@@ -1,0 +1,501 @@
+/* ============================================================================
+   PACE — Components
+   Cards, buttons, fields, chips, rings, list rows, empty states.
+   ========================================================================== */
+
+/* --- Card ------------------------------------------------------------------ */
+
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  box-shadow: var(--e-1);
+}
+
+.card.flush { padding: 0; overflow: hidden; }
+.card.quiet { background: var(--c-surface-2); border-color: transparent; box-shadow: none; }
+.card.accent-card {
+  background: var(--c-accent-soft);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.card-tap {
+  width: 100%;
+  text-align: left;
+  transition: transform var(--d-fast) var(--ease),
+              border-color var(--d-fast) var(--ease);
+}
+.card-tap:active { transform: scale(0.985); border-color: var(--c-line-strong); }
+
+/* --- Buttons ---------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 3.25rem;
+  padding: 0 var(--s-6);
+  border-radius: var(--r-full);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semi);
+  letter-spacing: -0.01em;
+  transition: transform var(--d-fast) var(--ease),
+              opacity var(--d-fast) var(--ease),
+              background var(--d-fast) var(--ease);
+}
+.btn:active { transform: scale(0.975); }
+.btn[disabled] { opacity: 0.35; pointer-events: none; }
+
+.btn-primary { background: var(--c-ink); color: var(--c-bg); }
+.btn-accent  { background: var(--c-accent); color: var(--c-on-accent); }
+.btn-ghost   { background: transparent; color: var(--c-ink-2); min-height: 2.75rem; }
+.btn-outline {
+  background: transparent;
+  color: var(--c-ink);
+  box-shadow: inset 0 0 0 1px var(--c-line-strong);
+}
+.btn-block { display: flex; width: 100%; }
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-full);
+  color: var(--c-ink-2);
+  background: var(--c-surface-2);
+  transition: transform var(--d-fast) var(--ease);
+}
+.btn-icon:active { transform: scale(0.9); }
+.btn-icon svg {
+  width: 18px; height: 18px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* --- Fields ----------------------------------------------------------------- */
+
+.field { display: flex; flex-direction: column; gap: var(--s-2); }
+
+.field > label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-ink-2);
+}
+
+.field .hint  { font-size: var(--fs-sm); color: var(--c-ink-3); }
+.field .error { font-size: var(--fs-sm); color: var(--c-danger); }
+
+.input {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 var(--s-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  font-size: var(--fs-body);
+  color: var(--c-ink);
+  transition: border-color var(--d-fast) var(--ease),
+              background var(--d-fast) var(--ease);
+}
+.input::placeholder { color: var(--c-ink-4); }
+.input:focus { border-color: var(--c-ink-3); }
+.input[aria-invalid="true"] { border-color: var(--c-danger); }
+
+/* A number paired with its unit, e.g. 72 kg */
+.input-unit { position: relative; display: flex; align-items: center; }
+.input-unit .input { padding-right: 3.5rem; }
+.input-unit .unit {
+  position: absolute;
+  right: var(--s-4);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-3);
+  font-weight: var(--fw-medium);
+  pointer-events: none;
+}
+
+/* --- Segmented control ------------------------------------------------------ */
+
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--s-1);
+  padding: var(--s-1);
+  background: var(--c-surface-2);
+  border-radius: var(--r-full);
+}
+
+.segmented button {
+  min-height: 2.5rem;
+  border-radius: var(--r-full);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-ink-2);
+  transition: background var(--d-fast) var(--ease),
+              color var(--d-fast) var(--ease);
+}
+.segmented button[aria-pressed="true"] {
+  background: var(--c-surface);
+  color: var(--c-ink);
+  box-shadow: var(--e-1);
+}
+
+/* --- Chips (multi-select goals) --------------------------------------------- */
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 2.75rem;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  color: var(--c-ink-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: background var(--d-fast) var(--ease),
+              color var(--d-fast) var(--ease),
+              box-shadow var(--d-fast) var(--ease),
+              transform var(--d-fast) var(--ease);
+}
+.chip:active { transform: scale(0.96); }
+.chip[aria-pressed="true"] {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-ink);
+  box-shadow: inset 0 0 0 1.5px var(--c-accent);
+}
+.chip .dot {
+  width: 6px; height: 6px;
+  border-radius: var(--r-full);
+  background: currentColor;
+  opacity: 0.3;
+  transition: opacity var(--d-fast) var(--ease);
+}
+.chip[aria-pressed="true"] .dot { opacity: 1; }
+
+/* --- Tag -------------------------------------------------------------------- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 0.2rem var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: var(--fw-semi);
+}
+.tag.on-accent {
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  color: var(--c-accent-ink);
+}
+.tag.on-ember { background: var(--c-ember-soft); color: var(--c-ember); }
+
+/* --- Metric tile ------------------------------------------------------------ */
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.metric .value {
+  font-family: var(--font-num);
+  font-size: 1.5rem;
+  font-weight: var(--fw-semi);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.metric .value .suffix {
+  font-size: 0.8125rem;
+  font-weight: var(--fw-medium);
+  color: var(--c-ink-3);
+  letter-spacing: 0;
+  margin-left: 0.15rem;
+}
+.metric .label {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tr-xs);
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+  font-weight: var(--fw-semi);
+}
+
+/* --- Progress bar ------------------------------------------------------------ */
+
+.bar {
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--c-surface-3);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-full);
+  background: var(--c-accent);
+  transition: width var(--d-slow) var(--ease-out);
+}
+.bar.ember > i { background: var(--c-ember); }
+
+/* --- Progress ring ------------------------------------------------------------ */
+
+.ring { display: block; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-linecap: round; }
+.ring .track { stroke: var(--c-surface-3); }
+.ring .value {
+  stroke: var(--c-accent);
+  transition: stroke-dashoffset var(--d-slow) var(--ease-out);
+}
+.ring-wrap { position: relative; display: inline-grid; place-items: center; }
+.ring-wrap .ring-label {
+  position: absolute;
+  text-align: center;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-semi);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* --- List rows ---------------------------------------------------------------- */
+
+.rows { display: flex; flex-direction: column; }
+
+.row-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-4) var(--s-5);
+  text-align: left;
+  border-top: 1px solid var(--c-line);
+  transition: background var(--d-fast) var(--ease);
+}
+.rows > .row-item:first-child { border-top: none; }
+.row-item:active { background: var(--c-surface-2); }
+
+.row-item .lead {
+  display: grid;
+  place-items: center;
+  width: 2.25rem; height: 2.25rem;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+  flex: none;
+}
+.row-item .lead svg {
+  width: 17px; height: 17px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.row-item .title { font-size: var(--fs-body); font-weight: var(--fw-medium); }
+.row-item .sub   { font-size: var(--fs-sm); color: var(--c-ink-3); }
+.row-item .trail {
+  margin-left: auto;
+  color: var(--c-ink-3);
+  font-size: var(--fs-sm);
+  flex: none;
+}
+
+/* --- Habit tick ----------------------------------------------------------------- */
+
+.tick {
+  width: 1.5rem; height: 1.5rem;
+  flex: none;
+  border-radius: var(--r-full);
+  box-shadow: inset 0 0 0 1.5px var(--c-line-strong);
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: background var(--d-fast) var(--ease),
+              box-shadow var(--d-fast) var(--ease),
+              color var(--d-fast) var(--ease),
+              transform var(--d-fast) var(--ease);
+}
+.tick svg {
+  width: 13px; height: 13px;
+  stroke: currentColor; fill: none;
+  stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+}
+[data-done="true"] .tick {
+  background: var(--c-accent);
+  box-shadow: inset 0 0 0 1.5px var(--c-accent);
+  color: var(--c-on-accent);
+}
+[data-done="true"] .title {
+  color: var(--c-ink-3);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.row-item:active .tick { transform: scale(0.88); }
+
+/* --- Empty state ------------------------------------------------------------------ */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-8) var(--s-5);
+  text-align: center;
+  border: 1px dashed var(--c-line-strong);
+  border-radius: var(--r-lg);
+  color: var(--c-ink-3);
+}
+.empty .glyph {
+  display: grid; place-items: center;
+  width: 2.75rem; height: 2.75rem;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  margin-bottom: var(--s-1);
+}
+.empty .glyph svg {
+  width: 20px; height: 20px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.empty .title { font-size: var(--fs-body); font-weight: var(--fw-medium); color: var(--c-ink-2); }
+.empty .body  { font-size: var(--fs-sm); max-width: 28ch; }
+
+/* --- Divider ---------------------------------------------------------------------- */
+
+.hr { height: 1px; background: var(--c-line); border: 0; }
+
+/* --- Toast ------------------------------------------------------------------------ */
+
+.toast-host {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + var(--s-4));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--gutter);
+  pointer-events: none;
+}
+.toast {
+  max-width: 100%;
+  padding: var(--s-3) var(--s-5);
+  border-radius: var(--r-full);
+  background: var(--c-ink);
+  color: var(--c-bg);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  box-shadow: var(--e-3);
+  animation: toast-in var(--d-base) var(--ease-out) both;
+}
+.toast[data-leaving="true"] { animation: toast-out var(--d-base) var(--ease) both; }
+
+@keyframes toast-in  { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to   { opacity: 0; transform: translateY(6px)  scale(0.98); } }
+
+/* --- Additions for the React shell ------------------------------------------ */
+
+.btn-danger {
+  background: var(--c-danger);
+  color: #fff;
+}
+
+.avatar-lg {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 1.375rem;
+}
+
+.ring-label { font-size: 1.0625rem; }
+.ring-sublabel {
+  font-size: 0.625rem;
+  font-weight: var(--fw-semi);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+
+/* Row subtitles are spans inside a flex column, so they need to break the line. */
+.row-item .sub { display: block; }
+
+/* --- Boot ------------------------------------------------------------------- */
+
+.boot {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  padding: var(--gutter);
+  text-align: center;
+  background: var(--c-bg);
+  color: var(--c-ink);
+}
+
+/* --- Dialog ------------------------------------------------------------------
+   Replaces window.confirm. Inside a WKWebView the native dialog is titled with
+   the origin and blocks the JS thread; this does neither. */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  /* Above the sheet (70): a confirmation is always raised by something else,
+     and a dialog the user cannot reach is worse than no dialog at all. */
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--gutter);
+  padding-bottom: calc(var(--gutter) + var(--safe-bottom));
+  background: rgba(19, 20, 24, 0.42);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: fade-in var(--d-base) var(--ease) both;
+}
+
+.dialog {
+  width: 100%;
+  max-width: calc(var(--app-max-w) - var(--gutter) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-6) var(--s-5) var(--s-5);
+  border-radius: var(--r-xl);
+  background: var(--c-surface);
+  box-shadow: var(--e-3);
+  animation: sheet-in var(--d-base) var(--ease-out) both;
+}
+
+.dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Centre the sheet where there is room for it to read as a dialog. */
+@media (min-height: 700px) and (min-width: 520px) {
+  .dialog-backdrop { align-items: center; }
+}

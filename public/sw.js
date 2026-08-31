@@ -1,0 +1,81 @@
+/**
+ * PACE — Service worker.
+ *
+ * Exists for one reason: without it, an app added to the iPhone home screen is
+ * a bookmark. It opens, finds no server, and shows nothing. With it, the shell
+ * is cached and the app opens offline like a real app.
+ *
+ * Strategy, deliberately small:
+ *   - navigations go to the network first and fall back to the cached shell, so
+ *     a new deploy is picked up the moment the phone is online;
+ *   - everything else is cache-first, because Vite fingerprints its filenames —
+ *     a given URL's contents can never change, so a cached copy is never stale.
+ *
+ * Bump CACHE_VERSION when the precached list below changes.
+ */
+
+const CACHE_VERSION = 'v1';
+const CACHE = `pace-${CACHE_VERSION}`;
+
+/** Relative on purpose: the app is served from a repository subpath on Pages. */
+const SHELL = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './icon.svg',
+  './apple-touch-icon.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      // One missing file must not fail the whole install.
+      .then((cache) => Promise.allSettled(SHELL.map((url) => cache.add(url))))
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          void caches.open(CACHE).then((cache) => cache.put('./index.html', copy));
+          return response;
+        })
+        .catch(() => caches.match('./index.html').then((hit) => hit ?? Response.error())),
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((hit) => {
+      if (hit) return hit;
+      return fetch(request).then((response) => {
+        // Opaque and error responses are not worth keeping.
+        if (response.ok && response.type === 'basic') {
+          const copy = response.clone();
+          void caches.open(CACHE).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      });
+    }),
+  );
+});

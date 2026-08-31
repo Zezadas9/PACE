@@ -1,0 +1,230 @@
+/* ============================================================================
+   PACE — App shell & layout
+   A phone-width column that stays centred on wider screens, a scrolling
+   screen area, and a fixed bottom navigation.
+   ========================================================================== */
+
+.app {
+  position: relative;
+  width: 100%;
+  max-width: var(--app-max-w);
+  min-height: 100dvh;
+  margin-inline: auto;
+  background: var(--c-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;                 /* contains the screen transitions */
+}
+
+/* On a desktop viewport the column reads as a device, not a stretched page. */
+@media (min-width: 520px) {
+  body { background: var(--c-surface-2); }
+  .app {
+    min-height: 100dvh;
+    box-shadow: 0 0 0 1px var(--c-line);
+  }
+}
+
+/* --- Screen viewport ------------------------------------------------------- */
+
+.screens {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(var(--safe-top) + var(--s-6)) var(--gutter)
+           calc(var(--nav-h) + var(--safe-bottom) + var(--s-8));
+}
+
+/* Screens without the bottom nav (onboarding) reclaim the space. */
+.app[data-chrome="bare"] .screen {
+  padding-bottom: calc(var(--safe-bottom) + var(--s-6));
+}
+
+/* Enter animation — a short, low-travel fade-up. Nothing bouncy. */
+.screen[data-state="entering"] {
+  animation: screen-in var(--d-base) var(--ease-out) both;
+}
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Children stagger in, which is what makes the app feel considered. */
+.stagger > * {
+  animation: rise var(--d-slow) var(--ease-out) both;
+}
+.stagger > *:nth-child(1) { animation-delay:  20ms; }
+.stagger > *:nth-child(2) { animation-delay:  60ms; }
+.stagger > *:nth-child(3) { animation-delay: 100ms; }
+.stagger > *:nth-child(4) { animation-delay: 140ms; }
+.stagger > *:nth-child(5) { animation-delay: 180ms; }
+.stagger > *:nth-child(6) { animation-delay: 220ms; }
+.stagger > *:nth-child(7) { animation-delay: 260ms; }
+.stagger > *:nth-child(8) { animation-delay: 300ms; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* --- Vertical rhythm helpers ---------------------------------------------- */
+
+.stack     { display: flex; flex-direction: column; }
+.stack-2   { gap: var(--s-2); }
+.stack-3   { gap: var(--s-3); }
+.stack-4   { gap: var(--s-4); }
+.stack-6   { gap: var(--s-6); }
+.stack-8   { gap: var(--s-8); }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.row-between { justify-content: space-between; }
+.grow { flex: 1; min-width: 0; }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+/* --- Section header -------------------------------------------------------- */
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+
+.section-head .action {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-3);
+  font-weight: var(--fw-medium);
+}
+
+/* --- Page header ----------------------------------------------------------- */
+
+.page-head {
+  margin-bottom: var(--s-6);
+}
+
+.page-head .t-display,
+.page-head .t-title { margin-top: var(--s-1); }
+
+/* --- Bottom navigation ----------------------------------------------------- */
+
+.nav {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: stretch;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: color-mix(in srgb, var(--c-bg-elev) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(18px);
+  -webkit-backdrop-filter: saturate(1.4) blur(18px);
+  box-shadow: var(--e-nav);
+  transform: translateY(0);
+  transition: transform var(--d-base) var(--ease);
+}
+
+.app[data-chrome="bare"] .nav {
+  transform: translateY(110%);
+  pointer-events: none;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0 0.1rem;
+  color: var(--c-ink-3);
+  transition: color var(--d-fast) var(--ease);
+}
+
+.nav-item svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--d-base) var(--ease-out);
+}
+
+.nav-item .label {
+  font-size: 0.625rem;
+  letter-spacing: 0.01em;
+  font-weight: var(--fw-medium);
+  line-height: 1;
+}
+
+.nav-item[aria-current="page"] {
+  color: var(--c-ink);
+}
+.nav-item[aria-current="page"] svg {
+  transform: translateY(-1px) scale(1.06);
+}
+
+.nav-item:active svg { transform: scale(0.9); }
+
+/* The active indicator: a single hairline pip, nothing more. */
+.nav-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 2px;
+  border-radius: var(--r-full);
+  background: var(--c-accent);
+  opacity: 0;
+  transform: scaleX(0.3);
+  transition: opacity var(--d-base) var(--ease),
+              transform var(--d-base) var(--ease-out);
+}
+.nav-item { position: relative; }
+.nav-item[aria-current="page"]::before { opacity: 1; transform: none; }
+
+/* --- Native shell ------------------------------------------------------------
+   Inside a Capacitor WebView there is no browser around the app, so the desktop
+   framing has to go: full bleed, no border, and the OS handles the background. */
+
+:root[data-native="true"] .app,
+:root[data-standalone="true"] .app {
+  max-width: none;
+  box-shadow: none;
+}
+
+:root[data-native="true"] body,
+:root[data-standalone="true"] body {
+  background: var(--c-bg);
+  /* A native shell must not rubber-band the whole document. */
+  overscroll-behavior: none;
+  position: fixed;
+  inset: 0;
+}
+
+/* The iOS keyboard resizes the WebView rather than overlaying it, so a fixed
+   bottom bar would sit on top of the keyboard. Hide it while typing. */
+:root[data-keyboard="open"] .nav {
+  transform: translateY(110%);
+  pointer-events: none;
+}

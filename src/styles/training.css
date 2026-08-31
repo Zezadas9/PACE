@@ -1,0 +1,294 @@
+/* ============================================================================
+   PACE — Training
+   The session runner is the one screen used mid-effort: big type, big targets,
+   nothing that needs a second look.
+   ========================================================================== */
+
+.session-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  padding-bottom: calc(var(--safe-bottom) + var(--s-6));
+}
+
+.session-top {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.session-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.session-title .t-h2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.session-clock {
+  font-size: 1.125rem;
+  color: var(--c-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.session-progress { display: flex; flex-direction: column; gap: var(--s-2); }
+
+/* --- The current set ---------------------------------------------------------- */
+
+.session-current {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-6) var(--s-5);
+  border-radius: var(--r-xl);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--e-2);
+}
+
+.session-exercise {
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-weight: var(--fw-semi);
+  text-wrap: balance;
+}
+
+.session-targets {
+  display: flex;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+}
+
+.target { display: flex; flex-direction: column; gap: var(--s-2); }
+.target .value {
+  font-family: var(--font-num);
+  font-size: 2rem;
+  font-weight: var(--fw-semi);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.target .unit {
+  font-size: 0.875rem;
+  color: var(--c-ink-3);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0;
+  margin-left: 0.15rem;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.stepper button {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+  transition: transform var(--d-fast) var(--ease), background var(--d-fast) var(--ease);
+}
+.stepper button:active { transform: scale(0.9); background: var(--c-surface-3); }
+.stepper button svg {
+  width: 16px; height: 16px;
+  stroke: currentColor; fill: none;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.stepper .value { min-width: 3.5rem; text-align: center; }
+
+.session-note {
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--c-line);
+}
+
+.session-actions { display: flex; flex-direction: column; gap: var(--s-2); }
+
+/* --- Rest --------------------------------------------------------------------- */
+
+.rest-timer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--c-surface-2);
+  overflow: hidden;
+  animation: rise var(--d-base) var(--ease-out) both;
+}
+.rest-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--c-accent-soft);
+  transition: width 1s linear;
+}
+.rest-label, .rest-clock, .rest-skip { position: relative; }
+.rest-label {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tr-xs);
+  text-transform: uppercase;
+  font-weight: var(--fw-semi);
+  color: var(--c-ink-3);
+}
+.rest-clock {
+  font-size: 1.25rem;
+  font-weight: var(--fw-semi);
+  letter-spacing: -0.03em;
+  margin-left: auto;
+}
+.rest-skip {
+  padding: 0.3rem var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  color: var(--c-ink-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+/* --- Finished ------------------------------------------------------------------ */
+
+.session-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-10) var(--s-5);
+  text-align: center;
+}
+.session-done .glyph {
+  display: grid;
+  place-items: center;
+  width: 3.5rem; height: 3.5rem;
+  border-radius: var(--r-full);
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  margin-bottom: var(--s-2);
+}
+.session-done .glyph svg {
+  width: 26px; height: 26px;
+  stroke: currentColor; fill: none;
+  stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+  animation: perfect-mark 620ms var(--ease-out) both;
+}
+
+/* --- Plan list ------------------------------------------------------------------ */
+
+.session-blocks { display: flex; flex-direction: column; gap: var(--s-1); }
+.session-block {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+}
+.session-block .title { font-size: var(--fs-body); font-weight: var(--fw-medium); display: block; }
+.session-block .sub { font-size: var(--fs-sm); color: var(--c-ink-3); display: block; }
+.session-block .trail { color: var(--c-ink-3); font-size: var(--fs-sm); }
+.session-block[data-state='current'] {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-ink);
+}
+.session-block[data-state='current'] .block-index {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+}
+.session-block[data-state='done'] { opacity: 0.55; }
+.session-block[data-state='done'] .title { text-decoration: line-through; }
+
+/* --- RPE scale ------------------------------------------------------------------- */
+
+.rpe-scale {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+}
+.rpe-scale button {
+  aspect-ratio: 1;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  color: var(--c-ink-3);
+  font-size: var(--fs-sm);
+  font-family: var(--font-num);
+  font-weight: var(--fw-medium);
+  transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease);
+}
+.rpe-scale button[aria-pressed='true'] {
+  background: var(--c-ink);
+  color: var(--c-bg);
+}
+
+/* --- Today CTA ----------------------------------------------------------------- */
+
+.today-cta {
+  flex: none;
+  padding: 0.45rem var(--s-4);
+  border-radius: var(--r-full);
+  background: var(--c-ink);
+  color: var(--c-bg);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+}
+
+/* --- Frequency bars -------------------------------------------------------------- */
+
+.freq-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-2);
+  height: 3.5rem;
+}
+.freq-bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: var(--c-surface-3);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.freq-bar i {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  background: var(--c-accent);
+  border-radius: var(--r-sm);
+  transition: height var(--d-slow) var(--ease-out);
+}
+
+/* --- Sparkline -------------------------------------------------------------------- */
+
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 3rem;
+  margin-top: var(--s-4);
+}
+.spark-bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  min-width: 4px;
+}
+.spark-bar i {
+  display: block;
+  width: 100%;
+  min-height: 3px;
+  border-radius: 2px;
+  background: var(--c-accent);
+}
+
+.delta {
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+  padding: 0.2rem var(--s-2);
+  border-radius: var(--r-sm);
+}
+.delta.up { background: var(--c-accent-soft); color: var(--c-accent-ink); }
+.delta.down { background: var(--c-ember-soft); color: var(--c-ember); }

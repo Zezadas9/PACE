@@ -1,0 +1,160 @@
+/* ============================================================================
+   PACE — Design tokens
+   The single source of truth for colour, type, space, radius, elevation and
+   motion. Nothing below this file should hard-code a colour or a pixel ramp.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Palette: warm paper neutrals -------------------------------------- */
+  --c-bg:          #F7F6F3;
+  --c-bg-elev:     #FFFFFF;
+  --c-surface:     #FFFFFF;
+  --c-surface-2:   #F1EFEA;
+  --c-surface-3:   #E9E6DF;
+  --c-line:        #E4E1D9;
+  --c-line-strong: #D3CFC5;
+
+  --c-ink:         #131418;
+  --c-ink-2:       #4C4F57;
+  --c-ink-3:       #8A8D95;
+  --c-ink-4:       #B2B5BB;
+
+  /* --- Accents ------------------------------------------------------------
+     One calm primary (wellness / focus) and one warm signal (energy, streaks).
+     Used sparingly: the interface is carried by type and space, not colour. */
+  --c-accent:      #2E6B58;
+  --c-accent-ink:  #1F4C3E;
+  --c-accent-soft: #E3EEE9;
+  --c-ember:       #BE6238;
+  --c-ember-soft:  #F8E9E1;
+  --c-on-accent:   #FFFFFF;
+
+  /* Semantic */
+  --c-positive:    #2E6B58;
+  --c-attention:   #BE6238;
+  --c-danger:      #A93A32;
+
+  /* --- Typography --------------------------------------------------------- */
+  --font-sans: "Segoe UI Variable Display", "Segoe UI", -apple-system,
+               BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-num:  "Segoe UI Variable Display", "SF Pro Display", -apple-system,
+               "Inter", Arial, sans-serif;
+
+  --fs-display: 2.5rem;   --lh-display: 1.02;  --tr-display: -0.035em;
+  --fs-title:   1.75rem;  --lh-title:   1.1;   --tr-title:   -0.03em;
+  --fs-h1:      1.3125rem;--lh-h1:      1.2;   --tr-h1:      -0.02em;
+  --fs-h2:      1.0625rem;--lh-h2:      1.3;   --tr-h2:      -0.01em;
+  --fs-body:    0.9375rem;--lh-body:    1.5;
+  --fs-sm:      0.8125rem;--lh-sm:      1.45;
+  --fs-xs:      0.6875rem;--lh-xs:      1.3;   --tr-xs:      0.09em;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semi:    600;
+
+  /* --- Space (4pt ramp) ---------------------------------------------------- */
+  --s-1:  0.25rem;
+  --s-2:  0.5rem;
+  --s-3:  0.75rem;
+  --s-4:  1rem;
+  --s-5:  1.25rem;
+  --s-6:  1.5rem;
+  --s-8:  2rem;
+  --s-10: 2.5rem;
+  --s-12: 3rem;
+  --s-16: 4rem;
+
+  /* Horizontal page gutter — every screen breathes on the same margin. */
+  --gutter: 1.25rem;
+
+  /* --- Radius -------------------------------------------------------------- */
+  --r-sm:   0.625rem;
+  --r-md:   0.875rem;
+  --r-lg:   1.25rem;
+  --r-xl:   1.75rem;
+  --r-full: 999px;
+
+  /* --- Elevation ----------------------------------------------------------
+     Barely there. Depth comes from hairlines, not drop shadows. */
+  --e-0: none;
+  --e-1: 0 1px 2px rgba(19, 20, 24, 0.04);
+  --e-2: 0 2px 10px rgba(19, 20, 24, 0.05);
+  --e-3: 0 12px 32px rgba(19, 20, 24, 0.10);
+  --e-nav: 0 -1px 0 var(--c-line), 0 -8px 28px rgba(19, 20, 24, 0.05);
+
+  /* --- Motion -------------------------------------------------------------- */
+  --ease:      cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --d-fast:    140ms;
+  --d-base:    240ms;
+  --d-slow:    420ms;
+
+  /* --- Layout -------------------------------------------------------------- */
+  --app-max-w:  460px;
+  --nav-h:      4.25rem;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top:    env(safe-area-inset-top, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-bg:          #0D0E11;
+    --c-bg-elev:     #15171B;
+    --c-surface:     #15171B;
+    --c-surface-2:   #1C1F24;
+    --c-surface-3:   #23272D;
+    --c-line:        #24272D;
+    --c-line-strong: #333840;
+
+    --c-ink:         #F3F2EF;
+    --c-ink-2:       #ACB0B8;
+    --c-ink-3:       #7B7F87;
+    --c-ink-4:       #575B62;
+
+    --c-accent:      #62BC9D;
+    --c-accent-ink:  #8FD5BC;
+    --c-accent-soft: #16302A;
+    --c-ember:       #DD8B60;
+    --c-ember-soft:  #33211A;
+    --c-on-accent:   #07120E;
+
+    --c-positive:    #62BC9D;
+    --c-attention:   #DD8B60;
+    --c-danger:      #E0736A;
+
+    --e-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --e-2: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --e-3: 0 14px 36px rgba(0, 0, 0, 0.55);
+    --e-nav: 0 -1px 0 var(--c-line), 0 -10px 30px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Explicit override, so a future in-app theme switch works in both directions */
+:root[data-theme="dark"] {
+  --c-bg:          #0D0E11;
+  --c-bg-elev:     #15171B;
+  --c-surface:     #15171B;
+  --c-surface-2:   #1C1F24;
+  --c-surface-3:   #23272D;
+  --c-line:        #24272D;
+  --c-line-strong: #333840;
+  --c-ink:         #F3F2EF;
+  --c-ink-2:       #ACB0B8;
+  --c-ink-3:       #7B7F87;
+  --c-ink-4:       #575B62;
+  --c-accent:      #62BC9D;
+  --c-accent-ink:  #8FD5BC;
+  --c-accent-soft: #16302A;
+  --c-ember:       #DD8B60;
+  --c-ember-soft:  #33211A;
+  --c-on-accent:   #07120E;
+  --c-positive:    #62BC9D;
+  --c-attention:   #DD8B60;
+  --c-danger:      #E0736A;
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --e-2: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --e-3: 0 14px 36px rgba(0, 0, 0, 0.55);
+  --e-nav: 0 -1px 0 var(--c-line), 0 -10px 30px rgba(0, 0, 0, 0.4);
+}

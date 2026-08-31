@@ -1,0 +1,6 @@
+# Normalise line endings so the repo stays consistent between Windows and the
+# Linux runner that builds it.
+* text=auto eol=lf
+*.png binary
+*.jpeg binary
+*.jpg binary

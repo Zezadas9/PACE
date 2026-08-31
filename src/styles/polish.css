@@ -1,0 +1,405 @@
+/* ============================================================================
+   PACE — Finish
+   The pass that separates "renders correctly" from "feels made". Depth, weight
+   and reaction: nothing here changes what the app says, only how solid it feels
+   while you use it.
+   ========================================================================== */
+
+/* --- Palette -------------------------------------------------------------------
+   The brand mark is stark white on near-black. The interface follows it: an
+   essentially monochrome shell carrying one vivid accent, rather than a wash of
+   muted mid-tones that never commit to anything.
+
+   The neutrals are very slightly cool, which reads as product rather than as
+   default grey, and the accent is bright enough to be the only colour on the
+   screen and still be the first thing you see. Warmth stays where it means
+   something — the streak. */
+
+:root {
+  --c-bg:          #F7F8F9;
+  --c-bg-elev:     #FFFFFF;
+  --c-surface:     #FFFFFF;
+  --c-surface-2:   #EFF1F3;
+  --c-surface-3:   #E1E5E9;
+  --c-line:        #E5E8EB;
+  --c-line-strong: #CBD1D7;
+
+  --c-ink:         #0D1012;
+  --c-ink-2:       #454D55;
+  --c-ink-3:       #78818B;
+  --c-ink-4:       #AAB2BA;
+
+  --c-accent:      #00875A;
+  --c-accent-ink:  #006946;
+  --c-accent-soft: #DFF3EB;
+  --c-ember:       #B45309;
+  --c-ember-soft:  #FCEEDD;
+  --c-on-accent:   #FFFFFF;
+
+  --c-positive:    #00875A;
+  --c-attention:   #B45309;
+  --c-danger:      #C0392F;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --c-bg:          #08090B;
+    --c-bg-elev:     #121417;
+    --c-surface:     #131619;
+    --c-surface-2:   #1B1F23;
+    --c-surface-3:   #262B31;
+    --c-line:        #232830;
+    --c-line-strong: #363D45;
+
+    --c-ink:         #F4F6F7;
+    --c-ink-2:       #A6AEB7;
+    --c-ink-3:       #757E88;
+    --c-ink-4:       #515A63;
+
+    --c-accent:      #3EE0A4;
+    --c-accent-ink:  #7DEFC6;
+    --c-accent-soft: #0E2C22;
+    --c-ember:       #FFB454;
+    --c-ember-soft:  #2E2110;
+    --c-on-accent:   #04170F;
+
+    --c-positive:    #3EE0A4;
+    --c-attention:   #FFB454;
+    --c-danger:      #FF6B61;
+  }
+}
+
+:root[data-theme='dark'] {
+  --c-bg:          #08090B;
+  --c-bg-elev:     #121417;
+  --c-surface:     #131619;
+  --c-surface-2:   #1B1F23;
+  --c-surface-3:   #262B31;
+  --c-line:        #232830;
+  --c-line-strong: #363D45;
+  --c-ink:         #F4F6F7;
+  --c-ink-2:       #A6AEB7;
+  --c-ink-3:       #757E88;
+  --c-ink-4:       #515A63;
+  --c-accent:      #3EE0A4;
+  --c-accent-ink:  #7DEFC6;
+  --c-accent-soft: #0E2C22;
+  --c-ember:       #FFB454;
+  --c-ember-soft:  #2E2110;
+  --c-on-accent:   #04170F;
+  --c-positive:    #3EE0A4;
+  --c-attention:   #FFB454;
+  --c-danger:      #FF6B61;
+}
+
+/* --- Surfaces -----------------------------------------------------------------
+   In dark mode the cards were within a few percent of the page and the whole
+   screen read as one grey field. A card now sits above the page on its own
+   light, with a hairline top edge catching it. */
+
+.card {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--c-ink) 2.5%, transparent) 0%,
+    transparent 42%
+  );
+}
+
+:root[data-theme='dark'] .card,
+:root:not([data-theme='light']) .card {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.045) 0%,
+    rgba(255, 255, 255, 0) 46%
+  );
+}
+
+/* --- The day ring gets a glow, because it is the one hero on the screen ------- */
+
+.summary-card .ring-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--c-accent) 22%, transparent) 0%,
+    transparent 68%
+  );
+  opacity: 0;
+  animation: glow-in 900ms var(--ease-out) 240ms forwards;
+  pointer-events: none;
+}
+
+@keyframes glow-in { to { opacity: 1; } }
+
+/* --- Reaction -----------------------------------------------------------------
+   Presses used to shrink linearly, which reads as a slide. A short overshoot on
+   release is what makes a control feel physical. */
+
+.btn, .chip, .card-tap, .btn-icon, .fab, .month-cell, .year-month, .weekday-picker button {
+  transition:
+    transform 220ms cubic-bezier(0.34, 1.4, 0.5, 1),
+    background var(--d-fast) var(--ease),
+    color var(--d-fast) var(--ease),
+    box-shadow var(--d-fast) var(--ease);
+}
+.btn:active, .card-tap:active { transform: scale(0.965); transition-duration: 90ms; }
+.chip:active, .btn-icon:active, .month-cell:active { transform: scale(0.93); transition-duration: 90ms; }
+.fab:active { transform: scale(0.88); transition-duration: 90ms; }
+
+/* Primary actions carry a little weight of their own. */
+.btn-primary, .btn-accent { box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--c-ink) 55%, transparent); }
+.btn-accent { box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--c-accent) 80%, transparent); }
+
+/* --- Completion ---------------------------------------------------------------
+   A row that has just been ticked flashes once. The animation is attached to
+   the completed state, so it replays every time the row enters it. */
+
+.row-item[data-done='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+  animation: row-flash 620ms var(--ease-out) forwards;
+}
+
+@keyframes row-flash {
+  from { opacity: 0.9; }
+  to   { opacity: 0; }
+}
+
+/* The tick itself lands rather than appears. */
+[data-done='true'] .tick {
+  animation: tick-pop 340ms cubic-bezier(0.34, 1.5, 0.5, 1) both;
+}
+@keyframes tick-pop {
+  0%   { transform: scale(0.7); }
+  55%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* --- Tab bar -------------------------------------------------------------------
+   The pip was static and the icons all weighed the same. The active item now
+   lifts, and the pip slides in rather than blinking on. */
+
+.nav-item::before {
+  width: 22px;
+  height: 2.5px;
+  top: 0;
+  transition:
+    opacity 200ms var(--ease),
+    transform 320ms cubic-bezier(0.34, 1.3, 0.5, 1);
+}
+.nav-item[aria-current='page']::before { transform: translateY(0) scaleX(1); }
+.nav-item:not([aria-current='page'])::before { transform: translateY(-3px) scaleX(0.2); }
+
+.nav-item[aria-current='page'] svg {
+  transform: translateY(-2px) scale(1.08);
+  stroke-width: 1.85;
+}
+.nav-item[aria-current='page'] .label { font-weight: var(--fw-semi); }
+
+/* --- Streak stats ---------------------------------------------------------------
+   The current streak is the one number people open the app for, so it is
+   allowed to be louder than its three neighbours. */
+
+.streak-stat.hot {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--c-ember) 16%, var(--c-surface-2)) 0%,
+    var(--c-surface-2) 70%
+  );
+}
+.streak-stat.hot .value { color: var(--c-ember); }
+.streak-stat.hot .glyph svg { animation: flame-breathe 3.2s var(--ease) infinite; }
+
+@keyframes flame-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.1); opacity: 1; }
+}
+
+/* --- Perfect day ------------------------------------------------------------------
+   Restrained, as asked: a soft sheen crosses the card once and then stops. */
+
+.perfect-banner {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, #fff 12%, var(--c-accent)) 0%,
+    var(--c-accent) 55%
+  );
+}
+.perfect-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: sheen 1400ms var(--ease-out) 420ms 1 forwards;
+  pointer-events: none;
+}
+@keyframes sheen { to { transform: translateX(100%); } }
+
+/* --- Headers ----------------------------------------------------------------------
+   The eyebrow/title pair had no relationship. Tightening the pair and letting
+   the title carry the weight gives each screen a real top. */
+
+.page-head .t-eyebrow, .today-hero .t-eyebrow { color: var(--c-ink-3); }
+.page-head .t-title, .today-hero .t-title { letter-spacing: -0.035em; }
+
+/* --- Section headers -------------------------------------------------------------- */
+
+.section-head .t-h2 { letter-spacing: -0.015em; }
+.section-head .action { font-variant-numeric: tabular-nums; }
+
+/* --- Empty states ------------------------------------------------------------------
+   A dashed box reads as a placeholder someone forgot to finish. A quiet filled
+   panel reads as a deliberate "nothing here yet". */
+
+.empty {
+  border: none;
+  background: color-mix(in srgb, var(--c-surface-2) 70%, transparent);
+}
+.empty .glyph { background: var(--c-surface-3); }
+
+/* --- Focus -------------------------------------------------------------------------- */
+
+:focus-visible { outline-color: var(--c-accent); outline-width: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .summary-card .ring-wrap::before,
+  .perfect-banner::after,
+  .streak-stat.hot .glyph svg,
+  .row-item[data-done='true']::after,
+  [data-done='true'] .tick {
+    animation: none;
+    opacity: 1;
+  }
+  .row-item[data-done='true']::after { display: none; }
+}
+
+/* --- The tick -------------------------------------------------------------------
+   It was a hairline circle on a near-black card: technically present, visually
+   absent. It now reads as an empty target you are meant to fill. */
+
+.tick {
+  background: color-mix(in srgb, var(--c-ink) 6%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--c-line-strong);
+}
+.row-item:hover .tick { box-shadow: inset 0 0 0 1.5px var(--c-ink-3); }
+
+[data-done='true'] .tick {
+  background: var(--c-accent);
+  box-shadow:
+    inset 0 0 0 1.5px var(--c-accent),
+    0 4px 12px -4px color-mix(in srgb, var(--c-accent) 70%, transparent);
+}
+
+/* --- Week strip -------------------------------------------------------------------
+   Six identical grey circles told you nothing. Each state now looks different
+   at a glance: done is filled, today is ringed, ahead is an outline. */
+
+.week .day .pip {
+  font-weight: var(--fw-semi);
+  transition: background var(--d-base) var(--ease), color var(--d-base) var(--ease),
+              box-shadow var(--d-base) var(--ease);
+}
+.week .day[data-state='perfect'] .pip {
+  box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--c-accent) 85%, transparent);
+}
+.week .day[data-state='today'] .pip {
+  background: var(--c-surface-3);
+  box-shadow: inset 0 0 0 2px var(--c-ink);
+  color: var(--c-ink);
+}
+.week .day[data-state='future'] .pip {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--c-line-strong);
+  color: var(--c-ink-4);
+}
+
+/* --- Row text ---------------------------------------------------------------------
+   The secondary line was two steps too quiet to be worth rendering. */
+
+.row-item .sub, .session-block .sub { color: var(--c-ink-2); }
+.row-item .trail { color: var(--c-ink-2); font-variant-numeric: tabular-nums; }
+
+/* --- Metric tiles ------------------------------------------------------------------ */
+
+.metric { background: color-mix(in srgb, var(--c-surface-2) 88%, transparent); }
+.metric .value { letter-spacing: -0.035em; }
+
+/* --- The avatar earns a little presence --------------------------------------------- */
+
+.avatar {
+  box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--c-ink) 60%, transparent);
+}
+
+/* --- Progress bars ------------------------------------------------------------------- */
+
+.bar > i {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--c-accent) 70%, var(--c-accent-ink)) 0%,
+    var(--c-accent) 100%
+  );
+}
+
+/* --- Toast --------------------------------------------------------------------------- */
+
+.toast {
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.7);
+  border: 1px solid color-mix(in srgb, var(--c-bg) 30%, transparent);
+}
+
+/* Keep the four streak tiles on one line each, whatever the label. */
+.streak-stat .label { white-space: nowrap; }
+
+/* --- Fill-all -------------------------------------------------------------------
+   A counted habit takes as many taps as it has repetitions. This is the escape
+   hatch, and it only appears while there is something left to fill. */
+
+.fill-all {
+  flex: none;
+  align-self: center;
+  padding: 0.3rem 0.7rem;
+  margin-right: var(--s-1);
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: var(--fw-semi);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  transition: transform 200ms cubic-bezier(0.34, 1.4, 0.5, 1),
+              background var(--d-fast) var(--ease), color var(--d-fast) var(--ease);
+}
+.fill-all:active {
+  transform: scale(0.9);
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  transition-duration: 90ms;
+}
+
+/* --- Category colour on cards ------------------------------------------------------
+   The agenda spine is the loudest use of hue; keep it slim and confident. */
+
+.agenda-kind { width: 3px; border-radius: var(--r-full); opacity: 0.9; }
+.row-item[data-done='true'] .agenda-kind { opacity: 0.35; }
+
+/* Workout plans and the session header inherit the type colour. */
+.workout-type-dot { margin-right: var(--s-2); }
+
+/* Keep the row on one line: the escape hatch must not cost the title its space. */
+.agenda-time { width: 2.85rem; }
+.fill-all { padding: 0.28rem 0.6rem; font-size: 0.625rem; letter-spacing: 0.05em; }
+.agenda-open .title { line-height: 1.25; }

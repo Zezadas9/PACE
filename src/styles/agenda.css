@@ -1,0 +1,615 @@
+/* ============================================================================
+   PACE — Agenda, streak and sheets
+   ========================================================================== */
+
+/* --- Bottom sheet ---------------------------------------------------------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(19, 20, 24, 0.42);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: fade-in var(--d-base) var(--ease) both;
+}
+
+.sheet {
+  width: 100%;
+  max-width: var(--app-max-w);
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg-elev);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--e-3);
+  animation: sheet-in var(--d-base) var(--ease-out) both;
+  padding-bottom: var(--safe-bottom);
+}
+
+.sheet-grip {
+  width: 2.25rem;
+  height: 4px;
+  margin: var(--s-3) auto var(--s-1);
+  border-radius: var(--r-full);
+  background: var(--c-line-strong);
+  flex: none;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-5) var(--s-4);
+  flex: none;
+}
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 var(--s-5) var(--s-5);
+}
+
+.sheet-foot {
+  flex: none;
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  border-top: 1px solid var(--c-line);
+  background: var(--c-bg-elev);
+}
+.sheet-foot > * { flex: 1; }
+
+/* --- Floating action button ------------------------------------------------ */
+
+.fab {
+  position: absolute;
+  right: var(--gutter);
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + var(--s-4));
+  z-index: 25;
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-full);
+  background: var(--c-ink);
+  color: var(--c-bg);
+  box-shadow: var(--e-3);
+  transition: transform var(--d-fast) var(--ease);
+}
+.fab:active { transform: scale(0.92); }
+.fab svg {
+  width: 24px; height: 24px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* --- Date navigator -------------------------------------------------------- */
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+.date-nav-label {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+.date-nav-label .t-h2 {
+  display: block;
+  /* Sentence case, not title case: `capitalize` would give
+     "Terça, 1 De Setembro". */
+  text-transform: lowercase;
+}
+.date-nav-label .t-h2::first-letter { text-transform: uppercase; }
+.date-nav svg {
+  width: 18px; height: 18px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.date-nav-today {
+  flex: none;
+  padding: 0.35rem var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+/* --- Week strip states ------------------------------------------------------ */
+
+.week .day[data-state='perfect'] .pip {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+}
+.week .day[data-state='partial'] .pip {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-ink);
+}
+.week .day[data-state='today'] .pip {
+  box-shadow: inset 0 0 0 1.5px var(--c-ink);
+  color: var(--c-ink);
+}
+.week .day[data-state='missed'] .pip,
+.week .day[data-state='empty'] .pip {
+  background: var(--c-surface-2);
+  color: var(--c-ink-4);
+}
+.week .day[data-state='future'] .pip {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  color: var(--c-ink-4);
+}
+.week .day[data-selected='true'] .pip {
+  outline: 2px solid var(--c-ink);
+  outline-offset: 2px;
+}
+
+/* --- Month grid ------------------------------------------------------------- */
+
+.month-grid { display: flex; flex-direction: column; gap: 2px; }
+
+.month-heads,
+.month-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.month-heads {
+  margin-bottom: var(--s-2);
+}
+.month-heads span {
+  text-align: center;
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tr-xs);
+  text-transform: uppercase;
+  font-weight: var(--fw-semi);
+  color: var(--c-ink-3);
+}
+
+.month-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-ink-2);
+  font-variant-numeric: tabular-nums;
+  transition: background var(--d-fast) var(--ease);
+}
+.month-cell .num {
+  font-family: var(--font-num);
+  font-size: 0.875rem;
+  font-weight: var(--fw-medium);
+  line-height: 1;
+}
+.month-cell[data-outside='true'] { opacity: 0.32; }
+.month-cell[data-state='perfect'] {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+}
+.month-cell[data-state='partial'] { background: var(--c-accent-soft); color: var(--c-accent-ink); }
+.month-cell[data-state='today'] { box-shadow: inset 0 0 0 1.5px var(--c-ink); color: var(--c-ink); }
+.month-cell[data-selected='true'] { outline: 2px solid var(--c-ink); outline-offset: -1px; }
+.month-cell:active { background: var(--c-surface-3); }
+
+.month-cell .marks {
+  display: flex;
+  gap: 2px;
+  height: 4px;
+  align-items: center;
+}
+.mark {
+  width: 4px; height: 4px;
+  border-radius: var(--r-full);
+  display: block;
+}
+.mark-event { background: var(--c-ink-3); }
+.mark-task { background: var(--c-ember); }
+.mark-habit { background: var(--c-accent); }
+.month-cell[data-state='perfect'] .mark { background: var(--c-on-accent); opacity: 0.7; }
+
+/* --- Year grid --------------------------------------------------------------- */
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+}
+
+.year-month {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  text-align: left;
+  transition: transform var(--d-fast) var(--ease);
+}
+.year-month:active { transform: scale(0.97); }
+.year-month .t-eyebrow { text-transform: uppercase; }
+
+.year-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.year-days i {
+  aspect-ratio: 1;
+  border-radius: 1.5px;
+  background: var(--c-surface-3);
+  display: block;
+}
+.year-days i[data-level='1'] { background: var(--c-accent-soft); }
+.year-days i[data-level='2'] { background: var(--c-accent); }
+
+/* --- Agenda list ------------------------------------------------------------- */
+
+.agenda-group + .agenda-group { margin-top: var(--s-5); }
+
+.agenda-time {
+  flex: none;
+  width: 3.1rem;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-ink-3);
+  letter-spacing: -0.01em;
+}
+
+.agenda-kind {
+  width: 3px;
+  align-self: stretch;
+  border-radius: var(--r-full);
+  flex: none;
+  margin-right: var(--s-1);
+}
+.agenda-kind[data-kind='event'] { background: var(--c-ink-3); }
+.agenda-kind[data-kind='task'] { background: var(--c-ember); }
+.agenda-kind[data-kind='habit'] { background: var(--c-accent); }
+.agenda-kind[data-kind='workout'] { background: var(--c-ink); }
+
+.essential-dot {
+  width: 5px; height: 5px;
+  border-radius: var(--r-full);
+  background: var(--c-ember);
+  flex: none;
+  margin-left: var(--s-1);
+}
+
+/* A counted habit shows how far along it is, under the title. */
+.row-meter {
+  height: 3px;
+  margin-top: 0.4rem;
+  border-radius: var(--r-full);
+  background: var(--c-surface-3);
+  overflow: hidden;
+}
+.row-meter > i {
+  display: block;
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: var(--r-full);
+  transition: width var(--d-base) var(--ease-out);
+}
+
+/* --- Streak ------------------------------------------------------------------ */
+
+.streak-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3);
+}
+
+.streak-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.streak-stat .glyph {
+  display: grid;
+  place-items: center;
+  width: 2rem; height: 2rem;
+  flex: none;
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  color: var(--c-ink-2);
+}
+.streak-stat .glyph svg {
+  width: 15px; height: 15px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.streak-stat.hot .glyph { background: var(--c-ember-soft); color: var(--c-ember); }
+.streak-stat .value {
+  font-family: var(--font-num);
+  font-size: 1.25rem;
+  font-weight: var(--fw-semi);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.streak-stat .label {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tr-xs);
+  text-transform: uppercase;
+  font-weight: var(--fw-semi);
+  color: var(--c-ink-3);
+}
+
+/* --- Perfect day banner -------------------------------------------------------
+   A quiet arrival, not confetti: the card fades up once and stays. */
+
+.perfect-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  animation: perfect-in 520ms var(--ease-out) both;
+}
+.perfect-banner .glyph {
+  display: grid;
+  place-items: center;
+  width: 2.5rem; height: 2.5rem;
+  flex: none;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.18);
+}
+.perfect-banner .glyph svg {
+  width: 20px; height: 20px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  animation: perfect-mark 620ms var(--ease-out) 120ms both;
+}
+.perfect-banner .title {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-semi);
+  letter-spacing: -0.02em;
+}
+.perfect-banner .body {
+  font-size: var(--fs-sm);
+  opacity: 0.82;
+}
+
+@keyframes perfect-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes perfect-mark {
+  from { opacity: 0; transform: scale(0.7); }
+  60%  { transform: scale(1.06); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* --- Switch -------------------------------------------------------------------- */
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-4) var(--s-5);
+  text-align: left;
+  border-top: 1px solid var(--c-line);
+}
+.rows > .switch-row:first-child { border-top: none; }
+
+.switch {
+  flex: none;
+  width: 2.75rem;
+  height: 1.625rem;
+  border-radius: var(--r-full);
+  background: var(--c-surface-3);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: background var(--d-base) var(--ease);
+}
+.switch > i {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  box-shadow: var(--e-1);
+  transition: transform var(--d-base) var(--ease-out);
+  display: block;
+}
+.switch[data-checked='true'] { background: var(--c-accent); }
+.switch[data-checked='true'] > i { transform: translateX(1.125rem); }
+
+/* --- Segmented, compact --------------------------------------------------------- */
+
+.segmented.compact button {
+  min-height: 2.125rem;
+  font-size: var(--fs-sm);
+}
+
+/* --- Empty day ------------------------------------------------------------------ */
+
+.day-empty {
+  padding: var(--s-10) var(--s-5);
+  text-align: center;
+  color: var(--c-ink-3);
+}
+.day-empty .t-h2 { color: var(--c-ink-2); margin-bottom: var(--s-1); }
+
+/* --- Chips row that scrolls sideways rather than wrapping ------------------------ */
+
+.chips-scroll {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  padding-bottom: var(--s-1);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.chips-scroll::-webkit-scrollbar { display: none; }
+.chips-scroll > * { flex: none; }
+
+/* --- Weekday picker -------------------------------------------------------- */
+
+.weekday-picker {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--s-1);
+}
+.weekday-picker button {
+  aspect-ratio: 1;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  color: var(--c-ink-3);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease);
+}
+.weekday-picker button[aria-pressed='true'] {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+}
+
+/* --- Essential toggle box ---------------------------------------------------- */
+
+.essential-box {
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--c-surface);
+}
+.essential-box .switch-row { padding: var(--s-4); }
+.essential-box .sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-3);
+  line-height: 1.4;
+}
+.switch-row .title { font-size: var(--fs-body); font-weight: var(--fw-medium); }
+.switch-row .sub { display: block; font-size: var(--fs-sm); color: var(--c-ink-3); }
+
+/* --- Agenda row -------------------------------------------------------------- */
+
+.agenda-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  min-width: 0;
+  background: none;
+}
+.agenda-open .title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.row-item .tick { cursor: pointer; }
+
+/* --- Month legend ------------------------------------------------------------ */
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-semi);
+}
+.legend .mark { margin-left: var(--s-2); }
+.legend .mark:first-child { margin-left: 0; }
+
+/* --- Date field ------------------------------------------------------------- */
+
+.date-field {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 5rem;
+  gap: var(--s-2);
+}
+.date-field select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--s-3);
+  text-transform: capitalize;
+}
+.date-field input { text-align: center; }
+.date-field[aria-invalid='true'] .input { border-color: var(--c-danger); }
+
+/* --- Workout builder --------------------------------------------------------- */
+
+.block-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+}
+
+.block-index {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  color: var(--c-ink-3);
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+}
+
+.block-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-2);
+}
+
+.number-cell { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.cell-label {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--tr-xs);
+  text-transform: uppercase;
+  font-weight: var(--fw-semi);
+  color: var(--c-ink-3);
+}
+.cell-input { position: relative; display: block; }
+.cell-input .input {
+  min-height: 2.75rem;
+  padding: 0 0.4rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.cell-unit {
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.3rem;
+  font-size: 0.625rem;
+  color: var(--c-ink-4);
+  pointer-events: none;
+}
+/* The spinner arrows steal room a phone does not have. */
+.cell-input input::-webkit-outer-spin-button,
+.cell-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cell-input input[type='number'] { -moz-appearance: textfield; appearance: textfield; }

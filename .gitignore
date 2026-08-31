@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.DS_Store
+.vite/
+
+# Native projects, once `npx cap add` has been run.
+/ios/
+/android/
+
+# The pre-React version, kept locally for reference only.
+/legacy/
+
+# Editor and tooling scratch.
+.claude/

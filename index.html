@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to real
+       values on a notched device inside a Capacitor shell. -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <title>PACE — Progress, every day</title>
+  <meta name="description" content="PACE — organização pessoal, hábitos, treino, atividade e alimentação." />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#F7F6F3" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="PACE" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <!-- iOS home screen needs a PNG; the SVG serves everything else. -->
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+</head>
+<body>
+  <div id="root"></div>
+  <noscript>A PACE precisa de JavaScript para funcionar.</noscript>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

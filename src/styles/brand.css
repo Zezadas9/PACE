@@ -1,0 +1,67 @@
+/* ============================================================================
+   PACE — Brand
+   The mark, the wordmark, and the one place the app is allowed to be loud.
+   ========================================================================== */
+
+.pace-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  color: var(--c-ink);
+}
+
+.pace-mark-svg { display: block; }
+
+.pace-wordmark {
+  font-family: var(--font-num);
+  font-size: 2rem;
+  font-weight: var(--fw-regular);
+  /* The wide tracking is the wordmark: without it this is just a word. */
+  letter-spacing: 0.34em;
+  /* Tracking adds space after the last letter; pull it back so it optically
+     centres under the mark. */
+  text-indent: 0.34em;
+  line-height: 1;
+}
+
+.pace-tagline {
+  font-size: 0.6875rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  text-transform: uppercase;
+  font-weight: var(--fw-medium);
+  color: var(--c-ink-3);
+}
+
+/* --- Draw-in ------------------------------------------------------------------
+   Each stroke is dashed to its own length and the offset animates to zero, so
+   the mark builds itself in the order a hand would draw it. */
+
+.pace-mark-svg.is-drawing .mark-bowl,
+.pace-mark-svg.is-drawing .mark-stem,
+.pace-mark-svg.is-drawing .mark-arrow,
+.pace-mark-svg.is-drawing .mark-head {
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: var(--len);
+  animation: mark-draw var(--dur) var(--ease-out) forwards;
+}
+.pace-mark-svg.is-drawing .mark-bowl  { --len: 460; --dur: 760ms; animation-delay: 60ms; }
+.pace-mark-svg.is-drawing .mark-stem  { --len: 260; --dur: 620ms; animation-delay: 300ms; }
+.pace-mark-svg.is-drawing .mark-arrow { --len: 145; --dur: 420ms; animation-delay: 700ms; }
+.pace-mark-svg.is-drawing .mark-head  { --len: 62;  --dur: 260ms; animation-delay: 1020ms; }
+
+@keyframes mark-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pace-mark-svg.is-drawing .mark-bowl,
+  .pace-mark-svg.is-drawing .mark-stem,
+  .pace-mark-svg.is-drawing .mark-arrow,
+  .pace-mark-svg.is-drawing .mark-head {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
