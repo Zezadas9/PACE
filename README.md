@@ -330,6 +330,37 @@ corporal.
 
 ---
 
+## Publicar no GitHub Pages
+
+O `.github/workflows/deploy.yml` compila e publica a cada push para `main`.
+Corre `tsc`, `vite build` e os testes: um commit partido nunca chega ao
+telemóvel.
+
+**Passo manual, uma vez:** no repositório, *Settings → Pages → Build and
+deployment → Source: **GitHub Actions***.
+
+O Pages em contas gratuitas só serve repositórios **públicos**. O código fica
+visível; os dados não — cada pessoa guarda os seus no próprio telemóvel, e não
+há servidor nem base de dados.
+
+### Instalar no telemóvel
+
+Com o site publicado, no Safari do iPhone: **Partilhar → Adicionar ao Ecrã
+Principal**. Fica com o ícone, sem barra de browser, e o `public/sw.js` mantém
+a aplicação em cache — abre offline, sem depender de nenhum computador ligado.
+
+Cada telemóvel tem os seus próprios dados. Não há contas nem sincronização
+nesta fase.
+
+### Trocar o ícone
+
+`public/apple-touch-icon.png` (180×180) é o ícone do ecrã principal do iPhone,
+neste momento gerado a partir da reconstrução vetorial do mark. Para usares o
+ficheiro original, recorta-o num quadrado à volta do P e substitui esse
+ficheiro — mais nada precisa de mudar. O original está em `PACE logo.jpeg`.
+
+---
+
 ## Quando chegar a hora do Capacitor
 
 Nada disto é preciso agora. Fica registado para não haver arqueologia depois.
