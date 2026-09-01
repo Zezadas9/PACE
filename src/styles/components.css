@@ -380,6 +380,12 @@
   background: var(--c-surface-2);
   margin-bottom: var(--s-1);
 }
+/* Com a arte ilustrada nao ha disco por baixo: o desenho ja tem forma. */
+.empty .glyph-brand {
+  width: auto; height: auto;
+  background: none;
+  margin-bottom: var(--s-2);
+}
 .empty .glyph svg {
   width: 20px; height: 20px;
   stroke: currentColor; fill: none;

@@ -30,7 +30,7 @@ export function CreatePicker({
           </span>
         </button>
         <button type="button" className="pick-item" onClick={() => onPick('habit')}>
-          <BrandIconTile name="hidratacao" size={34} />
+          <BrandIconTile name="progresso" size={34} />
           <span className="grow">
             <span className="title">Hábito</span>
             <span className="sub">Algo que se repete — beber água, caminhar, ler</span>

@@ -22,6 +22,7 @@ import { useUi } from '../../app/providers/uiContext';
 import { Screen } from '../../app/navigation/Screen';
 import { Avatar, Card, Chip, SectionHeader } from '../../ui/primitives';
 import { EmptyState, Metric, Row, Rows } from '../../ui/data';
+import { BrandIcon } from '../../ui/BrandIcon';
 import { Field, Input, Segmented } from '../../ui/form';
 import { AppearanceSection } from './AppearanceSection';
 import { FeedbackSection } from './FeedbackSection';
@@ -44,7 +45,7 @@ export function ProfileScreen(): ReactElement {
     return (
       <Screen>
         <EmptyState
-          icon="user"
+          brand="perfil"
           title="Sem perfil"
           body="Conclui o onboarding para criar o teu perfil."
         />
@@ -124,9 +125,7 @@ function MetricsSection({ summary }: { summary: ProfileSummary }): ReactElement 
                 {metrics.bmiLabel ?? 'Sem dados suficientes'}
               </p>
             </div>
-            <span className="t-display">
-              {metrics.bmi == null ? '—' : format.number(metrics.bmi, 1)}
-            </span>
+            <BrandIcon name="saude" size={44} float />
           </div>
           <div className="scale" aria-hidden="true">
             {metrics.bmiScalePosition != null ? (

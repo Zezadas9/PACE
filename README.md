@@ -347,6 +347,35 @@ O ícone da aplicação vive em `public/`: `icon.svg` para tudo, e
 Se quiseres o teu ficheiro original em vez da reconstrução vetorial, substitui
 esses dois ficheiros — mais nada precisa de mudar.
 
+### Os ícones ilustrados
+
+A folha original é um JPEG com quinze desenhos sobre preto, cada um com a sua
+legenda por baixo — AGENDA, TREINOS, CORRIDA, BICICLETA, ALIMENTAÇÃO, PROGRESSO,
+OBJETIVOS, HIDRATAÇÃO, IA COACH, LEMBRETES, SONO, PERFIL, SAÚDE, RELAXAMENTO,
+ESTATÍSTICAS. É essa legenda que decide onde cada ícone é usado.
+
+`tools/build-brand-icons.cjs` transforma a folha em `public/brand-icons.png`:
+
+- **Tira o fundo** por preenchimento a partir das margens, só por pixéis quase
+  pretos. O disco escuro do "perfil" e o halter cinzento sobrevivem porque não
+  estão ligados à margem por preto — um limiar global comia-os.
+- **Mede cada ícone ao pixel** (linhas e colunas ocupadas), em vez de assumir uma
+  grelha. Era isso que cortava a bicicleta, que é mais larga do que as outras.
+- **Normaliza**: todos ficam centrados numa célula de 144 px com a mesma margem,
+  por isso o CSS é uma multiplicação e nada pode ficar cortado.
+- **Limpa o ringing do JPEG** com uma rampa de opacidade nos dois pixéis
+  encostados ao fundo, para não sobrar sujidade escura em tema claro.
+
+Correr outra vez, se a folha mudar:
+
+```bash
+npm install --no-save jpeg-js pngjs && node tools/build-brand-icons.cjs
+```
+
+Na barra de navegação, o separador ativo é o único a cores; os outros ficam
+esbatidos e dessaturados. `sono`, `relaxamento` e `ia` ainda não têm sítio —
+ficam guardados para as fases que os pedirem.
+
 ### Cor
 
 A paleta segue o mark: um interface essencialmente monocromático com **um só

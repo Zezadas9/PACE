@@ -24,7 +24,7 @@ export function GoalsSection({
       <SectionHeader title="Objetivos" actionLabel="Novo" onAction={onAdd} />
       {goals.length === 0 ? (
         <EmptyState
-          icon="target"
+          brand="objetivos"
           title="Sem objetivos"
           body="Ex.: correr 20 km esta semana, ou caminhar 30 minutos por dia."
           actionLabel="Criar objetivo"

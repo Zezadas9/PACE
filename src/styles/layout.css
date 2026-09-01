@@ -170,6 +170,22 @@
   transition: transform var(--d-base) var(--ease-out);
 }
 
+/* Os icones ilustrados na barra: esbatidos quando nao sao o separador atual,
+   para so um estar a cores de cada vez. */
+.nav-item .brand-icon {
+  opacity: 0.5;
+  filter: saturate(0.15);
+  transition: opacity var(--d-base) var(--ease),
+              filter var(--d-base) var(--ease),
+              transform var(--d-base) var(--ease-out);
+}
+.nav-item[aria-current="page"] .brand-icon {
+  opacity: 1;
+  filter: none;
+  transform: translateY(-1px) scale(1.06);
+}
+.nav-item:active .brand-icon { transform: scale(0.9); }
+
 .nav-item .label {
   font-size: 0.625rem;
   letter-spacing: 0.01em;

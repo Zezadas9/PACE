@@ -101,7 +101,7 @@ export function GoalsSection({
       <SectionHeader title="Objetivos" actionLabel="Novo" onAction={onAdd} />
       {goals.length === 0 ? (
         <EmptyState
-          icon="target"
+          brand="objetivos"
           title="Sem objetivos"
           body="Ex.: 2 000 ml de água por dia, ou 3 refeições registadas."
           actionLabel="Criar objetivo"
@@ -165,7 +165,7 @@ export function MealsSection({
       />
       {meals.length === 0 ? (
         <EmptyState
-          icon="utensils"
+          brand="alimentacao"
           title="Sem refeições"
           body="Regista o que comeste, ou cria um plano para o dia aparecer feito."
           actionLabel="Registar refeição"
@@ -218,7 +218,7 @@ export function PlanSection({
       <SectionHeader title="Plano da semana" actionLabel="Nova" onAction={onAdd} />
       {entries.length === 0 ? (
         <EmptyState
-          icon="calendar"
+          brand="agenda"
           title="Sem plano"
           body="Define as refeições de cada dia. Depois é só marcar como feitas."
           actionLabel="Criar refeição do plano"
@@ -309,7 +309,7 @@ export function HistorySection({
       <section>
         <SectionHeader title="Últimas refeições" />
         {recent.length === 0 ? (
-          <EmptyState icon="utensils" title="Sem histórico" />
+          <EmptyState brand="estatisticas" title="Sem histórico" />
         ) : (
           <Card variant="flush">
             <Rows>

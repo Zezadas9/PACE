@@ -67,27 +67,23 @@
 }
 
 /* --- Illustrated icons ---------------------------------------------------------
-   Sprite cells from one sheet. The artwork is drawn on black, so anywhere the
-   surface might be light it sits on a dark disc rather than a grey rectangle. */
+   Sprite cells from one sheet, recortadas com fundo transparente. Sem caixa e
+   sem disco preto por baixo: o desenho assenta direto no fundo do tema. */
 
 .brand-icon {
   display: block;
   flex: none;
-  /* The sheet's own black bleeds a pixel at the crop edges; a matching
-     background hides the seam instead of showing a grey halo. */
-  background-color: #000;
-  border-radius: 22%;
 }
 
+/* Um disco discreto, so onde o icone precisa de presenca sozinho numa linha.
+   Segue o tema — nao e o preto da folha original. */
 .brand-tile {
   display: grid;
   place-items: center;
   flex: none;
   border-radius: var(--r-lg);
-  background: #0A0A0B;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  background: var(--c-surface-2);
 }
-.brand-tile .brand-icon { background-color: transparent; }
 
 /* A slow drift, only where an icon is the hero of its card. Two seconds of
    travel over four pixels: noticeable once, invisible after. */
@@ -123,4 +119,12 @@ button:active .brand-icon { transform: scale(0.92); }
   .brand-icon.is-floating,
   .stagger .brand-tile,
   .stagger .brand-icon:not(.is-floating) { animation: none; }
+}
+
+/* Um icone ilustrado a abrir uma linha. Ocupa a mesma largura do glifo de
+   linha, para o texto alinhar de linha para linha, mas sem disco por tras. */
+.row-item .lead-brand {
+  background: none;
+  width: 2.25rem;
+  height: 2.25rem;
 }

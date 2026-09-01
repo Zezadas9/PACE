@@ -259,16 +259,18 @@ export interface TabRoute {
   path: string;
   label: string;
   icon: string;
+  /** O icone ilustrado da folha da marca, pela legenda que tem por baixo. */
+  brand: string;
 }
 
 /** Bottom navigation. The AI tab is deliberately absent in this phase. */
 export const TABS: ReadonlyArray<TabRoute> = [
-  { id: 'today', path: '/hoje', label: 'Hoje', icon: 'sun' },
-  { id: 'agenda', path: '/agenda', label: 'Agenda', icon: 'calendar' },
-  { id: 'workout', path: '/treino', label: 'Treino', icon: 'dumbbell' },
-  { id: 'activity', path: '/atividade', label: 'Atividade', icon: 'run' },
-  { id: 'nutrition', path: '/alimentacao', label: 'Alimentação', icon: 'leaf' },
-  { id: 'profile', path: '/perfil', label: 'Perfil', icon: 'user' },
+  { id: 'today', path: '/hoje', label: 'Hoje', icon: 'sun', brand: 'progresso' },
+  { id: 'agenda', path: '/agenda', label: 'Agenda', icon: 'calendar', brand: 'agenda' },
+  { id: 'workout', path: '/treino', label: 'Treino', icon: 'dumbbell', brand: 'treinos' },
+  { id: 'activity', path: '/atividade', label: 'Atividade', icon: 'run', brand: 'corrida' },
+  { id: 'nutrition', path: '/alimentacao', label: 'Alimentação', icon: 'leaf', brand: 'alimentacao' },
+  { id: 'profile', path: '/perfil', label: 'Perfil', icon: 'user', brand: 'perfil' },
 ];
 
 export const ONBOARDING_PATH = '/onboarding';

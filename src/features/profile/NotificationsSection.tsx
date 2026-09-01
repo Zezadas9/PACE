@@ -101,7 +101,7 @@ export function NotificationsSection(): ReactElement {
             onChange={(next) => void toggle(next)}
           />
           <Row
-            icon="bell"
+            brand="lembretes"
             title="Agendados"
             sub={
               settings.enabled

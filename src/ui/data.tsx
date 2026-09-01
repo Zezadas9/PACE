@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
+import { BrandIcon, type BrandIconName } from './BrandIcon';
 import { Button } from './primitives';
 
 export function Metric({
@@ -100,12 +101,14 @@ export function Ring({
 }
 
 export function Row({
-  title, sub, trail, icon, tick, done, chevron, hue, onClick,
+  title, sub, trail, icon, brand, tick, done, chevron, hue, onClick,
 }: {
   title: string;
   sub?: string | null;
   trail?: string | null;
   icon?: IconName;
+  /** O icone ilustrado, quando existe um que seja exatamente esta linha. */
+  brand?: BrandIconName;
   tick?: boolean;
   done?: boolean;
   chevron?: boolean;
@@ -120,7 +123,12 @@ export function Row({
           <Icon name="check" />
         </span>
       ) : null}
-      {!tick && icon ? (
+      {!tick && brand ? (
+        <span className="lead lead-brand">
+          <BrandIcon name={brand} size={26} />
+        </span>
+      ) : null}
+      {!tick && !brand && icon ? (
         <span className="lead">
           <Icon name={icon} />
         </span>
@@ -164,9 +172,11 @@ export function Rows({ children }: { children: ReactNode }): ReactElement {
 }
 
 export function EmptyState({
-  icon, title, body, actionLabel, onAction,
+  icon, brand, title, body, actionLabel, onAction,
 }: {
   icon?: IconName;
+  /** O icone ilustrado, onde existe um que diga exatamente aquilo que falta. */
+  brand?: BrandIconName;
   title: string;
   body?: string;
   actionLabel?: string;
@@ -174,7 +184,12 @@ export function EmptyState({
 }): ReactElement {
   return (
     <div className="empty">
-      {icon ? (
+      {brand ? (
+        <div className="glyph glyph-brand">
+          <BrandIcon name={brand} size={52} float />
+        </div>
+      ) : null}
+      {!brand && icon ? (
         <div className="glyph">
           <Icon name={icon} />
         </div>

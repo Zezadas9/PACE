@@ -88,7 +88,7 @@ export function WorkoutScreen(): ReactElement {
           <SectionHeader title="Planos" actionLabel={String(data.workouts.length)} />
           {data.workouts.length === 0 ? (
             <EmptyState
-              icon="dumbbell"
+              brand="treinos"
               title="Sem planos de treino"
               body="Cria o primeiro com o botão +."
             />
@@ -168,7 +168,7 @@ function TodayCard({
       <section>
         <SectionHeader title="Hoje" />
         <EmptyState
-          icon="dumbbell"
+          brand="treinos"
           title="Sem treino marcado"
           body="Escolhe um plano abaixo ou cria um novo."
         />

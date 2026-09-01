@@ -199,7 +199,7 @@ function HistorySection({
       <SectionHeader title="Histórico" actionLabel={total > 0 ? String(total) : undefined} />
       {sessions.length === 0 ? (
         <EmptyState
-          icon="run"
+          brand="corrida"
           title="Sem atividades"
           body="Começa uma acima, ou usa o + para registar à mão."
         />

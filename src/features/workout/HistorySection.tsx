@@ -37,7 +37,7 @@ export function HistorySection(): ReactElement {
       <section>
         <SectionHeader title="Histórico" />
         <EmptyState
-          icon="clock"
+          brand="estatisticas"
           title="Ainda sem sessões"
           body="Depois do primeiro treino, o histórico e a evolução das cargas aparecem aqui."
         />
@@ -116,7 +116,7 @@ function ExerciseProgress({
   if (exercises.length === 0) {
     return (
       <EmptyState
-        icon="chart"
+        brand="progresso"
         title="Sem exercícios concluídos"
         body="A evolução aparece assim que terminares as séries de um exercício."
       />

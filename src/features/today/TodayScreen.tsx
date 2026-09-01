@@ -305,7 +305,7 @@ function WorkoutSection({ model }: { model: TodayModel }): ReactElement {
           </Card>
         ) : (
           <EmptyState
-            icon="dumbbell"
+            brand="treinos"
             title="Sem treino planeado"
             body="Dia de descanso — ou ainda por planear."
           />

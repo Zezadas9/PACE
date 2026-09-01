@@ -14,7 +14,7 @@
  * Bump CACHE_VERSION when the precached list below changes.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = `pace-${CACHE_VERSION}`;
 
 /** Relative on purpose: the app is served from a repository subpath on Pages. */
@@ -24,6 +24,8 @@ const SHELL = [
   './manifest.webmanifest',
   './icon.svg',
   './apple-touch-icon.png',
+  // A barra de navegacao e feita destes icones: sem eles, offline, fica vazia.
+  './brand-icons.png',
 ];
 
 self.addEventListener('install', (event) => {
