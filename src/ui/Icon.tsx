@@ -11,7 +11,8 @@ export type IconName =
   | 'scale' | 'sparkle' | 'plus' | 'clock' | 'utensils' | 'target'
   | 'activity' | 'trash' | 'lock' | 'close' | 'bell' | 'bellOff' | 'star'
   | 'trophy' | 'chart' | 'briefcase' | 'graduation' | 'stethoscope' | 'users'
-  | 'home' | 'wallet' | 'edit' | 'today' | 'minus';
+  | 'home' | 'wallet' | 'edit' | 'today' | 'minus' | 'walk' | 'bike'
+  | 'mountain' | 'pause' | 'play' | 'stop' | 'pin' | 'route' | 'flag';
 
 const PATHS: Record<IconName, ReactNode> = {
   sun: (
@@ -173,6 +174,49 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   minus: <path d="M5 12h14" />,
+  walk: (
+    <>
+      <circle cx="13" cy="4.2" r="1.8" />
+      <path d="M11 21l1.4-5.6-2.4-2.3.8-4.4 3 2.2 2.6.7" />
+      <path d="M10.8 8.7 8 10l-.8 2.8M12.4 15.4 9.8 16.6 8 21" />
+    </>
+  ),
+  bike: (
+    <>
+      <circle cx="5.5" cy="17" r="3.5" />
+      <circle cx="18.5" cy="17" r="3.5" />
+      <circle cx="14.5" cy="4.5" r="1.5" />
+      <path d="M5.5 17 10 9h4l4.5 8M8.5 9H13l2.5 4" />
+    </>
+  ),
+  mountain: (
+    <>
+      <path d="M2.5 19 9 7.5l4 6.5 2-3 6.5 8z" />
+      <path d="M7 13.5 9 12l1.5 2.5" />
+    </>
+  ),
+  pause: <path d="M9 5v14M15 5v14" />,
+  play: <path d="M7 4.5 19 12 7 19.5z" />,
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
+  pin: (
+    <>
+      <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
+      <circle cx="12" cy="10" r="2.6" />
+    </>
+  ),
+  route: (
+    <>
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="5.5" r="2.5" />
+      <path d="M8 18.5h5a4 4 0 0 0 0-8H11a4 4 0 0 1 0-8h5" />
+    </>
+  ),
+  flag: (
+    <>
+      <path d="M5 21V4" />
+      <path d="M5 5h11l-2 3.5L16 12H5z" />
+    </>
+  ),
   lock: (
     <>
       <rect x="4.5" y="10" width="15" height="11" rx="3" />

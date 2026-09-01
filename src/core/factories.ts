@@ -7,8 +7,9 @@
 
 import { APP } from './constants';
 import type {
-  ActivitySession, AppSettings, CalendarEvent, Entity, Exercise, Food, Goal,
-  Habit, HabitEntry, Meal, Streak, Task, User, Workout, WorkoutSession,
+  ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Entity, Exercise,
+  Food, Goal, Habit, HabitEntry, Meal, Streak, Task, User, Workout,
+  WorkoutSession,
 } from './types';
 import { noRecurrence } from './scheduling';
 import { createId } from './utils/id';
@@ -161,6 +162,10 @@ export function createActivitySession(partial: Partial<ActivitySession> = {}): A
     type: 'run',
     date: todayKey(),
     startedAt: null,
+    endedAt: null,
+    pausedAt: null,
+    pausedTotalSec: 0,
+    track: [],
     durationSec: null,
     distanceM: null,
     elevationGainM: null,
@@ -226,6 +231,19 @@ export function createCalendarEvent(partial: Partial<CalendarEvent> = {}): Calen
     recurrence: noRecurrence(),
     reminder: null,
     location: null,
+    ...partial,
+  };
+}
+
+export function createActivityGoal(partial: Partial<ActivityGoal> = {}): ActivityGoal {
+  return {
+    ...base(),
+    title: '',
+    activityType: null,
+    metric: 'distance',
+    target: 20000,
+    period: 'week',
+    active: true,
     ...partial,
   };
 }

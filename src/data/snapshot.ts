@@ -9,8 +9,8 @@
 import { APP } from '../core/constants';
 import { createSettings } from '../core/factories';
 import type {
-  ActivitySession, AppSettings, CalendarEvent, Exercise, Food, Goal, Habit,
-  HabitEntry, Meal, Streak, Task, User, Workout, WorkoutSession,
+  ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Exercise, Food,
+  Goal, Habit, HabitEntry, Meal, Streak, Task, User, Workout, WorkoutSession,
 } from '../core/types';
 
 export interface Snapshot {
@@ -29,6 +29,7 @@ export interface Snapshot {
   workouts: Workout[];
   workoutSessions: WorkoutSession[];
   activitySessions: ActivitySession[];
+  activityGoals: ActivityGoal[];
   foods: Food[];
   meals: Meal[];
   streaks: Streak[];
@@ -41,7 +42,8 @@ export type CollectionKey = Exclude<
 
 export const COLLECTION_KEYS: CollectionKey[] = [
   'goals', 'habits', 'habitEntries', 'tasks', 'events', 'exercises', 'workouts',
-  'workoutSessions', 'activitySessions', 'foods', 'meals', 'streaks',
+  'workoutSessions', 'activitySessions', 'activityGoals', 'foods', 'meals',
+  'streaks',
 ];
 
 export const STORAGE_KEY = `${APP.storageNamespace}.snapshot`;
@@ -62,6 +64,7 @@ export function emptySnapshot(): Snapshot {
     workouts: [],
     workoutSessions: [],
     activitySessions: [],
+    activityGoals: [],
     foods: [],
     meals: [],
     streaks: [],
@@ -117,6 +120,28 @@ const MIGRATIONS: Record<number, Migration> = {
       essential: session.essential ?? false,
     })),
   }),
+  /**
+   * v3 -> v4 — activities.
+   *
+   * Swimming left the list of types, so any session recorded as one becomes
+   * 'other' rather than a value the union no longer contains. The live-session
+   * fields are backfilled so an old record reads as finished, not as one that
+   * has been running since 2026.
+   */
+  3: (snapshot) => ({
+    ...snapshot,
+    schemaVersion: 4,
+    activityGoals: snapshot.activityGoals ?? [],
+    activitySessions: (snapshot.activitySessions ?? []).map((session) => ({
+      ...session,
+      type: (session.type as string) === 'swim' ? 'other' : session.type,
+      endedAt: session.endedAt ?? session.startedAt,
+      pausedAt: session.pausedAt ?? null,
+      pausedTotalSec: session.pausedTotalSec ?? 0,
+      track: session.track ?? [],
+    })),
+  }),
+
   /** v2 -> v3 — the training system. */
   2: (snapshot) => ({
     ...snapshot,

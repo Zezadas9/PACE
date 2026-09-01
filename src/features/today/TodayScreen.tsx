@@ -75,6 +75,7 @@ export function TodayScreen(): ReactElement {
         })}
       />
       <WorkoutSection model={model} />
+      <MovementSection model={model} />
       <UpcomingSection model={model} />
       <RecapSection model={model} />
     </Screen>
@@ -342,6 +343,57 @@ function WorkoutSection({ model }: { model: TodayModel }): ReactElement {
             </Rows>
           </Card>
         ) : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Movement: today's activity and how the week's goals are going.
+ *
+ * The goals live on the Atividade tab but their progress belongs here — a goal
+ * you have to go looking for is a goal you forget.
+ */
+function MovementSection({ model }: { model: TodayModel }): ReactElement | null {
+  const navigate = useNavigate();
+  const unit = model.preferences.distanceUnit;
+  if (!model.activity && model.activityGoals.length === 0) return null;
+
+  return (
+    <section>
+      <SectionHeader
+        title="Atividade"
+        actionLabel="Ver tudo"
+        onAction={() => navigate('/atividade')}
+      />
+      <div className="stack stack-3">
+        {model.activity ? (
+          <Card variant="quiet">
+            <div className="grid-2">
+              <Metric label="Duração" value={format.duration(model.activity.durationSec)} />
+              <Metric
+                label="Distância"
+                value={format.distance(model.activity.distanceM, unit)}
+              />
+            </div>
+          </Card>
+        ) : null}
+
+        {model.activityGoals.map((progress) => (
+          <button
+            key={progress.goal.id}
+            type="button"
+            className="goal-card"
+            data-complete={String(progress.complete)}
+            onClick={() => navigate('/atividade')}
+          >
+            <div className="row row-between">
+              <span className="title">{progress.goal.title}</span>
+              <span className="t-num">{Math.round(progress.ratio * 100)}%</span>
+            </div>
+            <ProgressBar ratio={progress.ratio} />
+          </button>
+        ))}
       </div>
     </section>
   );

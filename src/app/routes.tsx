@@ -16,6 +16,7 @@ import { TodayScreen } from '../features/today/TodayScreen';
 import { AgendaScreen } from '../features/agenda/AgendaScreen';
 import { WorkoutScreen } from '../features/workout/WorkoutScreen';
 import { SessionScreen } from '../features/workout/SessionScreen';
+import { ActivitySessionScreen } from '../features/activity/ActivitySessionScreen';
 import { ActivityScreen } from '../features/activity/ActivityScreen';
 import { NutritionScreen } from '../features/nutrition/NutritionScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
@@ -60,6 +61,8 @@ export function AppRoutes(): ReactElement {
             {/* Full-screen: mid-set is the worst moment to tap a tab by accident. */}
             <Route path="/treino/sessao" element={<SessionScreen />} />
             <Route path="/atividade" element={<ActivityScreen />} />
+            {/* Full-screen: a live activity should not lose a tap to the tab bar. */}
+            <Route path="/atividade/sessao" element={<ActivitySessionScreen />} />
             <Route path="/alimentacao" element={<NutritionScreen />} />
             <Route path="/perfil" element={<ProfileScreen />} />
           </Route>

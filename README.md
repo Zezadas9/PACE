@@ -207,6 +207,60 @@ repor a aplicação inteira.
 
 ---
 
+## Atividade
+
+Seis tipos — corrida, caminhada, caminhada rápida, bicicleta, hiking e outro —
+lidos pela métrica certa: quem corre pensa em minutos por quilómetro, quem
+pedala pensa em quilómetros por hora. Mostrar a errada é o detalhe que denuncia
+uma aplicação feita por quem não treina.
+
+### Sessão em tempo real
+
+Ecrã inteiro, sem barra de navegação: cronómetro grande, distância, ritmo e
+subida, com pausa e terminar. A pausa exclui-se do tempo — `pausedTotalSec`
+acumula, e o tempo decorrido mede-se do relógio em vez de um temporizador,
+porque o telemóvel pode adormecer a meio.
+
+A localização entra pelo `GeolocationPort`, nunca pelo `navigator` diretamente.
+Na web é a API do browser; em nativo passa a ser a do sistema com permissões de
+segundo plano, sem uma linha mudar no ecrã.
+
+Dois filtros protegem o percurso: um ponto que o telemóvel admite ser impreciso
+(>40 m) é descartado, e um ponto a menos de 8 m do anterior é ignorado — sem
+isso, esperar num semáforo acrescenta cem metros de rabisco ao traçado.
+
+### O mapa
+
+É o traçado do percurso, não um mapa de ruas: sem fornecedor de tiles, sem chave
+de API e sem chamada de rede, o que significa que funciona offline e dentro de
+uma WebView com política restrita. A longitude é escalada por cos(latitude) para
+o traço manter as proporções — sem isso, um percurso em Lisboa sai esticado 20%
+para o lado.
+
+### Objetivos
+
+"Correr 20 km esta semana", "caminhar 30 minutos por dia", "bicicleta 3 vezes
+por semana": tipo de atividade (ou qualquer), métrica (distância, tempo, vezes),
+período (dia ou semana) e meta. O nome escreve-se sozinho a partir das escolhas.
+
+As metas guardam-se em unidades canónicas (metros, segundos) e mostram-se nas
+unidades do utilizador. O progresso aparece automaticamente no ecrã Hoje.
+
+### Histórico
+
+Distância, tempo e frequência por semana, mais uma linha de tendência do ritmo —
+invertida, para que melhorar suba, que é o que toda a gente lê num gráfico. O
+ritmo semanal é ponderado pela distância, não a média das sessões: uma corrida
+longa e constante deve pesar mais do que um sprint.
+
+### Integração com Health
+
+Ainda não implementada, como pedido. O `HealthPort` já devolve
+`ActivitySession[]` em `readWorkouts()`, e cada sessão tem `source` e
+`externalId` para que uma importação repetida não duplique registos.
+
+---
+
 ## Marca, cor e som
 
 ### O logo

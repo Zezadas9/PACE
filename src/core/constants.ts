@@ -5,6 +5,7 @@
 
 import type {
   DistanceUnit, EventCategory, Gender, GoalType, HabitFrequency, HabitKind,
+  ActivityGoalMetric, ActivityGoalPeriod, ActivityType, PaceMode,
   SessionDifficulty, TaskCategory, TaskPriority, WeightUnit, WorkoutType,
 } from './types';
 import type { RecurrenceKind } from './scheduling';
@@ -13,7 +14,7 @@ export const APP = {
   name: 'PACE',
   version: '0.3.0',
   /** Bump when a stored shape changes; migrations live in data/snapshot.ts */
-  schemaVersion: 3,
+  schemaVersion: 4,
   storageNamespace: 'pace',
   locale: 'pt-PT',
 } as const;
@@ -75,14 +76,53 @@ export const BMI_BANDS: ReadonlyArray<BmiBand> = [
 
 /* --- Display labels ------------------------------------------------------- */
 
-export const ACTIVITY_LABELS: Record<string, string> = {
-  run: 'Corrida',
-  walk: 'Caminhada',
-  ride: 'Ciclismo',
-  swim: 'Natação',
-  hike: 'Trilho',
-  other: 'Atividade',
-};
+export interface ActivityTypeEntry extends Option<ActivityType> {
+  icon: string;
+  /**
+   * How the session is read back. Runners think in minutes per kilometre;
+   * cyclists think in kilometres per hour. Showing the wrong one is the kind of
+   * detail that tells a user the app was not built by someone who trains.
+   */
+  paceMode: PaceMode;
+}
+
+export const ACTIVITY_TYPE_OPTIONS: ReadonlyArray<ActivityTypeEntry> = [
+  { id: 'run', label: 'Corrida', icon: 'run', paceMode: 'pace' },
+  { id: 'walk', label: 'Caminhada', icon: 'walk', paceMode: 'pace' },
+  { id: 'brisk_walk', label: 'Caminhada rápida', icon: 'walk', paceMode: 'pace' },
+  { id: 'ride', label: 'Bicicleta', icon: 'bike', paceMode: 'speed' },
+  { id: 'hike', label: 'Hiking', icon: 'mountain', paceMode: 'pace' },
+  { id: 'other', label: 'Outro', icon: 'activity', paceMode: 'none' },
+];
+
+export const ACTIVITY_LABELS: Record<ActivityType, string> =
+  Object.fromEntries(ACTIVITY_TYPE_OPTIONS.map((o) => [o.id, o.label])) as
+    Record<ActivityType, string>;
+
+export function paceModeFor(type: ActivityType): PaceMode {
+  return ACTIVITY_TYPE_OPTIONS.find((o) => o.id === type)?.paceMode ?? 'none';
+}
+
+export const ACTIVITY_GOAL_METRIC_OPTIONS: ReadonlyArray<Option<ActivityGoalMetric>> = [
+  { id: 'distance', label: 'Distância' },
+  { id: 'duration', label: 'Tempo' },
+  { id: 'sessions', label: 'Vezes' },
+];
+
+export const ACTIVITY_GOAL_PERIOD_OPTIONS: ReadonlyArray<Option<ActivityGoalPeriod>> = [
+  { id: 'day', label: 'Por dia' },
+  { id: 'week', label: 'Por semana' },
+];
+
+/**
+ * How far apart two fixes must be before the track records another point.
+ * Below this the phone is reporting noise, not movement, and the route turns
+ * into a scribble around wherever you are standing.
+ */
+export const TRACK_MIN_DISTANCE_M = 8;
+
+/** GPS accuracy worse than this is discarded rather than trusted. */
+export const TRACK_MAX_ACCURACY_M = 40;
 
 export const MEAL_LABELS: Record<string, string> = {
   breakfast: 'Pequeno-almoço',
@@ -166,6 +206,7 @@ export const TABS: ReadonlyArray<TabRoute> = [
 export const ONBOARDING_PATH = '/onboarding';
 export const DEFAULT_PATH = '/hoje';
 export const SESSION_PATH = '/treino/sessao';
+export const ACTIVITY_SESSION_PATH = '/atividade/sessao';
 
 /* --- Agenda --------------------------------------------------------------- */
 

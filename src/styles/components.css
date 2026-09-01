@@ -49,6 +49,21 @@
 .btn:active { transform: scale(0.975); }
 .btn[disabled] { opacity: 0.35; pointer-events: none; }
 
+/* An inline SVG with no intrinsic size fills its container. Without this the
+   icon in a full-width button rendered at 240px and swallowed the label. */
+.btn svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* The play triangle and the stop square are solid shapes, not outlines. */
+.btn svg path[d^='M7 4.5'], .btn svg rect { fill: currentColor; stroke: none; }
+
 .btn-primary { background: var(--c-ink); color: var(--c-bg); }
 .btn-accent  { background: var(--c-accent); color: var(--c-on-accent); }
 .btn-ghost   { background: transparent; color: var(--c-ink-2); min-height: 2.75rem; }

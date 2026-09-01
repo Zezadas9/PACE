@@ -133,8 +133,26 @@ export function seed(repos: Repositories): void {
     endTime: '16:15',
   });
 
+  const walkStarted = new Date();
   repos.activitySessions.create({
-    type: 'walk', date: today, durationSec: 32 * 60, distanceM: 2800, calories: 145,
+    type: 'walk',
+    date: today,
+    startedAt: walkStarted.toISOString(),
+    endedAt: walkStarted.toISOString(),
+    durationSec: 32 * 60,
+    distanceM: 2800,
+    calories: 145,
+    avgPaceSecPerKm: Math.round((32 * 60 * 1000) / 2800),
+  });
+
+  // One goal, so the section on the dashboard has something to show rather than
+  // an empty state on day one.
+  repos.activityGoals.create({
+    title: 'Caminhada: 30 min por dia',
+    activityType: 'walk',
+    metric: 'duration',
+    target: 30 * 60,
+    period: 'day',
   });
 
   const foods = [

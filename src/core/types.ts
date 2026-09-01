@@ -68,7 +68,47 @@ export type SessionDifficulty = 'easy' | 'right' | 'hard';
 export type MuscleGroup =
   | 'chest' | 'back' | 'legs' | 'shoulders' | 'arms' | 'core' | 'full_body';
 
-export type ActivityType = 'run' | 'walk' | 'ride' | 'swim' | 'hike' | 'other';
+export type ActivityType =
+  | 'run'         // corrida
+  | 'walk'        // caminhada
+  | 'brisk_walk'  // caminhada rápida
+  | 'ride'        // bicicleta
+  | 'hike'        // hiking
+  | 'other';
+
+/** What a session is measured by. Pace suits feet, speed suits wheels. */
+export type PaceMode = 'pace' | 'speed' | 'none';
+
+/** One fix from the GPS, relative to the start of the session. */
+export interface ActivityTrackPoint {
+  lat: number;
+  lon: number;
+  /** Milliseconds since `startedAt`, so a track is self-contained. */
+  t: number;
+  altitudeM: number | null;
+}
+
+export type ActivityGoalMetric = 'distance' | 'duration' | 'sessions';
+export type ActivityGoalPeriod = 'day' | 'week';
+
+/**
+ * A measurable target — "correr 20 km esta semana", "caminhar 30 minutos por
+ * dia", "bicicleta 3 vezes por semana".
+ *
+ * Separate from `Goal`, which holds the open-ended aspirations chosen during
+ * onboarding. This one has a number, a period and a deadline, so progress can
+ * be computed rather than felt.
+ */
+export interface ActivityGoal extends Entity {
+  title: string;
+  /** null means any activity counts. */
+  activityType: ActivityType | null;
+  metric: ActivityGoalMetric;
+  /** Metres, seconds or a plain count, matching `metric`. */
+  target: number;
+  period: ActivityGoalPeriod;
+  active: boolean;
+}
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type StreakKind = 'daily_completion' | 'habit';
 
@@ -242,6 +282,14 @@ export interface ActivitySession extends Entity {
   type: ActivityType;
   date: DayKey;
   startedAt: Timestamp | null;
+  /** Set when the session finishes; null while it is still running. */
+  endedAt: Timestamp | null;
+  /** Set while paused, so elapsed time can exclude the gap. */
+  pausedAt: Timestamp | null;
+  /** Seconds spent paused across the whole session. */
+  pausedTotalSec: number;
+  /** GPS trace, downsampled. Empty for anything entered by hand. */
+  track: ActivityTrackPoint[];
   durationSec: number | null;
   distanceM: number | null;
   elevationGainM: number | null;

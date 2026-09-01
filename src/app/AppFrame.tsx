@@ -7,7 +7,7 @@
 
 import { useEffect, type ReactElement } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { ONBOARDING_PATH, SESSION_PATH } from '../core/constants';
+import { ACTIVITY_SESSION_PATH, ONBOARDING_PATH, SESSION_PATH } from '../core/constants';
 import { TabBar } from './navigation/TabBar';
 import { useHardwareBack } from './navigation/useHardwareBack';
 import { useApp, usePreferences, useStoreVersion } from './providers/appContext';
@@ -18,7 +18,8 @@ export function AppFrame(): ReactElement {
   const location = useLocation();
   // Onboarding and a running session both own the whole screen.
   const bare = location.pathname === ONBOARDING_PATH
-    || location.pathname === SESSION_PATH;
+    || location.pathname === SESSION_PATH
+    || location.pathname === ACTIVITY_SESSION_PATH;
 
   useHardwareBack();
   useTheme();

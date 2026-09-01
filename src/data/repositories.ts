@@ -9,8 +9,9 @@
 import { touch } from '../core/factories';
 import * as factories from '../core/factories';
 import type {
-  ActivitySession, AppSettings, CalendarEvent, Entity, Exercise, Food, Goal,
-  Habit, HabitEntry, Meal, Streak, Task, User, Workout, WorkoutSession,
+  ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Entity, Exercise,
+  Food, Goal, Habit, HabitEntry, Meal, Streak, Task, User, Workout,
+  WorkoutSession,
 } from '../core/types';
 import type { CollectionKey } from './snapshot';
 import type { Store } from './store';
@@ -150,6 +151,7 @@ export interface Repositories {
   workouts: Collection<Workout>;
   workoutSessions: Collection<WorkoutSession>;
   activitySessions: Collection<ActivitySession>;
+  activityGoals: Collection<ActivityGoal>;
   foods: Collection<Food>;
   meals: Collection<Meal>;
   streaks: Collection<Streak>;
@@ -168,6 +170,7 @@ export function createRepositories(store: Store): Repositories {
     workouts: new Collection(store, 'workouts', factories.createWorkout),
     workoutSessions: new Collection(store, 'workoutSessions', factories.createWorkoutSession),
     activitySessions: new Collection(store, 'activitySessions', factories.createActivitySession),
+    activityGoals: new Collection(store, 'activityGoals', factories.createActivityGoal),
     foods: new Collection(store, 'foods', factories.createFood),
     meals: new Collection(store, 'meals', factories.createMeal),
     streaks: new Collection(store, 'streaks', factories.createStreak),

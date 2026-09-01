@@ -15,6 +15,8 @@ import * as progress from '../domain/progress';
 import type { DaySummary, EssentialItem } from '../domain/progress';
 import { streakStats, type StreakStats } from '../domain/streak';
 import * as training from '../domain/training';
+import type { GoalProgress } from '../domain/activity';
+import { goalProgress as activityGoalProgress } from './activity';
 import type { Repositories } from '../data/repositories';
 import { eventsOn, progressDataset } from './agenda';
 import { goalsOf } from './profile';
@@ -81,6 +83,8 @@ export interface TodayModel {
   tasks: Task[];
   workout: WorkoutView | null;
   activity: ActivityView | null;
+  /** Live progress on the activity goals — the brief asks for it here. */
+  activityGoals: GoalProgress[];
   nutrition: NutritionView | null;
   streak: StreakStats;
   week: DaySummary[];
@@ -114,6 +118,7 @@ export function todayModel(
     tasks: data.tasks.filter((task) => task.date === date),
     workout: buildWorkout(data, date),
     activity: buildActivity(data, date),
+    activityGoals: activityGoalProgress(repos, date),
     nutrition: buildNutrition(data, date),
     streak: streakStats(data, accountStart, date),
     week: progress.weekOverview(data),
