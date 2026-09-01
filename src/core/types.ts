@@ -109,7 +109,19 @@ export interface ActivityGoal extends Entity {
   period: ActivityGoalPeriod;
   active: boolean;
 }
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealType =
+  | 'breakfast'  // pequeno-almoço
+  | 'lunch'      // almoço
+  | 'dinner'     // jantar
+  | 'snack'
+  | 'supper'     // ceia
+  | 'other';
+
+/** How a quantity is expressed. Only grams convert to nutrition on their own. */
+export type FoodUnit = 'g' | 'ml' | 'unit' | 'portion';
+
+export type NutritionGoalMetric =
+  | 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber' | 'water' | 'meals' | 'custom';
 export type StreakKind = 'daily_completion' | 'habit';
 
 /** Where a record came from. Prepares wearables and Health sync. */
@@ -316,22 +328,36 @@ export interface ActivitySession extends Entity {
 
 /* --- Nutrition ------------------------------------------------------------ */
 
-/** A catalogue item, expressed per 100 g. */
+/**
+ * A catalogue item, expressed per 100 g.
+ *
+ * Every nutrient is nullable, and that is the point: a food entered by hand
+ * without a label in front of you has *unknown* protein, not zero. Zero is a
+ * claim, and totals built on invented zeroes are worse than no totals at all.
+ * The UI shows "sem dados" wherever a value is missing.
+ */
 export interface Food extends Entity {
   name: string;
   brand: string | null;
-  kcalPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
+  kcalPer100g: number | null;
+  proteinPer100g: number | null;
+  carbsPer100g: number | null;
+  fatPer100g: number | null;
   fiberPer100g: number | null;
+  /** Density, so a millilitre quantity can become grams honestly. */
+  gramsPerMl: number | null;
+  /** Weight of one unit or portion, where the food has a natural one. */
+  gramsPerUnit: number | null;
   barcode: string | null;
+  /** Where the record came from; a future food database fills this in. */
+  source: 'manual' | 'database' | 'barcode';
 }
 
 export interface MealItem {
   id: string;
   foodId: string;
-  quantityG: number;
+  quantity: number;
+  unit: FoodUnit;
 }
 
 export interface Meal extends Entity {
@@ -340,6 +366,49 @@ export interface Meal extends Entity {
   time: ClockTime | null;
   items: MealItem[];
   notes: string | null;
+  /** Set when this meal came from a plan entry, so it is not offered twice. */
+  planEntryId: string | null;
+}
+
+/* --- Meal plans ------------------------------------------------------------- */
+
+/** One meal of one weekday inside a plan. */
+export interface MealPlanEntry {
+  id: string;
+  /** 0 = Sunday .. 6 = Saturday. */
+  weekday: number;
+  type: MealType;
+  time: ClockTime | null;
+  items: MealItem[];
+  notes: string | null;
+}
+
+/** A weekly template: day, then meal, then foods and quantities. */
+export interface MealPlan extends Entity {
+  title: string;
+  entries: MealPlanEntry[];
+  active: boolean;
+}
+
+/* --- Nutrition goals --------------------------------------------------------- */
+
+export interface NutritionGoal extends Entity {
+  title: string;
+  metric: NutritionGoalMetric;
+  /** kcal, grams, millilitres or a plain count, matching the metric. */
+  target: number;
+  /** Only for 'custom', where the user names their own unit. */
+  unit: string | null;
+  period: 'day' | 'week';
+  active: boolean;
+}
+
+/** A drink, logged on its own because water has no food record behind it. */
+export interface WaterEntry {
+  id: string;
+  date: DayKey;
+  ml: number;
+  at: Timestamp;
 }
 
 /* --- Derived -------------------------------------------------------------- */

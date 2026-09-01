@@ -8,8 +8,8 @@
 import { APP } from './constants';
 import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Entity, Exercise,
-  Food, Goal, Habit, HabitEntry, Meal, Streak, Task, User, Workout,
-  WorkoutSession,
+  Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task,
+  User, WaterEntry, Workout, WorkoutSession,
 } from './types';
 import { noRecurrence } from './scheduling';
 import { createId } from './utils/id';
@@ -185,12 +185,16 @@ export function createFood(partial: Partial<Food> = {}): Food {
     ...base(),
     name: '',
     brand: null,
-    kcalPer100g: 0,
-    proteinPer100g: 0,
-    carbsPer100g: 0,
-    fatPer100g: 0,
+    // Unknown, not zero: nothing here is claimed until someone enters it.
+    kcalPer100g: null,
+    proteinPer100g: null,
+    carbsPer100g: null,
+    fatPer100g: null,
     fiberPer100g: null,
+    gramsPerMl: null,
+    gramsPerUnit: null,
     barcode: null,
+    source: 'manual',
     ...partial,
   };
 }
@@ -203,6 +207,7 @@ export function createMeal(partial: Partial<Meal> = {}): Meal {
     time: null,
     items: [],
     notes: null,
+    planEntryId: null,
     ...partial,
   };
 }
@@ -245,6 +250,33 @@ export function createActivityGoal(partial: Partial<ActivityGoal> = {}): Activit
     target: 20000,
     period: 'week',
     active: true,
+    ...partial,
+  };
+}
+
+export function createMealPlan(partial: Partial<MealPlan> = {}): MealPlan {
+  return { ...base(), title: '', entries: [], active: true, ...partial };
+}
+
+export function createNutritionGoal(partial: Partial<NutritionGoal> = {}): NutritionGoal {
+  return {
+    ...base(),
+    title: '',
+    metric: 'calories',
+    target: 2000,
+    unit: null,
+    period: 'day',
+    active: true,
+    ...partial,
+  };
+}
+
+export function createWaterEntry(partial: Partial<WaterEntry> = {}): WaterEntry {
+  return {
+    id: createId(),
+    date: todayKey(),
+    ml: 250,
+    at: now(),
     ...partial,
   };
 }

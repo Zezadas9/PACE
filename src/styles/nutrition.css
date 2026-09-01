@@ -1,0 +1,97 @@
+/* ============================================================================
+   PACE — Nutrition
+   ========================================================================== */
+
+.nutrient-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: var(--s-3);
+}
+.nutrient {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.nutrient .value {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.01em;
+}
+.nutrient .label { font-size: var(--fs-xs); color: var(--c-ink-2); }
+.nutrient .unit { font-size: var(--fs-xs); color: var(--c-ink-3); }
+/* Unknown is a state, not a small number: it reads quieter, never as zero. */
+.nutrient[data-unknown='true'] .value { color: var(--c-ink-3); }
+.nutrient .partial {
+  font-size: var(--fs-sm);
+  font-style: normal;
+  color: var(--c-ink-3);
+  vertical-align: super;
+}
+.nutrient-note { margin-top: var(--s-3); }
+
+/* --- Water --------------------------------------------------------------------- */
+
+.water-row {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+.water-add {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: var(--s-3) var(--s-2);
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-medium);
+  transition: transform var(--d-fast) var(--ease-out), background var(--d-fast) var(--ease-out);
+}
+.water-add span { font-size: var(--fs-xs); color: var(--c-ink-3); font-weight: var(--fw-regular); }
+.water-add:active { transform: scale(0.96); background: var(--c-surface-2); }
+.water-undo {
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-3);
+}
+.water-undo:disabled { opacity: 0.4; }
+
+/* --- Food entry ------------------------------------------------------------------ */
+
+.food-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.food-item .row-between { gap: var(--s-2); }
+.food-item .row-between .input { width: 100%; }
+.food-item-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: var(--s-2);
+  align-items: center;
+}
+.food-item-row .segmented { min-width: 0; }
+.food-item-row .segmented button { padding-inline: var(--s-2); }
+
+.food-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-3);
+  padding: 2px 2px 0;
+  text-align: left;
+}
+.food-status .link { color: var(--c-accent); font-weight: var(--fw-medium); }

@@ -167,25 +167,36 @@ export function seed(repos: Repositories): void {
   });
 
   const foods = [
-    { name: 'Aveia', kcalPer100g: 379, proteinPer100g: 13, carbsPer100g: 67, fatPer100g: 7 },
-    { name: 'Iogurte natural', kcalPer100g: 61, proteinPer100g: 3.5, carbsPer100g: 4.7, fatPer100g: 3.3 },
-    { name: 'Peito de frango', kcalPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6 },
-    { name: 'Arroz cozido', kcalPer100g: 130, proteinPer100g: 2.7, carbsPer100g: 28, fatPer100g: 0.3 },
+    { name: 'Aveia', kcalPer100g: 379, proteinPer100g: 13, carbsPer100g: 67, fatPer100g: 7, fiberPer100g: 10 },
+    { name: 'Iogurte natural', kcalPer100g: 61, proteinPer100g: 3.5, carbsPer100g: 4.7, fatPer100g: 3.3, gramsPerMl: 1.03 },
+    { name: 'Peito de frango', kcalPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6, fiberPer100g: 0 },
+    { name: 'Arroz cozido', kcalPer100g: 130, proteinPer100g: 2.7, carbsPer100g: 28, fatPer100g: 0.3, fiberPer100g: 0.4 },
+    // Deliberately without values: shows what an unlabelled food looks like.
+    { name: 'Sopa de legumes caseira' },
   ].map((food) => repos.foods.create(food));
 
   repos.meals.create({
     date: today, type: 'breakfast', time: '08:15',
     items: [
-      { id: createId(), foodId: foods[0]!.id, quantityG: 60 },
-      { id: createId(), foodId: foods[1]!.id, quantityG: 150 },
+      { id: createId(), foodId: foods[0]!.id, quantity: 60, unit: 'g' as const },
+      { id: createId(), foodId: foods[1]!.id, quantity: 150, unit: 'g' as const },
     ],
   });
   repos.meals.create({
     date: today, type: 'lunch', time: '13:00',
     items: [
-      { id: createId(), foodId: foods[2]!.id, quantityG: 180 },
-      { id: createId(), foodId: foods[3]!.id, quantityG: 200 },
+      { id: createId(), foodId: foods[2]!.id, quantity: 180, unit: 'g' as const },
+      { id: createId(), foodId: foods[3]!.id, quantity: 200, unit: 'g' as const },
     ],
+  });
+
+  repos.waterEntries.create({ date: today, ml: 500 });
+
+  repos.nutritionGoals.create({
+    title: 'Água: 2 L por dia', metric: 'water', target: 2000, period: 'day',
+  });
+  repos.nutritionGoals.create({
+    title: 'Proteína: 120 g por dia', metric: 'protein', target: 120, period: 'day',
   });
 
   repos.streaks.create({ kind: 'daily_completion', current: 0, longest: 0, lastDate: null });

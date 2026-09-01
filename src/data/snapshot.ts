@@ -10,7 +10,8 @@ import { APP } from '../core/constants';
 import { createSettings } from '../core/factories';
 import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Exercise, Food,
-  Goal, Habit, HabitEntry, Meal, Streak, Task, User, Workout, WorkoutSession,
+  Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task, User,
+  WaterEntry, Workout, WorkoutSession,
 } from '../core/types';
 
 export interface Snapshot {
@@ -32,6 +33,9 @@ export interface Snapshot {
   activityGoals: ActivityGoal[];
   foods: Food[];
   meals: Meal[];
+  mealPlans: MealPlan[];
+  nutritionGoals: NutritionGoal[];
+  waterEntries: WaterEntry[];
   streaks: Streak[];
 }
 
@@ -43,7 +47,7 @@ export type CollectionKey = Exclude<
 export const COLLECTION_KEYS: CollectionKey[] = [
   'goals', 'habits', 'habitEntries', 'tasks', 'events', 'exercises', 'workouts',
   'workoutSessions', 'activitySessions', 'activityGoals', 'foods', 'meals',
-  'streaks',
+  'mealPlans', 'nutritionGoals', 'waterEntries', 'streaks',
 ];
 
 export const STORAGE_KEY = `${APP.storageNamespace}.snapshot`;
@@ -67,6 +71,9 @@ export function emptySnapshot(): Snapshot {
     activityGoals: [],
     foods: [],
     meals: [],
+    mealPlans: [],
+    nutritionGoals: [],
+    waterEntries: [],
     streaks: [],
   };
 }
@@ -120,6 +127,42 @@ const MIGRATIONS: Record<number, Migration> = {
       essential: session.essential ?? false,
     })),
   }),
+  /**
+   * v5 -> v6 — the food system.
+   *
+   * Two changes that matter. Quantities gain an explicit unit, and existing
+   * ones were all grams, so they are labelled as such rather than guessed at.
+   *
+   * And nutrition becomes nullable. Old records defaulted to 0, which the app
+   * treated as a fact — an unlabelled food claimed to have no calories. A 0
+   * that was never entered cannot be told apart from one that was, so the
+   * safe reading is to keep it: it is what the previous version already
+   * displayed, and only new foods get honest nulls.
+   */
+  5: (snapshot) => ({
+    ...snapshot,
+    schemaVersion: 6,
+    mealPlans: snapshot.mealPlans ?? [],
+    nutritionGoals: snapshot.nutritionGoals ?? [],
+    waterEntries: snapshot.waterEntries ?? [],
+    foods: (snapshot.foods ?? []).map((food) => ({
+      ...food,
+      gramsPerMl: food.gramsPerMl ?? null,
+      gramsPerUnit: food.gramsPerUnit ?? null,
+      source: food.source ?? 'manual',
+    })),
+    meals: (snapshot.meals ?? []).map((meal) => ({
+      ...meal,
+      planEntryId: meal.planEntryId ?? null,
+      items: (meal.items ?? []).map((item) => ({
+        id: item.id,
+        foodId: item.foodId,
+        quantity: item.quantity ?? (item as { quantityG?: number }).quantityG ?? 0,
+        unit: item.unit ?? ('g' as const),
+      })),
+    })),
+  }),
+
   /**
    * v4 -> v5 — scheduled workouts and workout sections.
    *

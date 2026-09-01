@@ -20,6 +20,7 @@ import {
   addDaysToKey, dayOfMonth, fromKey, todayKey, weekKeys, weekdayShort,
 } from '../core/utils/date';
 import { daysBetween } from './recurrence';
+import { mealTotals } from './nutrition';
 
 /** The slice of storage the domain layer reads. */
 export interface ProgressDataset {
@@ -89,12 +90,9 @@ export function habitRatio(habit: Habit, entry: HabitEntry | null): number {
   return Math.min(1, Math.max(0, entry.value / habit.target));
 }
 
+/** Calories for a meal, counting only what is actually known. */
 export function mealCalories(meal: Meal, foods: Food[]): number {
-  return meal.items.reduce((sum, item) => {
-    const food = foods.find((candidate) => candidate.id === item.foodId);
-    if (!food) return sum;
-    return sum + (food.kcalPer100g * item.quantityG) / 100;
-  }, 0);
+  return mealTotals(meal, foods).values.kcal ?? 0;
 }
 
 interface ScoreInput {

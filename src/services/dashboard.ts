@@ -16,6 +16,10 @@ import type { DaySummary, EssentialItem } from '../domain/progress';
 import { streakStats, type StreakStats } from '../domain/streak';
 import * as training from '../domain/training';
 import type { GoalProgress } from '../domain/activity';
+import {
+  activeGoalProgress, dayTotals, waterOn,
+  type NutritionProgress, type NutritionTotals,
+} from '../domain/nutrition';
 import { goalProgress as activityGoalProgress } from './activity';
 import type { Repositories } from '../data/repositories';
 import { eventsOn, progressDataset } from './agenda';
@@ -64,6 +68,9 @@ export interface NutritionView {
   meals: Meal[];
   mealCount: number;
   calories: number;
+  /** The five nutrients, with whatever could not be resolved counted. */
+  totals: NutritionTotals;
+  waterMl: number;
 }
 
 export interface UpcomingEvent {
@@ -87,6 +94,8 @@ export interface TodayModel {
   /** Live progress on the activity goals — the brief asks for it here. */
   activityGoals: GoalProgress[];
   nutrition: NutritionView | null;
+  /** Progress on the food and water goals, alongside the activity ones. */
+  nutritionGoals: NutritionProgress[];
   streak: StreakStats;
   week: DaySummary[];
   upcoming: UpcomingEvent[];
@@ -120,7 +129,10 @@ export function todayModel(
     workout: buildWorkout(data, date),
     activity: buildActivity(data, date),
     activityGoals: activityGoalProgress(repos, date),
-    nutrition: buildNutrition(data, date),
+    nutrition: buildNutrition(repos, data, date),
+    nutritionGoals: activeGoalProgress(
+      repos.nutritionGoals.all(), data.meals, data.foods, repos.waterEntries.all(), date,
+    ),
     streak: streakStats(data, accountStart, date),
     week: progress.weekOverview(data),
     upcoming: buildUpcoming(repos, date),
@@ -208,14 +220,24 @@ function buildActivity(data: progress.ProgressDataset, date: DayKey): ActivityVi
   };
 }
 
-function buildNutrition(data: progress.ProgressDataset, date: DayKey): NutritionView | null {
+function buildNutrition(
+  repos: Repositories,
+  data: progress.ProgressDataset,
+  date: DayKey,
+): NutritionView | null {
   const meals = data.meals.filter((meal) => meal.date === date);
-  if (meals.length === 0) return null;
-  const calories = meals.reduce(
-    (sum, meal) => sum + progress.mealCalories(meal, data.foods),
-    0,
-  );
-  return { meals, mealCount: meals.length, calories: Math.round(calories) };
+  const waterMl = waterOn(repos.waterEntries.all(), date);
+  // Water alone is worth a card: drinking is logged on days nothing is eaten.
+  if (meals.length === 0 && waterMl === 0) return null;
+
+  const totals = dayTotals(data.meals, data.foods, date);
+  return {
+    meals,
+    mealCount: meals.length,
+    calories: Math.round(totals.values.kcal ?? 0),
+    totals,
+    waterMl,
+  };
 }
 
 /**

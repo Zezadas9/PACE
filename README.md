@@ -44,6 +44,7 @@ src/
   domain/            lógica de negócio pura (sem DOM, sem storage, testada)
     metrics.ts           IMC, categoria, idade, intervalo de referência, TMB
     progress.ts          progresso diário, sequências, vista semanal
+    nutrition.ts         totais por refeição e por dia, com o que não sabe
   data/              persistência
     snapshot.ts          forma do documento guardado + migrações
     store.ts             snapshot em memória, escrita debounced, reatividade
@@ -56,6 +57,7 @@ src/
   services/          orquestração entre dados e ecrãs
     profile.ts           criar/editar o perfil, derivar métricas
     dashboard.ts         view-model do ecrã "Hoje"
+    nutrition.ts         refeições, plano, água, objetivos, catálogo de alimentos
   ui/                sistema de design (Card, Chip, Ring, Row, Dialog, …)
   features/          um módulo por área
     onboarding/ today/ agenda/ workout/ activity/ nutrition/ profile/
@@ -261,6 +263,74 @@ Ainda não implementada, como pedido. O `HealthPort` já devolve
 
 ---
 
+## Alimentação
+
+### A regra que manda em tudo: nunca inventar um valor
+
+Um alimento escrito à mão, sem rótulo à frente, tem proteína **desconhecida** —
+não zero. Se uma refeição tiver um alimento desses, o total de proteína dessa
+refeição também é desconhecido, e não "a soma do resto".
+
+`src/domain/nutrition.ts` existe para garantir isso. Cada total traz um número
+**e** a contagem do que não conseguiu resolver:
+
+```ts
+totalsOf(items, foods) // → { values, unknown, itemCount }
+```
+
+- Um nutriente fica `null` quando nenhum item se resolveu — o ecrã escreve "—",
+  nunca 0.
+- Fica com número **e** asterisco quando parte se resolveu; a nota por baixo diz
+  que há alimentos sem esse valor e que não entram no total.
+- Um dia de comida sem rótulo aparece como desconhecido, não como um dia sem
+  calorias. É essa a diferença entre registar e mentir.
+
+### Quantidades
+
+Cada item guarda a sua unidade (`g`, `ml`, `unidade`, `porção`) em vez de ser
+convertido na entrada. Mililitros só viram gramas se o alimento tiver densidade
+(`gramsPerMl`); unidades só se tiver peso por unidade (`gramsPerUnit`). 1 ml = 1 g
+é verdade para a água e falso para o azeite, por isso não se assume.
+
+Quando falta esse dado, o ecrã diz exatamente o que falta ("Falta o peso de 1
+unidade") e abre o alimento a um toque — que é o momento em que a pessoa sabe a
+resposta.
+
+### Diário, plano e histórico
+
+Três vistas, porque são três perguntas diferentes:
+
+- **Diário** — o dia que se está a viver: energia e os cinco nutrientes, água com
+  adição rápida e anulação, refeições registadas e as do plano ainda por marcar,
+  objetivos. A navegação de datas é ilimitada, como na agenda.
+- **Plano** — a semana decidida com antecedência: dia → refeição → alimentos →
+  quantidades. Escolher vários dias de uma vez cria uma entrada por dia, porque
+  "almoço igual de segunda a sexta" é o caso normal. Marcar como feita copia os
+  itens para uma refeição real, e o plano fica intacto.
+- **Histórico** — consistência do registo (dias registados, seguidos, %),
+  energia dos últimos 14 dias e as últimas refeições. A consistência mede **o
+  hábito de registar, não a qualidade da alimentação** — a app não classifica o
+  que se come.
+
+### Objetivos
+
+Calorias, proteína, hidratos, gordura, fibra, água, número de refeições ou um
+objetivo próprio, por dia ou por semana. A app **não sugere números**: uma meta é
+uma decisão de quem a define, e nada aqui é uma recomendação médica. Num objetivo
+"outro", a PACE assume que não sabe medir e diz "acompanhado por ti" em vez de
+inventar progresso.
+
+### O que fica preparado (e não implementado)
+
+- `Food.source` já distingue `manual` · `database` · `barcode`, e há um único
+  ponto de entrada — `resolveFood()` em `src/services/nutrition.ts` — onde uma
+  base de dados de alimentos ou um leitor de códigos de barras entra sem tocar em
+  mais nada.
+- A IA nutricional **não** foi implementada nesta fase, por pedido. O domínio é
+  puro e já devolve o que uma camada dessas precisaria de ler.
+
+---
+
 ## Marca, cor e som
 
 ### O logo
@@ -368,6 +438,12 @@ Mudanças de forma dos dados passam por `APP.schemaVersion` e pelo mapa
 `MIGRATIONS` em `snapshot.ts`. Um snapshot de uma versão mais recente do que a
 instalada é descartado em vez de adivinhado.
 
+A migração para a v6 (alimentação) converte `quantityG` em `quantity` + `unit` e
+acrescenta plano, objetivos e registos de água. Os zeros nutricionais antigos são
+**mantidos**: um 0 que nunca foi escrito não se distingue de um que foi, e manter
+é o que a versão anterior já mostrava. Só os alimentos novos nascem com valores
+honestamente vazios.
+
 > **Atenção para nativo:** o `localStorage` da WebView **não** é armazenamento
 > durável em iOS — o sistema despeja-o sob pressão de espaço e não o inclui nos
 > backups. A implementação nativa do `StoragePort` tem de usar Preferences
@@ -469,7 +545,7 @@ quando `data-native="true"`.
 
 ## O que falta (fases seguintes)
 
-- Captura real: criar hábitos, tarefas, planos de treino, sessões e refeições.
+- Base de dados de alimentos e leitura de código de barras.
 - Camada de IA (o separador ainda não existe na navegação, por desenho).
 - Autenticação e sincronização com backend.
 - Empacotamento nativo, seguindo a secção acima.

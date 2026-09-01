@@ -76,6 +76,7 @@ export function TodayScreen(): ReactElement {
       />
       <WorkoutSection model={model} />
       <MovementSection model={model} />
+      <NutritionSection model={model} />
       <UpcomingSection model={model} />
       <RecapSection model={model} />
     </Screen>
@@ -390,6 +391,71 @@ function MovementSection({ model }: { model: TodayModel }): ReactElement | null 
             <div className="row row-between">
               <span className="title">{progress.goal.title}</span>
               <span className="t-num">{Math.round(progress.ratio * 100)}%</span>
+            </div>
+            <ProgressBar ratio={progress.ratio} />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Alimentação on the dashboard: what today has, and how the food and water
+ * goals stand. A dash where a value is unknown, never a zero standing in for it.
+ */
+function NutritionSection({ model }: { model: TodayModel }): ReactElement | null {
+  const navigate = useNavigate();
+  if (!model.nutrition && model.nutritionGoals.length === 0) return null;
+
+  const kcal = model.nutrition?.totals.values.kcal ?? null;
+
+  return (
+    <section>
+      <SectionHeader
+        title="Alimentação"
+        actionLabel="Ver tudo"
+        onAction={() => navigate('/alimentacao')}
+      />
+      <div className="stack stack-3">
+        {model.nutrition ? (
+          <Card variant="quiet">
+            <div className="grid-2">
+              <Metric
+                label="Energia"
+                value={kcal == null ? '—' : format.number(Math.round(kcal), 0)}
+                suffix={kcal == null ? undefined : 'kcal'}
+              />
+              <Metric label="Refeições" value={String(model.nutrition.mealCount)} />
+              <Metric
+                label="Água"
+                value={format.number(model.nutrition.waterMl, 0)}
+                suffix="ml"
+              />
+              <Metric
+                label="Proteína"
+                value={model.nutrition.totals.values.protein == null
+                  ? '—'
+                  : format.number(Math.round(model.nutrition.totals.values.protein), 0)}
+                suffix={model.nutrition.totals.values.protein == null ? undefined : 'g'}
+              />
+            </div>
+          </Card>
+        ) : null}
+
+        {model.nutritionGoals.map((progress) => (
+          <button
+            key={progress.goal.id}
+            type="button"
+            className="goal-card"
+            data-complete={String(progress.complete)}
+            onClick={() => navigate('/alimentacao')}
+          >
+            <div className="row row-between">
+              <span className="title">{progress.goal.title}</span>
+              <span className="t-num">
+                {progress.current == null ? '—' : `${Math.round(progress.ratio * 100)}%`}
+              </span>
             </div>
             <ProgressBar ratio={progress.ratio} />
           </button>

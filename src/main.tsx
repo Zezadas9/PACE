@@ -11,6 +11,7 @@ import './styles/screens.css';
 import './styles/agenda.css';
 import './styles/training.css';
 import './styles/activity.css';
+import './styles/nutrition.css';
 import './styles/brand.css';
 import './styles/polish.css';
 import './styles/hues.css';

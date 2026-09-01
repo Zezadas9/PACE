@@ -6,8 +6,8 @@
 import type {
   DistanceUnit, EventCategory, Gender, GoalType, HabitFrequency, HabitKind,
   ActivityGoalMetric, ActivityGoalPeriod, ActivityType, PaceMode,
-  SessionDifficulty, TaskCategory, TaskPriority, WeightUnit, WorkoutSection,
-  WorkoutType,
+  FoodUnit, MealType, NutritionGoalMetric, SessionDifficulty, TaskCategory,
+  TaskPriority, WeightUnit, WorkoutSection, WorkoutType,
 } from './types';
 import type { RecurrenceKind } from './scheduling';
 
@@ -15,7 +15,7 @@ export const APP = {
   name: 'PACE',
   version: '0.3.0',
   /** Bump when a stored shape changes; migrations live in data/snapshot.ts */
-  schemaVersion: 5,
+  schemaVersion: 6,
   storageNamespace: 'pace',
   locale: 'pt-PT',
 } as const;
@@ -125,12 +125,53 @@ export const TRACK_MIN_DISTANCE_M = 8;
 /** GPS accuracy worse than this is discarded rather than trusted. */
 export const TRACK_MAX_ACCURACY_M = 40;
 
-export const MEAL_LABELS: Record<string, string> = {
-  breakfast: 'Pequeno-almoço',
-  lunch: 'Almoço',
-  dinner: 'Jantar',
-  snack: 'Lanche',
-};
+export const MEAL_TYPE_OPTIONS: ReadonlyArray<Option<MealType>> = [
+  { id: 'breakfast', label: 'Pequeno-almoço' },
+  { id: 'lunch', label: 'Almoço' },
+  { id: 'dinner', label: 'Jantar' },
+  { id: 'snack', label: 'Snack' },
+  { id: 'supper', label: 'Ceia' },
+  { id: 'other', label: 'Outra' },
+];
+
+export const MEAL_LABELS: Record<MealType, string> =
+  Object.fromEntries(MEAL_TYPE_OPTIONS.map((o) => [o.id, o.label])) as
+    Record<MealType, string>;
+
+/** The order meals are shown in across a day. */
+export const MEAL_ORDER: ReadonlyArray<MealType> = [
+  'breakfast', 'snack', 'lunch', 'dinner', 'supper', 'other',
+];
+
+export const FOOD_UNIT_OPTIONS: ReadonlyArray<Option<FoodUnit>> = [
+  { id: 'g', label: 'g' },
+  { id: 'ml', label: 'ml' },
+  { id: 'unit', label: 'unidade' },
+  { id: 'portion', label: 'porção' },
+];
+
+export const FOOD_UNIT_LABELS: Record<FoodUnit, string> =
+  Object.fromEntries(FOOD_UNIT_OPTIONS.map((o) => [o.id, o.label])) as
+    Record<FoodUnit, string>;
+
+export interface NutritionMetricEntry extends Option<NutritionGoalMetric> {
+  /** The unit the target is stored and shown in. */
+  unit: string;
+}
+
+export const NUTRITION_GOAL_OPTIONS: ReadonlyArray<NutritionMetricEntry> = [
+  { id: 'calories', label: 'Calorias', unit: 'kcal' },
+  { id: 'protein', label: 'Proteína', unit: 'g' },
+  { id: 'carbs', label: 'Hidratos', unit: 'g' },
+  { id: 'fat', label: 'Gordura', unit: 'g' },
+  { id: 'fiber', label: 'Fibra', unit: 'g' },
+  { id: 'water', label: 'Água', unit: 'ml' },
+  { id: 'meals', label: 'Refeições', unit: '' },
+  { id: 'custom', label: 'Outro', unit: '' },
+];
+
+/** Quick-add sizes for water, in millilitres. */
+export const WATER_PRESETS = [200, 330, 500] as const;
 
 export const WORKOUT_TYPE_OPTIONS: ReadonlyArray<Option<WorkoutType>> = [
   { id: 'strength', label: 'Musculação' },
