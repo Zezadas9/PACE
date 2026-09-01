@@ -26,6 +26,7 @@ import { EmptyState, Row, Rows } from '../../ui/data';
 import { Fab } from '../../ui/Fab';
 import { PageHeader } from '../../ui/page';
 import { Icon, type IconName } from '../../ui/Icon';
+import { BrandIcon, type BrandIconName } from '../../ui/BrandIcon';
 import { ActivityForm } from './ActivityForm';
 import { ActivityGoalForm } from './ActivityGoalForm';
 import { ChartsSection, GoalsSection, SummarySection } from './sections';
@@ -36,6 +37,19 @@ type SheetState =
   | { kind: 'goal'; goal?: ActivityGoal }
   | { kind: 'detail'; session: ActivitySession }
   | null;
+
+/**
+ * The illustrated equivalent, where the sheet actually has one.
+ *
+ * There is no walking or hiking artwork, and reusing the running shoe for all
+ * three made the grid look broken rather than illustrated. Those fall back to
+ * the line icon, on the same dark tile so the row still reads as one set.
+ */
+export function brandIconFor(type: ActivityType): BrandIconName | null {
+  if (type === 'run') return 'corrida';
+  if (type === 'ride') return 'bicicleta';
+  return null;
+}
 
 export function iconFor(type: ActivityType): IconName {
   return (ACTIVITY_TYPE_OPTIONS.find((o) => o.id === type)?.icon ?? 'activity') as IconName;
@@ -96,7 +110,14 @@ export function ActivityScreen(): ReactElement {
                 className="start-tile"
                 onClick={() => begin(option.id)}
               >
-                <Icon name={option.icon as IconName} />
+                <span className="start-art">
+                  {(() => {
+                    const brand = brandIconFor(option.id);
+                    return brand
+                      ? <BrandIcon name={brand} size={40} float />
+                      : <Icon name={option.icon as IconName} />;
+                  })()}
+                </span>
                 <span>{option.label}</span>
               </button>
             ))}

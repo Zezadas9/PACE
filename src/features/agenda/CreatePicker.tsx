@@ -2,8 +2,7 @@
 
 import type { ReactElement } from 'react';
 import { Sheet } from '../../ui/Sheet';
-import { Card } from '../../ui/primitives';
-import { Row, Rows } from '../../ui/data';
+import { BrandIconTile } from '../../ui/BrandIcon';
 
 export type CreateKind = 'event' | 'task' | 'habit';
 
@@ -15,31 +14,29 @@ export function CreatePicker({
 }): ReactElement {
   return (
     <Sheet title="Adicionar" onClose={onClose}>
-      <Card variant="flush">
-        <Rows>
-          <Row
-            icon="calendar"
-            title="Evento"
-            sub="Algo que acontece a uma hora — reunião, consulta, aula"
-            chevron
-            onClick={() => onPick('event')}
-          />
-          <Row
-            icon="check"
-            title="Tarefa"
-            sub="Algo para fazer num dia, com ou sem hora"
-            chevron
-            onClick={() => onPick('task')}
-          />
-          <Row
-            icon="repeat"
-            title="Hábito"
-            sub="Algo que se repete — beber água, caminhar, ler"
-            chevron
-            onClick={() => onPick('habit')}
-          />
-        </Rows>
-      </Card>
+      <div className="pick-list">
+        <button type="button" className="pick-item" onClick={() => onPick('event')}>
+          <BrandIconTile name="agenda" size={34} />
+          <span className="grow">
+            <span className="title">Evento</span>
+            <span className="sub">Algo que acontece a uma hora — reunião, consulta, aula</span>
+          </span>
+        </button>
+        <button type="button" className="pick-item" onClick={() => onPick('task')}>
+          <BrandIconTile name="objetivos" size={34} />
+          <span className="grow">
+            <span className="title">Tarefa</span>
+            <span className="sub">Algo para fazer num dia, com ou sem hora</span>
+          </span>
+        </button>
+        <button type="button" className="pick-item" onClick={() => onPick('habit')}>
+          <BrandIconTile name="hidratacao" size={34} />
+          <span className="grow">
+            <span className="title">Hábito</span>
+            <span className="sub">Algo que se repete — beber água, caminhar, ler</span>
+          </span>
+        </button>
+      </div>
       <p className="t-sm muted-2" style={{ marginTop: 'var(--s-4)' }}>
         Só os itens marcados como essenciais contam para a sequência.
       </p>

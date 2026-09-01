@@ -613,3 +613,20 @@
 .cell-input input::-webkit-outer-spin-button,
 .cell-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .cell-input input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+
+/* --- Create picker ---------------------------------------------------------- */
+
+.pick-list { display: flex; flex-direction: column; gap: var(--s-2); }
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  text-align: left;
+}
+.pick-item .title { display: block; font-size: var(--fs-body); font-weight: var(--fw-medium); }
+.pick-item .sub { display: block; font-size: var(--fs-sm); color: var(--c-ink-3); }
