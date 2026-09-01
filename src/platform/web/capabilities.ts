@@ -8,8 +8,8 @@
 
 import type {
   AuthPort, AuthSession, BackgroundPort, GeolocationPort, HealthMetric,
-  HealthPort, HealthSample, NetworkPort, NetworkStatus, NotificationsPort,
-  PermissionState, Position, ScheduledNotification, SensorPort,
+  HealthPort, HealthSample, NetworkPort, NetworkStatus,
+  PermissionState, Position, SensorPort,
 } from '../types';
 import type { ActivitySession } from '../../core/types';
 
@@ -87,41 +87,6 @@ export class WebNetworkPort implements NetworkPort {
       window.removeEventListener('online', emit);
       window.removeEventListener('offline', emit);
     };
-  }
-}
-
-/**
- * A browser cannot schedule a notification for later without a service worker
- * and a push subscription, so this reports unavailable rather than pretending.
- */
-export class WebNotificationsPort implements NotificationsPort {
-  async isAvailable(): Promise<boolean> {
-    return false;
-  }
-
-  async checkPermission(): Promise<PermissionState> {
-    if (!('Notification' in window)) return 'unavailable';
-    const permission = Notification.permission;
-    return permission === 'default' ? 'prompt' : (permission as PermissionState);
-  }
-
-  async requestPermission(): Promise<PermissionState> {
-    if (!('Notification' in window)) return 'unavailable';
-    const result = await Notification.requestPermission();
-    return result === 'default' ? 'prompt' : (result as PermissionState);
-  }
-
-  async schedule(_notification: ScheduledNotification): Promise<void> {
-    /* not schedulable on the web */
-  }
-
-  async cancel(_id: number): Promise<void> {}
-  async cancelAll(): Promise<void> {}
-  async listPending(): Promise<ScheduledNotification[]> {
-    return [];
-  }
-  onTapped(): () => void {
-    return () => {};
   }
 }
 

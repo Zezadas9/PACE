@@ -15,8 +15,6 @@
   --h-rose:   #C2325F;
   --h-amber:  #B4600A;
   --h-cyan:   #0A7B92;
-  --h-mint:   #00875A;
-  --h-lime:   #4C7A16;
   --h-slate:  #5A6672;
 
   --h-blue-soft:   #E4ECFA;
@@ -24,8 +22,6 @@
   --h-rose-soft:   #FBE5EC;
   --h-amber-soft:  #FBEEDC;
   --h-cyan-soft:   #DFF0F4;
-  --h-mint-soft:   #DFF3EB;
-  --h-lime-soft:   #EBF3DE;
   --h-slate-soft:  #EBEEF1;
 }
 
@@ -36,8 +32,6 @@
     --h-rose:   #FF7CA3;
     --h-amber:  #FFB454;
     --h-cyan:   #4FD4EE;
-    --h-mint:   #3EE0A4;
-    --h-lime:   #B6E05A;
     --h-slate:  #9BA7B4;
 
     --h-blue-soft:   #12213A;
@@ -45,8 +39,6 @@
     --h-rose-soft:   #33161F;
     --h-amber-soft:  #2E2110;
     --h-cyan-soft:   #0E2A31;
-    --h-mint-soft:   #0E2C22;
-    --h-lime-soft:   #1E2A10;
     --h-slate-soft:  #1D2228;
   }
 }
@@ -57,16 +49,12 @@
   --h-rose:   #FF7CA3;
   --h-amber:  #FFB454;
   --h-cyan:   #4FD4EE;
-  --h-mint:   #3EE0A4;
-  --h-lime:   #B6E05A;
   --h-slate:  #9BA7B4;
   --h-blue-soft:   #12213A;
   --h-violet-soft: #201938;
   --h-rose-soft:   #33161F;
   --h-amber-soft:  #2E2110;
   --h-cyan-soft:   #0E2A31;
-  --h-mint-soft:   #0E2C22;
-  --h-lime-soft:   #1E2A10;
   --h-slate-soft:  #1D2228;
 }
 
@@ -78,18 +66,20 @@
 [data-hue='appointment'] { --hue: var(--h-rose);   --hue-soft: var(--h-rose-soft); }
 [data-hue='meeting']     { --hue: var(--h-amber);  --hue-soft: var(--h-amber-soft); }
 [data-hue='commitment']  { --hue: var(--h-cyan);   --hue-soft: var(--h-cyan-soft); }
-[data-hue='personal']    { --hue: var(--h-mint);   --hue-soft: var(--h-mint-soft); }
+[data-hue='personal']    { --hue: var(--h-slate);  --hue-soft: var(--h-slate-soft); }
 
 [data-hue='strength']     { --hue: var(--h-amber);  --hue-soft: var(--h-amber-soft); }
 [data-hue='functional']   { --hue: var(--h-cyan);   --hue-soft: var(--h-cyan-soft); }
 [data-hue='calisthenics'] { --hue: var(--h-violet); --hue-soft: var(--h-violet-soft); }
 [data-hue='hiit']         { --hue: var(--h-rose);   --hue-soft: var(--h-rose-soft); }
-[data-hue='mobility']     { --hue: var(--h-mint);   --hue-soft: var(--h-mint-soft); }
-[data-hue='pilates']      { --hue: var(--h-blue);   --hue-soft: var(--h-blue-soft); }
-[data-hue='sport']        { --hue: var(--h-lime);   --hue-soft: var(--h-lime-soft); }
+[data-hue='mobility']     { --hue: var(--h-blue);   --hue-soft: var(--h-blue-soft); }
+[data-hue='pilates']      { --hue: var(--h-slate);  --hue-soft: var(--h-slate-soft); }
+[data-hue='sport']        { --hue: var(--h-rose);   --hue-soft: var(--h-rose-soft); }
 [data-hue='other']        { --hue: var(--h-slate);  --hue-soft: var(--h-slate-soft); }
 
-[data-hue='habit']   { --hue: var(--h-mint);  --hue-soft: var(--h-mint-soft); }
+/* The three kinds on the agenda. Habits are the quiet backbone of the day, so
+   they take the ink rather than a colour of their own. */
+[data-hue='habit']   { --hue: var(--c-ink-2); --hue-soft: var(--c-surface-2); }
 [data-hue='task']    { --hue: var(--h-amber); --hue-soft: var(--h-amber-soft); }
 [data-hue='workout'] { --hue: var(--h-rose);  --hue-soft: var(--h-rose-soft); }
 
@@ -122,7 +112,7 @@
 /* Month cells mark what is on the day, in the same language. */
 .mark-event { background: var(--h-blue); }
 .mark-task { background: var(--h-amber); }
-.mark-habit { background: var(--h-mint); }
+.mark-habit { background: var(--c-ink-2); }
 
 /* Priority reads as urgency, not as another grey word. */
 [data-priority='high'] .priority-flag { color: var(--h-rose); }

@@ -57,14 +57,19 @@ export function seed(repos: Repositories): void {
   });
 
   const plan = [
+    { name: 'Mobilidade de ombro', muscleGroups: ['shoulders' as const],
+      isBodyweight: true, section: 'warmup' as const,
+      sets: 2, reps: 10, restSec: 30 },
     { name: 'Agachamento', muscleGroups: ['legs' as const], equipment: 'barra',
-      sets: 4, reps: 8, loadKg: 60, restSec: 120 },
+      section: 'main' as const, sets: 4, reps: 8, loadKg: 60, restSec: 120 },
     { name: 'Supino', muscleGroups: ['chest' as const], equipment: 'barra',
-      sets: 3, reps: 10, loadKg: 40, restSec: 90 },
+      section: 'main' as const, sets: 3, reps: 10, loadKg: 40, restSec: 90 },
     { name: 'Remada curvada', muscleGroups: ['back' as const], equipment: 'barra',
-      sets: 3, reps: 10, loadKg: 35, restSec: 90 },
+      section: 'main' as const, sets: 3, reps: 10, loadKg: 35, restSec: 90 },
     { name: 'Prancha', muscleGroups: ['core' as const], isBodyweight: true,
-      sets: 3, reps: null, durationSec: 45, restSec: 60 },
+      section: 'main' as const, sets: 3, reps: null, durationSec: 45, restSec: 60 },
+    { name: 'Corrida leve', muscleGroups: ['full_body' as const], isBodyweight: true,
+      section: 'cardio' as const, sets: 1, reps: null, durationSec: 600, restSec: null },
   ];
 
   const workout = repos.workouts.create({
@@ -72,6 +77,8 @@ export function seed(repos: Repositories): void {
     type: 'strength',
     estimatedMin: 50,
     tags: ['Treino base de força, três vezes por semana.'],
+    // Monday, Wednesday, Friday.
+    weekdays: [1, 3, 5],
     blocks: plan.map((item) => {
       const exercise = repos.exercises.create({
         name: item.name,
@@ -81,12 +88,13 @@ export function seed(repos: Repositories): void {
       });
       return {
         id: createId(),
+        section: item.section,
         exerciseId: exercise.id,
         sets: item.sets,
         reps: item.reps ?? null,
         loadKg: item.loadKg ?? null,
         durationSec: item.durationSec ?? null,
-        restSec: item.restSec,
+        restSec: item.restSec ?? null,
         note: null,
       };
     }),
@@ -98,8 +106,11 @@ export function seed(repos: Repositories): void {
     type: 'mobility',
     estimatedMin: 15,
     tags: ['Rotina curta para começar o dia.'],
+    weekdays: [2, 4],
     blocks: ['Gato-camelo', 'Abertura de anca', 'Rotação torácica'].map((name) => ({
       id: createId(),
+      // Mobility has no sections; everything sits in the main set.
+      section: 'main' as const,
       exerciseId: repos.exercises.create({ name, isBodyweight: true }).id,
       sets: 2,
       reps: null,

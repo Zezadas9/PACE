@@ -7,7 +7,11 @@
  */
 
 import { useState, type ReactElement } from 'react';
-import { REST_PRESETS, WORKOUT_TYPE_OPTIONS } from '../../core/constants';
+import {
+  hasSections, REST_PRESETS, WORKOUT_SECTION_OPTIONS, WORKOUT_TYPE_OPTIONS,
+} from '../../core/constants';
+import type { WorkoutSection } from '../../core/types';
+import { WeekdayPicker } from '../agenda/forms/WeekdayPicker';
 import {
   emptyBlockDraft, emptyWorkoutDraft, type BlockDraft, type WorkoutDraft,
 } from '../../services/training';
@@ -55,8 +59,11 @@ export function WorkoutBuilder({
     setError(null);
   };
 
-  const addBlock = (): void => {
-    setDraft((current) => ({ ...current, blocks: [...current.blocks, emptyBlockDraft()] }));
+  const addBlock = (section: WorkoutSection = 'main'): void => {
+    setDraft((current) => ({
+      ...current,
+      blocks: [...current.blocks, emptyBlockDraft(section)],
+    }));
   };
 
   const removeBlock = (id: string): void => {
@@ -148,20 +155,63 @@ export function WorkoutBuilder({
           />
         </Field>
 
-        <div className="stack stack-3">
-          <p className="t-eyebrow">Exercícios</p>
-          {draft.blocks.map((block, index) => (
-            <BlockEditor
-              key={block.id}
-              block={block}
-              index={index}
-              canRemove={draft.blocks.length > 1}
-              onChange={(changes) => patchBlock(block.id, changes)}
-              onRemove={() => removeBlock(block.id)}
+        <Field label="Dias da semana" hint="Deixa vazio para um plano sem dia marcado.">
+          <WeekdayPicker
+            value={draft.weekdays}
+            onChange={(weekdays) => patch({ weekdays })}
+          />
+        </Field>
+
+        {hasSections(draft.type) ? (
+          /* Warm-up, main set and cardio, each with its own list. Only the
+             types actually built that way get the split. */
+          WORKOUT_SECTION_OPTIONS.map((section) => {
+            const blocks = draft.blocks.filter((block) => block.section === section.id);
+            return (
+              <div className="stack stack-3" key={section.id}>
+                <p className="t-eyebrow">{section.label}</p>
+                {blocks.map((block) => (
+                  <BlockEditor
+                    key={block.id}
+                    block={block}
+                    index={draft.blocks.indexOf(block)}
+                    canRemove={draft.blocks.length > 1}
+                    onChange={(changes) => patchBlock(block.id, changes)}
+                    onRemove={() => removeBlock(block.id)}
+                  />
+                ))}
+                <Button
+                  variant="outline"
+                  block
+                  icon="plus"
+                  label={`Adicionar a ${section.label.toLowerCase()}`}
+                  onClick={() => addBlock(section.id)}
+                />
+              </div>
+            );
+          })
+        ) : (
+          <div className="stack stack-3">
+            <p className="t-eyebrow">Exercícios</p>
+            {draft.blocks.map((block, index) => (
+              <BlockEditor
+                key={block.id}
+                block={block}
+                index={index}
+                canRemove={draft.blocks.length > 1}
+                onChange={(changes) => patchBlock(block.id, changes)}
+                onRemove={() => removeBlock(block.id)}
+              />
+            ))}
+            <Button
+              variant="outline"
+              block
+              icon="plus"
+              label="Adicionar exercício"
+              onClick={() => addBlock()}
             />
-          ))}
-          <Button variant="outline" block icon="plus" label="Adicionar exercício" onClick={addBlock} />
-        </div>
+          </div>
+        )}
       </div>
     </Sheet>
   );

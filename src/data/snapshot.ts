@@ -121,6 +121,26 @@ const MIGRATIONS: Record<number, Migration> = {
     })),
   }),
   /**
+   * v4 -> v5 — scheduled workouts and workout sections.
+   *
+   * Existing plans have no weekday, which reads as "unscheduled" rather than
+   * "every day", and every existing exercise lands in the main set — the only
+   * section that existed before.
+   */
+  4: (snapshot) => ({
+    ...snapshot,
+    schemaVersion: 5,
+    workouts: (snapshot.workouts ?? []).map((workout) => ({
+      ...workout,
+      weekdays: workout.weekdays ?? [],
+      blocks: (workout.blocks ?? []).map((block) => ({
+        ...block,
+        section: block.section ?? 'main',
+      })),
+    })),
+  }),
+
+  /**
    * v3 -> v4 — activities.
    *
    * Swimming left the list of types, so any session recorded as one becomes

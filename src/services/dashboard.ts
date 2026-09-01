@@ -32,7 +32,8 @@ export interface HabitView {
 }
 
 export interface WorkoutView {
-  session: WorkoutSession;
+  /** Null when the plan is due by schedule but has not been started. */
+  session: WorkoutSession | null;
   workout: Workout | null;
   title: string;
   blockCount: number;
@@ -142,21 +143,26 @@ function buildHabits(data: progress.ProgressDataset, date: DayKey): HabitView[] 
 }
 
 function buildWorkout(data: progress.ProgressDataset, date: DayKey): WorkoutView | null {
-  const session = data.workoutSessions.find((candidate) => candidate.date === date);
-  if (!session) return null;
-  const workout = session.workoutId
-    ? data.workouts.find((candidate) => candidate.id === session.workoutId) ?? null
-    : null;
+  const session = data.workoutSessions.find((candidate) => candidate.date === date) ?? null;
+  // No session yet? The weekday schedule still says what is due.
+  const workout = session
+    ? (session.workoutId
+      ? data.workouts.find((candidate) => candidate.id === session.workoutId) ?? null
+      : null)
+    : training.workoutsForDay(data.workouts, date)[0] ?? null;
+
+  if (!session && !workout) return null;
+
   return {
     session,
     workout,
     title: workout?.title ?? 'Treino',
     blockCount: workout?.blocks.length ?? 0,
     estimatedMin: workout?.estimatedMin ?? null,
-    completed: session.completed,
-    essential: session.essential,
-    running: session.startedAt !== null && !session.completed,
-    progress: training.sessionProgress(session, workout).ratio,
+    completed: session?.completed ?? false,
+    essential: session?.essential ?? false,
+    running: session != null && session.startedAt !== null && !session.completed,
+    progress: session ? training.sessionProgress(session, workout).ratio : 0,
   };
 }
 

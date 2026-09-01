@@ -4,12 +4,12 @@ import type { SetLog, Workout, WorkoutBlock, WorkoutSession } from '../core/type
 import {
   elapsedSeconds, exerciseProgress, history, isBlockComplete, nextSet,
   plannedSets, sessionProgress, sessionReps, sessionVolumeKg, setsFor,
-  trainedExercises, trainingStats, volumeApplies, weeklyFrequency,
+  trainedExercises, trainingStats, volumeApplies, weeklyFrequency, workoutsForDay,
 } from './training';
 
 function block(partial: Partial<WorkoutBlock> = {}): WorkoutBlock {
   return {
-    id: 'b1', exerciseId: 'e1', sets: 3, reps: 10, loadKg: 50,
+    id: 'b1', section: 'main', exerciseId: 'e1', sets: 3, reps: 10, loadKg: 50,
     durationSec: null, restSec: 90, note: null, ...partial,
   };
 }
@@ -262,5 +262,51 @@ describe('isBlockComplete', () => {
     expect(isBlockComplete(createWorkoutSession({ logs: { b1: done(3) } }), b)).toBe(true);
     expect(isBlockComplete(createWorkoutSession({ logs: { b1: done(2) } }), b)).toBe(false);
     expect(isBlockComplete(createWorkoutSession(), b)).toBe(false);
+  });
+});
+
+describe('workoutsForDay', () => {
+  const monWedFri = createWorkout({
+    id: 'w1', title: 'Força', weekdays: [1, 3, 5], blocks: [block()],
+  });
+  const unscheduled = createWorkout({ id: 'w2', title: 'Extra', weekdays: [] });
+  const archived = createWorkout({ id: 'w3', weekdays: [1], archived: true });
+
+  it('returns the plans due on that weekday', () => {
+    // 2026-08-31 is a Monday, 2026-09-01 a Tuesday.
+    expect(workoutsForDay([monWedFri, unscheduled], '2026-08-31').map((w) => w.id))
+      .toEqual(['w1']);
+    expect(workoutsForDay([monWedFri, unscheduled], '2026-09-01')).toEqual([]);
+  });
+
+  it('leaves unscheduled plans alone', () => {
+    // No weekdays means "start it deliberately", not "due every day".
+    expect(workoutsForDay([unscheduled], '2026-08-31')).toEqual([]);
+  });
+
+  it('ignores archived plans', () => {
+    expect(workoutsForDay([archived], '2026-08-31')).toEqual([]);
+  });
+});
+
+describe('sections', () => {
+  it('keeps blocks in their section', () => {
+    const plan = createWorkout({
+      blocks: [
+        block({ id: 'b1', section: 'warmup' }),
+        block({ id: 'b2', section: 'main' }),
+        block({ id: 'b3', section: 'cardio' }),
+      ],
+    });
+    expect(plan.blocks.map((b) => b.section)).toEqual(['warmup', 'main', 'cardio']);
+  });
+
+  it('walks the plan in order regardless of section', () => {
+    const plan = createWorkout({
+      id: 'w1',
+      blocks: [block({ id: 'b1', section: 'warmup' }), block({ id: 'b2', section: 'main' })],
+    });
+    const session = createWorkoutSession({ workoutId: 'w1', logs: { b1: done(3) } });
+    expect(nextSet(session, plan)?.block.section).toBe('main');
   });
 });

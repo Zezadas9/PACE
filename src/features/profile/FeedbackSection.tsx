@@ -6,7 +6,7 @@
  * people mute at the OS level and then never hear from again.
  */
 
-import type { ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useApp, useFeedback, useStoreVersion } from '../../app/providers/appContext';
 import { Card, SectionHeader } from '../../ui/primitives';
 import { Rows } from '../../ui/data';
@@ -19,6 +19,13 @@ export function FeedbackSection(): ReactElement {
 
   const settings = repos.settings.get().feedback;
 
+  /**
+   * iOS has no Vibration API at all — Safari has never shipped it, installed to
+   * the home screen or not. Saying so beats a switch that does nothing.
+   */
+  const [canVibrate, setCanVibrate] = useState(true);
+  useEffect(() => { setCanVibrate('vibrate' in navigator); }, []);
+
   return (
     <section>
       <SectionHeader title="Som e vibração" />
@@ -27,7 +34,7 @@ export function FeedbackSection(): ReactElement {
           <Switch
             checked={settings.sound}
             title="Som"
-            subtitle="Confirmações curtas ao concluir algo."
+            subtitle="Confirmações curtas ao concluir algo. Toca uma vez para ouvires."
             onChange={(sound) => {
               repos.settings.updateFeedback({ sound });
               feedback.setPreferences(sound, settings.haptics);
@@ -36,9 +43,14 @@ export function FeedbackSection(): ReactElement {
             }}
           />
           <Switch
-            checked={settings.haptics}
+            checked={settings.haptics && canVibrate}
+            disabled={!canVibrate}
             title="Vibração"
-            subtitle="Resposta tátil nos toques. Ignorada onde não existir."
+            subtitle={
+              canVibrate
+                ? 'Resposta tátil nos toques.'
+                : 'O iPhone não permite vibração a aplicações web. Fica ativa na versão nativa.'
+            }
             onChange={(haptics) => {
               repos.settings.updateFeedback({ haptics });
               feedback.setPreferences(settings.sound, haptics);

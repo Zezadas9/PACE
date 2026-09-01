@@ -13,7 +13,7 @@ import { LOAD_BEARING_TYPES } from '../core/constants';
 import type {
   DayKey, Exercise, SetLog, Workout, WorkoutBlock, WorkoutSession,
 } from '../core/types';
-import { addDaysToKey, startOfWeekKey, todayKey } from '../core/utils/date';
+import { addDaysToKey, fromKey, startOfWeekKey, todayKey } from '../core/utils/date';
 import { daysBetween } from './recurrence';
 
 /* --- Sets ------------------------------------------------------------------ */
@@ -148,6 +148,21 @@ export function elapsedSeconds(session: WorkoutSession, now: Date = new Date()):
   if (!session.startedAt) return 0;
   const started = new Date(session.startedAt).getTime();
   return Math.max(0, Math.round((now.getTime() - started) / 1000));
+}
+
+/**
+ * The plans scheduled for a given weekday.
+ *
+ * A plan with no weekdays is not scheduled at all — it exists to be started
+ * deliberately, which is different from being due every day.
+ */
+export function workoutsForDay(workouts: Workout[], date: DayKey): Workout[] {
+  const parsed = fromKey(date);
+  if (!parsed) return [];
+  const weekday = parsed.getDay();
+  return workouts.filter(
+    (workout) => !workout.archived && workout.weekdays.includes(weekday),
+  );
 }
 
 /* --- History --------------------------------------------------------------- */

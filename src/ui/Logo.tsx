@@ -13,7 +13,7 @@ import type { ReactElement } from 'react';
 
 const STROKE = 21;
 /** The arrow is drawn lighter than the letterform, as in the original mark. */
-const ARROW_STROKE = 14;
+const ARROW_STROKE = 11;
 const RATIO = 250 / 226;
 
 export function PaceMark({

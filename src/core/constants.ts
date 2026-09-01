@@ -6,7 +6,8 @@
 import type {
   DistanceUnit, EventCategory, Gender, GoalType, HabitFrequency, HabitKind,
   ActivityGoalMetric, ActivityGoalPeriod, ActivityType, PaceMode,
-  SessionDifficulty, TaskCategory, TaskPriority, WeightUnit, WorkoutType,
+  SessionDifficulty, TaskCategory, TaskPriority, WeightUnit, WorkoutSection,
+  WorkoutType,
 } from './types';
 import type { RecurrenceKind } from './scheduling';
 
@@ -14,7 +15,7 @@ export const APP = {
   name: 'PACE',
   version: '0.3.0',
   /** Bump when a stored shape changes; migrations live in data/snapshot.ts */
-  schemaVersion: 4,
+  schemaVersion: 5,
   storageNamespace: 'pace',
   locale: 'pt-PT',
 } as const;
@@ -174,6 +175,32 @@ export const RPE_SCALE = [
   { value: 9, label: 'Muito intenso' },
   { value: 10, label: 'Máximo' },
 ] as const;
+
+/**
+ * The workout types built as warm-up, main set and cardio.
+ *
+ * Weights, functional, calisthenics, HIIT and sport training all follow that
+ * shape. Mobility and Pilates do not: the session *is* the practice, and
+ * splitting it into three would be inventing a structure the discipline does
+ * not have.
+ */
+export const SECTIONED_WORKOUT_TYPES: ReadonlyArray<WorkoutType> = [
+  'strength', 'functional', 'calisthenics', 'hiit', 'sport',
+];
+
+export function hasSections(type: WorkoutType): boolean {
+  return SECTIONED_WORKOUT_TYPES.includes(type);
+}
+
+export const WORKOUT_SECTION_OPTIONS: ReadonlyArray<Option<WorkoutSection>> = [
+  { id: 'warmup', label: 'Aquecimento' },
+  { id: 'main', label: 'Workout' },
+  { id: 'cardio', label: 'Cardio' },
+];
+
+export const WORKOUT_SECTION_LABELS: Record<WorkoutSection, string> =
+  Object.fromEntries(WORKOUT_SECTION_OPTIONS.map((o) => [o.id, o.label])) as
+    Record<WorkoutSection, string>;
 
 /** Rest presets offered in the workout builder, in seconds. */
 export const REST_PRESETS = [30, 45, 60, 90, 120, 180] as const;

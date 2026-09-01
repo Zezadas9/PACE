@@ -223,9 +223,19 @@ export interface Exercise extends Entity {
   instructions: string | null;
 }
 
+/**
+ * Where an exercise sits in a session.
+ *
+ * Only the types that are actually structured this way use it — a mobility
+ * routine or a Pilates class is the whole session, not a main set with a
+ * warm-up bolted on. See SECTIONED_WORKOUT_TYPES.
+ */
+export type WorkoutSection = 'warmup' | 'main' | 'cardio';
+
 /** An exercise as planned inside a workout. */
 export interface WorkoutBlock {
   id: string;
+  section: WorkoutSection;
   exerciseId: string;
   sets: number;
   reps: number | null;
@@ -239,6 +249,8 @@ export interface WorkoutBlock {
 export interface Workout extends Entity {
   title: string;
   type: WorkoutType;
+  /** Days this plan is scheduled on. 0 = Sunday .. 6 = Saturday; empty = unscheduled. */
+  weekdays: number[];
   estimatedMin: number | null;
   blocks: WorkoutBlock[];
   goalId: string | null;

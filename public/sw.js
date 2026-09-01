@@ -79,3 +79,31 @@ self.addEventListener('fetch', (event) => {
     }),
   );
 });
+
+/**
+ * Notification taps.
+ *
+ * Focus an open window if there is one, otherwise open the app, and tell it
+ * which route the notification pointed at.
+ */
+self.addEventListener('notificationclick', (event) => {
+  const route = event.notification?.data?.route ?? null;
+  event.notification.close();
+
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true,
+    });
+
+    for (const client of clients) {
+      client.postMessage({ type: 'notification-tap', route });
+      if ('focus' in client) return client.focus();
+    }
+
+    if (self.clients.openWindow) {
+      return self.clients.openWindow(route ? `./#${route}` : './');
+    }
+    return undefined;
+  })());
+});

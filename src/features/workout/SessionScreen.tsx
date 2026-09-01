@@ -9,7 +9,7 @@
 
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { WORKOUT_TYPE_LABELS } from '../../core/constants';
+import { hasSections, WORKOUT_SECTION_LABELS, WORKOUT_TYPE_LABELS } from '../../core/constants';
 import * as training from '../../domain/training';
 import {
   activeSession, completeNextSet, discardSession, logSet,
@@ -133,6 +133,11 @@ export function SessionScreen(): ReactElement {
           exerciseName={
             repos.exercises.byId(current.block.exerciseId)?.name ?? 'Exercício'
           }
+          sectionLabel={
+            workout && hasSections(workout.type)
+              ? WORKOUT_SECTION_LABELS[current.block.section]
+              : null
+          }
         />
       )}
 
@@ -170,11 +175,12 @@ export function SessionScreen(): ReactElement {
  * logs stop being true.
  */
 function CurrentSet({
-  session, current, exerciseName, onEdit,
+  session, current, exerciseName, sectionLabel, onEdit,
 }: {
   session: import('../../core/types').WorkoutSession;
   current: NonNullable<ReturnType<typeof training.nextSet>>;
   exerciseName: string;
+  sectionLabel: string | null;
   onEdit: (patch: Partial<import('../../core/types').SetLog>) => void;
 }): ReactElement {
   const sets = training.setsFor(session, current.block);
@@ -182,6 +188,7 @@ function CurrentSet({
   return (
     <div className="session-current">
       <p className="t-eyebrow">
+        {sectionLabel ? `${sectionLabel} · ` : ''}
         Exercício {current.blockIndex + 1} · Série {current.set.setIndex + 1} de {sets.length}
       </p>
       <h1 className="session-exercise">{exerciseName}</h1>

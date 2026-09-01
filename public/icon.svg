@@ -4,7 +4,7 @@
      stroke-linecap="round" stroke-linejoin="round">
     <path d="M25 72V39a16 16 0 0 1 16-16h85a75 75 0 0 1 0 150H96" stroke-width="21"/>
     <path d="M25 115v104" stroke-width="21"/>
-    <path d="M27 224 120 117" stroke-width="14"/>
-    <path d="M91 117h29v29" stroke-width="14"/>
+    <path d="M27 224 120 117" stroke-width="11"/>
+    <path d="M91 117h29v29" stroke-width="11"/>
   </g>
 </svg>

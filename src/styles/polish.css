@@ -6,88 +6,90 @@
    ========================================================================== */
 
 /* --- Palette -------------------------------------------------------------------
-   The brand mark is stark white on near-black. The interface follows it: an
-   essentially monochrome shell carrying one vivid accent, rather than a wash of
-   muted mid-tones that never commit to anything.
+   Two themes, both monochrome: black on white, white on black. The accent is
+   not a colour — it is the ink itself, inverted. A filled ring, a completed
+   tick and a perfect day all read as "solid", which on a two-tone screen is the
+   loudest thing available.
 
-   The neutrals are very slightly cool, which reads as product rather than as
-   default grey, and the accent is bright enough to be the only colour on the
-   screen and still be the first thing you see. Warmth stays where it means
-   something — the streak. */
+   Colour is reserved for the few places where it carries meaning: the streak
+   burns warm, and each agenda category keeps its own hue (styles/hues.css).
+   Everything else is greyscale, so those few marks actually stand out. */
 
 :root {
-  --c-bg:          #F7F8F9;
+  --c-bg:          #FFFFFF;
   --c-bg-elev:     #FFFFFF;
   --c-surface:     #FFFFFF;
-  --c-surface-2:   #EFF1F3;
-  --c-surface-3:   #E1E5E9;
-  --c-line:        #E5E8EB;
-  --c-line-strong: #CBD1D7;
+  --c-surface-2:   #F2F2F3;
+  --c-surface-3:   #E4E4E6;
+  --c-line:        #E6E6E8;
+  --c-line-strong: #C9C9CD;
 
-  --c-ink:         #0D1012;
-  --c-ink-2:       #454D55;
-  --c-ink-3:       #78818B;
-  --c-ink-4:       #AAB2BA;
+  --c-ink:         #0A0A0B;
+  --c-ink-2:       #46464A;
+  --c-ink-3:       #78787E;
+  --c-ink-4:       #AEAEB4;
 
-  --c-accent:      #00875A;
-  --c-accent-ink:  #006946;
-  --c-accent-soft: #DFF3EB;
-  --c-ember:       #B45309;
-  --c-ember-soft:  #FCEEDD;
+  /* The accent is the ink. */
+  --c-accent:      #0A0A0B;
+  --c-accent-ink:  #0A0A0B;
+  --c-accent-soft: #EDEDEF;
   --c-on-accent:   #FFFFFF;
 
-  --c-positive:    #00875A;
+  /* The two colours that survive: warmth for the streak, red for danger. */
+  --c-ember:       #B45309;
+  --c-ember-soft:  #FBF0E1;
+  --c-positive:    #0A0A0B;
   --c-attention:   #B45309;
   --c-danger:      #C0392F;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --c-bg:          #08090B;
-    --c-bg-elev:     #121417;
-    --c-surface:     #131619;
-    --c-surface-2:   #1B1F23;
-    --c-surface-3:   #262B31;
-    --c-line:        #232830;
-    --c-line-strong: #363D45;
+    --c-bg:          #000000;
+    --c-bg-elev:     #0E0E10;
+    --c-surface:     #121214;
+    --c-surface-2:   #1A1A1D;
+    --c-surface-3:   #262629;
+    --c-line:        #232326;
+    --c-line-strong: #3A3A3F;
 
-    --c-ink:         #F4F6F7;
-    --c-ink-2:       #A6AEB7;
-    --c-ink-3:       #757E88;
-    --c-ink-4:       #515A63;
+    --c-ink:         #FFFFFF;
+    --c-ink-2:       #A8A8AE;
+    --c-ink-3:       #78787E;
+    --c-ink-4:       #525258;
 
-    --c-accent:      #3EE0A4;
-    --c-accent-ink:  #7DEFC6;
-    --c-accent-soft: #0E2C22;
+    --c-accent:      #FFFFFF;
+    --c-accent-ink:  #FFFFFF;
+    --c-accent-soft: #1F1F23;
+    --c-on-accent:   #000000;
+
     --c-ember:       #FFB454;
-    --c-ember-soft:  #2E2110;
-    --c-on-accent:   #04170F;
-
-    --c-positive:    #3EE0A4;
+    --c-ember-soft:  #2A1F10;
+    --c-positive:    #FFFFFF;
     --c-attention:   #FFB454;
     --c-danger:      #FF6B61;
   }
 }
 
 :root[data-theme='dark'] {
-  --c-bg:          #08090B;
-  --c-bg-elev:     #121417;
-  --c-surface:     #131619;
-  --c-surface-2:   #1B1F23;
-  --c-surface-3:   #262B31;
-  --c-line:        #232830;
-  --c-line-strong: #363D45;
-  --c-ink:         #F4F6F7;
-  --c-ink-2:       #A6AEB7;
-  --c-ink-3:       #757E88;
-  --c-ink-4:       #515A63;
-  --c-accent:      #3EE0A4;
-  --c-accent-ink:  #7DEFC6;
-  --c-accent-soft: #0E2C22;
+  --c-bg:          #000000;
+  --c-bg-elev:     #0E0E10;
+  --c-surface:     #121214;
+  --c-surface-2:   #1A1A1D;
+  --c-surface-3:   #262629;
+  --c-line:        #232326;
+  --c-line-strong: #3A3A3F;
+  --c-ink:         #FFFFFF;
+  --c-ink-2:       #A8A8AE;
+  --c-ink-3:       #78787E;
+  --c-ink-4:       #525258;
+  --c-accent:      #FFFFFF;
+  --c-accent-ink:  #FFFFFF;
+  --c-accent-soft: #1F1F23;
+  --c-on-accent:   #000000;
   --c-ember:       #FFB454;
-  --c-ember-soft:  #2E2110;
-  --c-on-accent:   #04170F;
-  --c-positive:    #3EE0A4;
+  --c-ember-soft:  #2A1F10;
+  --c-positive:    #FFFFFF;
   --c-attention:   #FFB454;
   --c-danger:      #FF6B61;
 }
@@ -123,7 +125,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--c-accent) 22%, transparent) 0%,
+    color-mix(in srgb, var(--c-accent) 12%, transparent) 0%,
     transparent 68%
   );
   opacity: 0;

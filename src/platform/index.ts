@@ -23,8 +23,9 @@ import { WebDevicePort } from './web/device';
 import { createWebStoragePort } from './web/storage';
 import {
   UnavailableBackgroundPort, UnavailableHealthPort, UnavailableSensorPort,
-  UnimplementedAuthPort, WebGeolocationPort, WebNetworkPort, WebNotificationsPort,
+  UnimplementedAuthPort, WebGeolocationPort, WebNetworkPort,
 } from './web/capabilities';
+import { WebNotificationsPort } from './web/notifications';
 import type { Platform } from './types';
 
 export async function createWebPlatform(): Promise<Platform> {

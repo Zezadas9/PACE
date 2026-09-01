@@ -7,9 +7,10 @@
 
 import { createId } from '../core/utils/id';
 import { todayKey } from '../core/utils/date';
+import { hasSections } from '../core/constants';
 import type {
   DayKey, Exercise, SessionDifficulty, SetLog, Workout, WorkoutBlock,
-  WorkoutSession, WorkoutType,
+  WorkoutSection, WorkoutSession, WorkoutType,
 } from '../core/types';
 import * as training from '../domain/training';
 import type { Repositories } from '../data/repositories';
@@ -19,6 +20,7 @@ import type { Repositories } from '../data/repositories';
 /** One exercise as the builder edits it, before it becomes a block. */
 export interface BlockDraft {
   id: string;
+  section: WorkoutSection;
   exerciseName: string;
   sets: number;
   reps: number | null;
@@ -32,14 +34,17 @@ export interface WorkoutDraft {
   id: string | null;
   title: string;
   type: WorkoutType;
+  /** 0 = Sunday .. 6 = Saturday. Empty means the plan is not on a schedule. */
+  weekdays: number[];
   estimatedMin: number | null;
   description: string | null;
   blocks: BlockDraft[];
 }
 
-export function emptyBlockDraft(): BlockDraft {
+export function emptyBlockDraft(section: WorkoutSection = 'main'): BlockDraft {
   return {
     id: createId(),
+    section,
     exerciseName: '',
     sets: 3,
     reps: 10,
@@ -55,6 +60,7 @@ export function emptyWorkoutDraft(): WorkoutDraft {
     id: null,
     title: '',
     type: 'strength',
+    weekdays: [],
     estimatedMin: 45,
     description: null,
     blocks: [emptyBlockDraft()],
@@ -67,10 +73,12 @@ export function draftFromWorkout(workout: Workout, exercises: Exercise[]): Worko
     id: workout.id,
     title: workout.title,
     type: workout.type,
+    weekdays: workout.weekdays,
     estimatedMin: workout.estimatedMin,
     description: workout.tags[0] ?? null,
     blocks: workout.blocks.map((block) => ({
       id: block.id,
+      section: block.section,
       exerciseName: exercises.find((e) => e.id === block.exerciseId)?.name ?? '',
       sets: block.sets,
       reps: block.reps,
@@ -102,6 +110,9 @@ export function saveWorkout(repos: Repositories, draft: WorkoutDraft): Workout {
     .filter((block) => block.exerciseName.trim().length > 0)
     .map((block) => ({
       id: block.id,
+      // Sections only mean something for the types that are built that way;
+      // everything else collapses into the main set.
+      section: hasSections(draft.type) ? block.section : ('main' as const),
       exerciseId: resolveExercise(repos, block.exerciseName).id,
       sets: Math.max(1, Math.floor(block.sets) || 1),
       reps: block.reps,
@@ -114,6 +125,7 @@ export function saveWorkout(repos: Repositories, draft: WorkoutDraft): Workout {
   const payload = {
     title: draft.title.trim(),
     type: draft.type,
+    weekdays: draft.weekdays,
     estimatedMin: draft.estimatedMin,
     blocks,
     // Description rides in tags[0] rather than adding a field the model does
@@ -143,6 +155,26 @@ export function activeSession(repos: Repositories): WorkoutSession | null {
   return repos.workoutSessions
     .where((session) => !session.completed && session.startedAt !== null)
     .sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))[0] ?? null;
+}
+
+/**
+ * What is on for a day: the session if one exists, otherwise the plan the
+ * weekday schedule says is due. The session is only created when the user
+ * actually starts, so an unopened day leaves no record behind.
+ */
+export function plannedForDay(
+  repos: Repositories,
+  date: DayKey = todayKey(),
+): { session: WorkoutSession | null; workout: Workout | null } {
+  const session = sessionForDay(repos, date);
+  if (session) {
+    return {
+      session,
+      workout: session.workoutId ? repos.workouts.byId(session.workoutId) : null,
+    };
+  }
+  const scheduled = training.workoutsForDay(repos.workouts.all(), date)[0] ?? null;
+  return { session: null, workout: scheduled };
 }
 
 /** The session planned for a day, started or not. */

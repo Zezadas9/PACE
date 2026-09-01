@@ -45,6 +45,25 @@ export function NotificationsSection(): ReactElement {
     [repos, settings, version],
   );
 
+  /** Proof it works, which is worth more than any explanation. */
+  const test = async (): Promise<void> => {
+    const state = await platform.notifications.requestPermission();
+    setPermission(state);
+    if (state !== 'granted') {
+      toast('Permissão de notificações não concedida.', 3600);
+      return;
+    }
+    await platform.notifications.schedule({
+      id: 999_999,
+      title: 'PACE',
+      body: 'As notificações estão a funcionar.',
+      at: new Date(Date.now() + 1000),
+      repeats: null,
+      route: '/hoje',
+    });
+    toast('Aviso enviado.');
+  };
+
   const toggle = async (enabled: boolean): Promise<void> => {
     const state = await setEnabled(repos, platform, enabled);
     setPermission(state);
@@ -74,9 +93,9 @@ export function NotificationsSection(): ReactElement {
             title="Lembretes locais"
             subtitle={
               available === false
-                ? 'Indisponível no browser — fica ativo na aplicação instalada.'
+                ? 'Este browser não suporta notificações.'
                 : permission === 'denied'
-                  ? 'Permissão recusada nas definições do sistema.'
+                  ? 'Permissão recusada. Tens de a repor nas definições do sistema.'
                   : 'Avisos de hábitos, eventos e tarefas.'
             }
             onChange={(next) => void toggle(next)}
@@ -90,6 +109,13 @@ export function NotificationsSection(): ReactElement {
                 : 'Nenhum — os lembretes estão desligados'
             }
           />
+          <Row
+            icon="clock"
+            title="Testar agora"
+            sub="Envia um aviso já, para confirmares que chegam"
+            chevron
+            onClick={() => void test()}
+          />
         </Rows>
       </Card>
 
@@ -99,6 +125,11 @@ export function NotificationsSection(): ReactElement {
           <p className="t-sm muted">
             Nenhum lembrete é enviado fora desta janela, mesmo que um hábito peça
             outra coisa.
+          </p>
+          <p className="t-sm muted-2">
+            Nesta versão web, os avisos chegam enquanto a aplicação estiver
+            aberta ou tiver sido aberta há pouco. Para avisos com a aplicação
+            fechada é preciso a versão nativa.
           </p>
           <div className="grid-2">
             <Field label="A partir das">

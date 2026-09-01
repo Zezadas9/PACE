@@ -13,8 +13,8 @@ import { longDate, todayKey } from '../../core/utils/date';
 import * as format from '../../core/utils/format';
 import * as training from '../../domain/training';
 import {
-  archiveWorkout, draftFromWorkout, planSession, saveWorkout,
-  sessionForDay, startSession, type WorkoutDraft,
+  archiveWorkout, draftFromWorkout, planSession, plannedForDay, saveWorkout,
+  startSession, type WorkoutDraft,
 } from '../../services/training';
 import { useApp, useFeedback, useStoreVersion } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
@@ -25,6 +25,18 @@ import { Fab } from '../../ui/Fab';
 import { PageHeader } from '../../ui/page';
 import { WorkoutBuilder } from './WorkoutBuilder';
 import { HistorySection } from './HistorySection';
+
+/** "seg, qua, sex" — or nothing at all when the plan is not on a schedule. */
+function describeWeekdays(weekdays: number[]): string | null {
+  if (weekdays.length === 0) return null;
+  if (weekdays.length === 7) return 'todos os dias';
+  const names = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  return weekdays
+    .slice()
+    .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+    .map((day) => names[day])
+    .join(', ');
+}
 
 export function WorkoutScreen(): ReactElement {
   const { repos } = useApp();
@@ -42,15 +54,13 @@ export function WorkoutScreen(): ReactElement {
     return {
       workouts,
       sessions,
-      todaySession: sessionForDay(repos, today),
+      planned: plannedForDay(repos, today),
       stats: training.trainingStats(sessions, repos.workouts.all(), today),
       weeks: training.weeklyFrequency(sessions, 8, today),
     };
   }, [repos, today, version]);
 
-  const todayWorkout = data.todaySession?.workoutId
-    ? repos.workouts.byId(data.todaySession.workoutId)
-    : null;
+  const todayWorkout = data.planned.workout;
 
   const begin = (workout: Workout): void => {
     startSession(repos, workout.id, today);
@@ -68,7 +78,7 @@ export function WorkoutScreen(): ReactElement {
         />
 
         <TodayCard
-          session={data.todaySession}
+          session={data.planned.session}
           workout={todayWorkout}
           onStart={() => todayWorkout && begin(todayWorkout)}
           onResume={() => navigate('/treino/sessao')}
@@ -95,6 +105,7 @@ export function WorkoutScreen(): ReactElement {
                       WORKOUT_TYPE_LABELS[workout.type],
                       `${workout.blocks.length} exercícios`,
                       workout.estimatedMin ? `${workout.estimatedMin} min` : null,
+                      describeWeekdays(workout.weekdays),
                     ].filter(Boolean).join(' · ')}
                     chevron
                     onClick={() =>
@@ -152,7 +163,7 @@ function TodayCard({
   onStart: () => void;
   onResume: () => void;
 }): ReactElement {
-  if (!session || !workout) {
+  if (!workout) {
     return (
       <section>
         <SectionHeader title="Hoje" />
@@ -165,8 +176,10 @@ function TodayCard({
     );
   }
 
-  const progress = training.sessionProgress(session, workout);
-  const running = session.startedAt !== null && !session.completed;
+  const progress = session
+    ? training.sessionProgress(session, workout)
+    : { ratio: 0, setsCompleted: 0, setsTotal: 0, blocksCompleted: 0, blocksTotal: 0 };
+  const running = session != null && session.startedAt !== null && !session.completed;
 
   return (
     <section>
@@ -182,10 +195,10 @@ function TodayCard({
             </p>
           </div>
           <span className="today-cta">
-            {session.completed ? 'Feito' : running ? 'Continuar' : 'Começar'}
+            {session?.completed ? 'Feito' : running ? 'Continuar' : 'Começar'}
           </span>
         </div>
-        {running || session.completed ? (
+        {running || session?.completed ? (
           <div style={{ marginTop: 'var(--s-4)' }}>
             <ProgressBar ratio={progress.ratio} />
             <p className="t-sm muted-2" style={{ marginTop: 'var(--s-2)' }}>

@@ -23,6 +23,7 @@ import { Screen } from '../../app/navigation/Screen';
 import { Avatar, Card, Chip, SectionHeader } from '../../ui/primitives';
 import { EmptyState, Metric, Row, Rows } from '../../ui/data';
 import { Field, Input, Segmented } from '../../ui/form';
+import { AppearanceSection } from './AppearanceSection';
 import { FeedbackSection } from './FeedbackSection';
 import { IdentitySection } from './IdentitySection';
 import { NotificationsSection } from './NotificationsSection';
@@ -57,6 +58,7 @@ export function ProfileScreen(): ReactElement {
       <IdentitySection user={summary.user} />
       <MetricsSection summary={summary} />
       <BodySection summary={summary} repos={repos} />
+      <AppearanceSection />
       <UnitsSection summary={summary} repos={repos} />
       <GoalsSection summary={summary} repos={repos} />
       <NotificationsSection />
