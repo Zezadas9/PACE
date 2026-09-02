@@ -23,7 +23,7 @@ export class LocalAssistantPort implements AssistantPort {
 
   async respond(request: AssistantRequest): Promise<AssistantReply> {
     const started = performance.now();
-    const turn = respond(request.context, request.message);
+    const turn = respond(request.context, request.message, request.previousIntent ?? null);
     return { turn, elapsedMs: Math.round(performance.now() - started) };
   }
 }

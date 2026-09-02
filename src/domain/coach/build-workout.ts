@@ -14,17 +14,21 @@
 
 import type { MuscleGroup, WorkoutType } from '../../core/types';
 import {
-  CARDIO_LIBRARY, FULL_BODY_ORDER, MOBILITY_LIBRARY, MUSCLE_LABELS, STRENGTH_LIBRARY,
-  WARMUP_LIBRARY, type CoachExercise,
+  CARDIO_LIBRARY, CIRCUIT_LIBRARY, FULL_BODY_ORDER, MOBILITY_LIBRARY, MUSCLE_LABELS,
+  PILATES_LIBRARY, STRENGTH_LIBRARY, WARMUP_LIBRARY, type CoachExercise,
 } from './exercises';
 import type { WorkoutDraft } from './types';
 
 export interface BuildRequest {
   minutes: number;
   muscles: MuscleGroup[];
+  /** Grupos a deixar de fora, mesmo que caibam no tempo. */
+  excluded?: MuscleGroup[];
   type: WorkoutType;
   /** Objetivo dominante do utilizador, quando autorizado. */
   goal: 'gain_muscle' | 'lose_weight' | 'improve_fitness' | 'general';
+  /** Sem ginásio, só entram exercícios que não precisam de máquinas. */
+  equipment?: 'gym' | 'home' | 'bodyweight' | null;
   weekdays: number[];
 }
 
@@ -56,10 +60,10 @@ function blockSeconds(exercise: CoachExercise, sets: number, restSec: number): n
 }
 
 /** Quais os grupos a treinar: o que foi pedido, ou o corpo inteiro. */
-function targetGroups(muscles: MuscleGroup[]): MuscleGroup[] {
-  const asked = muscles.filter((group) => group !== 'full_body');
+function targetGroups(muscles: MuscleGroup[], excluded: MuscleGroup[] = []): MuscleGroup[] {
+  const asked = muscles.filter((group) => group !== 'full_body' && !excluded.includes(group));
   if (asked.length > 0) return asked;
-  return FULL_BODY_ORDER;
+  return FULL_BODY_ORDER.filter((group) => !excluded.includes(group));
 }
 
 /**
@@ -71,11 +75,14 @@ function targetGroups(muscles: MuscleGroup[]): MuscleGroup[] {
  * ir buscar tudo de um grupo antes de passar ao seguinte deixava metade do
  * corpo de fora quando o tempo acabasse.
  */
-function pickExercises(groups: MuscleGroup[]): CoachExercise[] {
+function pickExercises(groups: MuscleGroup[], bodyweightOnly: boolean): CoachExercise[] {
   const out: CoachExercise[] = [];
+  const library = bodyweightOnly
+    ? STRENGTH_LIBRARY.filter((exercise) => exercise.isBodyweight)
+    : STRENGTH_LIBRARY;
 
   for (const tier of [1, 2, 3] as const) {
-    const byGroup = groups.map((group) => STRENGTH_LIBRARY.filter(
+    const byGroup = groups.map((group) => library.filter(
       (exercise) => exercise.tier === tier && exercise.muscleGroups[0] === group,
     ));
     const deepest = Math.max(0, ...byGroup.map((list) => list.length));
@@ -90,10 +97,16 @@ function pickExercises(groups: MuscleGroup[]): CoachExercise[] {
 }
 
 export function buildWorkout(request: BuildRequest): WorkoutDraft {
-  const groups = targetGroups(request.muscles);
+  const groups = targetGroups(request.muscles, request.excluded);
   const budgetSec = request.minutes * 60;
+  const bodyweightOnly = request.equipment === 'bodyweight' || request.equipment === 'home'
+    || request.type === 'calisthenics';
 
-  if (request.type === 'mobility') return buildMobility(request, budgetSec);
+  if (request.type === 'mobility') return buildFromLibrary(request, budgetSec, MOBILITY_LIBRARY, 2);
+  if (request.type === 'pilates') return buildFromLibrary(request, budgetSec, PILATES_LIBRARY, 2);
+  if (request.type === 'hiit' || request.type === 'functional') {
+    return buildCircuit(request, budgetSec);
+  }
 
   const blocks: WorkoutDraft['blocks'] = [];
 
@@ -126,7 +139,7 @@ export function buildWorkout(request: BuildRequest): WorkoutDraft {
 
   /* Parte principal: entra exercício a exercício enquanto houver tempo. */
   let used = warmupUsed;
-  for (const exercise of pickExercises(groups)) {
+  for (const exercise of pickExercises(groups, bodyweightOnly)) {
     const prescription = prescribe(request.goal, exercise.tier);
     const cost = blockSeconds(exercise, prescription.sets, prescription.restSec);
     if (used + cost > budgetSec) continue;
@@ -165,8 +178,15 @@ export function buildWorkout(request: BuildRequest): WorkoutDraft {
     used += seconds;
   }
 
+  /* O título vem do que ficou dentro, não do que foi pedido. Se o tempo não
+     chegou para os braços, o treino não se chama "de braços". */
+  const trained = blocks
+    .filter((block) => block.section === 'main')
+    .map((block) => block.muscleGroups[0])
+    .filter((group): group is MuscleGroup => group != null);
+
   return {
-    title: workoutTitle(groups, request.minutes),
+    title: workoutTitle([...new Set(trained.length > 0 ? trained : groups)], request.minutes),
     type: request.type,
     estimatedMin: Math.round(used / 60),
     weekdays: request.weekdays,
@@ -174,11 +194,20 @@ export function buildWorkout(request: BuildRequest): WorkoutDraft {
   };
 }
 
-function buildMobility(request: BuildRequest, budgetSec: number): WorkoutDraft {
+/**
+ * Sessões de solo — mobilidade, pilates: sem cargas, tempo por posição, e uma
+ * lista curta feita para caber no tempo em vez de o encher.
+ */
+function buildFromLibrary(
+  request: BuildRequest,
+  budgetSec: number,
+  library: ReadonlyArray<CoachExercise>,
+  sets: number,
+): WorkoutDraft {
   const blocks: WorkoutDraft['blocks'] = [];
   let used = 0;
-  for (const item of MOBILITY_LIBRARY) {
-    const cost = 2 * (item.workSec + 20);
+  for (const item of library) {
+    const cost = sets * (item.workSec + 20);
     if (used + cost > budgetSec && blocks.length > 0) break;
     used += cost;
     blocks.push({
@@ -186,17 +215,83 @@ function buildMobility(request: BuildRequest, budgetSec: number): WorkoutDraft {
       exerciseName: item.name,
       muscleGroups: item.muscleGroups,
       isBodyweight: true,
-      sets: 2,
+      sets,
       reps: null,
       durationSec: item.workSec,
       restSec: 20,
       note: null,
     });
   }
+  // O título leva os minutos que a sessão tem, não os que foram pedidos: uma
+  // rotina de mobilidade honesta são dez minutos, e chamar-lhe 45 é mentir.
+  const realMinutes = Math.round(used / 60);
   return {
-    title: `Mobilidade de ${request.minutes} min`,
-    type: 'mobility',
-    estimatedMin: Math.round(used / 60),
+    title: request.type === 'pilates'
+      ? `Pilates de ${realMinutes} min`
+      : `Mobilidade de ${realMinutes} min`,
+    type: request.type,
+    estimatedMin: realMinutes,
+    weekdays: request.weekdays,
+    blocks,
+  };
+}
+
+/**
+ * Circuito para HIIT e funcional.
+ *
+ * Trabalho curto, descanso curto, várias voltas. O aquecimento não desaparece
+ * por ser um treino curto — é precisamente quando mais falta faz.
+ */
+function buildCircuit(request: BuildRequest, budgetSec: number): WorkoutDraft {
+  const hiit = request.type === 'hiit';
+  const workSec = hiit ? 30 : 40;
+  const restSec = hiit ? 30 : 20;
+  const blocks: WorkoutDraft['blocks'] = [];
+
+  const warmup = WARMUP_LIBRARY[0];
+  let used = 0;
+  if (warmup) {
+    used += 300;
+    blocks.push({
+      section: 'warmup',
+      exerciseName: warmup.name,
+      muscleGroups: warmup.muscleGroups,
+      isBodyweight: warmup.isBodyweight,
+      sets: 1,
+      reps: null,
+      durationSec: 300,
+      restSec: null,
+      note: 'Sobe o ritmo aos poucos.',
+    });
+  }
+
+  // Quantas voltas cabem no que sobra, com um minuto entre elas.
+  const perExercise = workSec + restSec;
+  const exercises = CIRCUIT_LIBRARY.slice(0, request.minutes >= 30 ? 6 : 4);
+  const roundSec = exercises.length * perExercise + 60;
+  const rounds = Math.max(2, Math.min(6, Math.floor((budgetSec - used) / roundSec)));
+
+  for (const exercise of exercises) {
+    used += rounds * perExercise;
+    blocks.push({
+      section: 'main',
+      exerciseName: exercise.name,
+      muscleGroups: exercise.muscleGroups,
+      isBodyweight: true,
+      sets: rounds,
+      reps: null,
+      durationSec: workSec,
+      restSec,
+      note: null,
+    });
+  }
+  used += rounds * 60;
+
+  const realMinutes = Math.min(request.minutes, Math.round(used / 60));
+  return {
+    title: hiit ? `HIIT de ${realMinutes} min` : `Funcional de ${realMinutes} min`,
+    type: request.type,
+    estimatedMin: realMinutes,
     weekdays: request.weekdays,
     blocks,
   };

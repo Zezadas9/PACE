@@ -97,3 +97,24 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
 
 /** Os grupos que um treino de corpo inteiro cobre, pela ordem de execução. */
 export const FULL_BODY_ORDER: MuscleGroup[] = ['legs', 'back', 'chest', 'shoulders', 'arms', 'core'];
+
+/** Circuito: pouco material, muito tempo debaixo de esforço. */
+export const CIRCUIT_LIBRARY: ReadonlyArray<CoachExercise> = [
+  { name: 'Burpees', muscleGroups: ['full_body'], isBodyweight: true, tier: 1, workSec: 40 },
+  { name: 'Agachamento com salto', muscleGroups: ['legs'], isBodyweight: true, tier: 1, workSec: 40 },
+  { name: 'Mountain climbers', muscleGroups: ['core', 'full_body'], isBodyweight: true, tier: 2, workSec: 40 },
+  { name: 'Flexões', muscleGroups: ['chest', 'arms'], isBodyweight: true, tier: 2, workSec: 40 },
+  { name: 'Afundo alternado', muscleGroups: ['legs'], isBodyweight: true, tier: 2, workSec: 40 },
+  { name: 'Prancha com toque no ombro', muscleGroups: ['core'], isBodyweight: true, tier: 3, workSec: 40 },
+  { name: 'Corda ou corrida no sítio', muscleGroups: ['full_body'], isBodyweight: true, tier: 3, workSec: 40 },
+];
+
+/** Pilates de solo: controlo e core, sem material. */
+export const PILATES_LIBRARY: ReadonlyArray<CoachExercise> = [
+  { name: 'The hundred', muscleGroups: ['core'], isBodyweight: true, tier: 1, workSec: 60 },
+  { name: 'Roll up', muscleGroups: ['core'], isBodyweight: true, tier: 2, workSec: 50 },
+  { name: 'Ponte de anca', muscleGroups: ['legs', 'core'], isBodyweight: true, tier: 2, workSec: 50 },
+  { name: 'Single leg stretch', muscleGroups: ['core'], isBodyweight: true, tier: 2, workSec: 50 },
+  { name: 'Swimming', muscleGroups: ['back', 'core'], isBodyweight: true, tier: 3, workSec: 45 },
+  { name: 'Side kick series', muscleGroups: ['legs'], isBodyweight: true, tier: 3, workSec: 50 },
+];

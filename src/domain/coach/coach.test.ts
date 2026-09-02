@@ -6,7 +6,7 @@ import type { AiSettings, Workout } from '../../core/types';
 import { buildWorkout, setsByGroup } from './build-workout';
 import { evaluateWeek, findingsFor } from './evaluate-workout';
 import { suggestHabits } from './habits';
-import { parseIntent } from './intent';
+import { looksLikeRefinement, parseIntent, refine } from './intent';
 import { referencesByIds, REFERENCES } from './references';
 import {
   adapt, applyAdaptation, baselineFrom, buildRunPlan, cappedIncrease, progression,
@@ -408,5 +408,119 @@ describe('intenções que se parecem umas com as outras', () => {
   it('separa "melhorar a condição física" de um pedido de evolução', () => {
     expect(parseIntent('Sugere hábitos para melhorar a condição física').kind).toBe('habits');
     expect(parseIntent('Como está a minha evolução?').kind).toBe('performance');
+  });
+});
+
+describe('conversa com seguimento', () => {
+  it('lê "superiores" como meio corpo', () => {
+    const intent = parseIntent('Quero um treino só de superiores');
+    expect(intent.muscles).toEqual(['chest', 'back', 'shoulders', 'arms']);
+  });
+
+  it('lê "inferiores" como pernas', () => {
+    expect(parseIntent('treino de inferiores').muscles).toContain('legs');
+  });
+
+  it('reconhece uma correção ao pedido anterior', () => {
+    expect(looksLikeRefinement('Mas eu queria que fosse só de superiores')).toBe(true);
+    expect(looksLikeRefinement('Cria-me um treino de pernas')).toBe(false);
+  });
+
+  it('mantém o tempo do pedido anterior ao corrigir os músculos', () => {
+    const first = parseIntent('Cria-me um treino de pernas de 45 minutos');
+    const merged = refine(first, parseIntent('Mas eu queria que fosse só de superiores'));
+    expect(merged.kind).toBe('create_workout');
+    expect(merged.minutes).toBe(45);
+    expect(merged.muscles).toEqual(['chest', 'back', 'shoulders', 'arms']);
+  });
+
+  it('responde à correção com um treino, e não com um beco', () => {
+    const first = respond(context(), 'Cria-me um treino de pernas de 45 minutos');
+    const second = respond(
+      context(),
+      'Mas eu queria que fosse só de superiores',
+      first.intent as never,
+    );
+    const action = second.actions.find((candidate) => candidate.kind === 'create_workout');
+    expect(action).toBeDefined();
+    if (action?.kind === 'create_workout') {
+      const groups = action.draft.blocks
+        .filter((block) => block.section === 'main')
+        .flatMap((block) => block.muscleGroups);
+      expect(groups).not.toContain('legs');
+      expect(action.draft.estimatedMin).toBeLessThanOrEqual(45);
+    }
+  });
+
+  it('tira um grupo quando o utilizador o exclui', () => {
+    const intent = parseIntent('treino de corpo inteiro sem pernas');
+    expect(intent.excluded).toContain('legs');
+  });
+});
+
+describe('os outros temas da PACE', () => {
+  const kinds = (message: string): string => parseIntent(message).kind;
+
+  it('reconhece sono, alongamentos, recuperação, caminhada e o dia', () => {
+    expect(kinds('Como durmo melhor?')).toBe('sleep');
+    expect(kinds('Quero alongar mais')).toBe('stretching');
+    expect(kinds('Sinto-me cansado, o que faço?')).toBe('recovery');
+    expect(kinds('Quero caminhar mais')).toBe('activity_plan');
+    expect(kinds('O que faço hoje?')).toBe('today');
+    expect(kinds('Sugere ideias de refeições')).toBe('meal_ideas');
+  });
+
+  it('reconhece tipos de treino e falta de equipamento', () => {
+    expect(parseIntent('quero um HIIT de 20 minutos').workoutType).toBe('hiit');
+    expect(parseIntent('treino de pilates').workoutType).toBe('pilates');
+    expect(parseIntent('um treino em casa sem equipamento').equipment).toBe('home');
+  });
+
+  it('responde a cada tema com alguma coisa útil', () => {
+    for (const message of [
+      'Como durmo melhor?',
+      'Quero alongar mais',
+      'Sinto-me cansado, o que faço?',
+      'Quero caminhar mais',
+      'O que faço hoje?',
+      'Sugere ideias de refeições',
+    ]) {
+      const turn = respond(context(), message);
+      expect(turn.blocks.length).toBeGreaterThan(0);
+      expect(JSON.stringify(turn.blocks)).not.toContain('Não apanhei o pedido');
+    }
+  });
+
+  it('não inventa valores nutricionais nas ideias de refeições', () => {
+    const said = JSON.stringify(respond(context(), 'Sugere ideias de refeições').blocks);
+    expect(said).toContain('não invento valores');
+    expect(said).not.toMatch(/\d+\s?kcal/);
+  });
+
+  it('diz que ainda não mede sono', () => {
+    expect(JSON.stringify(respond(context(), 'Durmo mal, ajuda').blocks))
+      .toContain('ainda não regista sono');
+  });
+
+  it('mesmo sem perceber, oferece caminhos', () => {
+    const turn = respond(context(), 'xpto qwerty');
+    expect(turn.followUps.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('o título diz o que lá está', () => {
+  it('não promete um grupo que ficou de fora por falta de tempo', () => {
+    const draft = buildWorkout({
+      minutes: 30,
+      muscles: ['chest', 'back', 'shoulders', 'arms'],
+      type: 'strength',
+      goal: 'gain_muscle',
+      weekdays: [],
+    });
+    const trained = new Set(setsByGroup(draft).map((entry) => entry.group));
+    for (const word of ['peito', 'costas', 'ombros', 'braços']) {
+      const group = { peito: 'chest', costas: 'back', ombros: 'shoulders', 'braços': 'arms' }[word];
+      if (draft.title.includes(word)) expect(trained.has(group as never)).toBe(true);
+    }
   });
 });

@@ -137,6 +137,14 @@ export interface CoachTurn {
   actions: CoachAction[];
   /** Perguntas de seguimento, oferecidas como atalhos. */
   followUps: string[];
+  /**
+   * O que foi entendido nesta vez.
+   *
+   * Fica guardado com a resposta para a mensagem seguinte poder corrigi-la —
+   * "mas só de superiores" precisa de saber que antes disto houve um pedido de
+   * treino de 45 minutos.
+   */
+  intent?: unknown;
 }
 
 /* --- Ajudas partilhadas ---------------------------------------------------------- */

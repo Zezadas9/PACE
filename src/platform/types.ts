@@ -15,6 +15,7 @@
 
 import type { ActivitySession, DayKey } from '../core/types';
 import type { CoachContext, CoachTurn } from '../domain/coach/types';
+import type { CoachIntent } from '../domain/coach/intent';
 
 export type PlatformName = 'web' | 'ios' | 'android';
 
@@ -238,6 +239,13 @@ export interface AssistantRequest {
   message: string;
   /** O contexto já filtrado pelas autorizações do utilizador. */
   context: CoachContext;
+  /**
+   * O que foi entendido na resposta anterior.
+   *
+   * Sem isto, "mas só de superiores" é uma frase sem sentido. Com isto, é uma
+   * correção ao pedido de treino que veio antes.
+   */
+  previousIntent?: CoachIntent | null;
 }
 
 export interface AssistantReply {

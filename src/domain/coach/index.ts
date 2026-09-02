@@ -24,15 +24,20 @@ import { buildWorkout, setsByGroup } from './build-workout';
 import { evaluateWeek, findingsFor as workoutFindings, type Finding } from './evaluate-workout';
 import { MUSCLE_LABELS } from './exercises';
 import { suggestHabits } from './habits';
-import { parseIntent, type CoachIntent } from './intent';
+import { parseIntent, refine, type CoachIntent } from './intent';
 import { readNutrition } from './nutrition-advice';
 import { readPerformance } from './performance';
 import { baselineFrom, buildRunPlan } from './running';
 import { screen } from './safety';
 import { caveat, notice, sources, text, type CoachBlock, type CoachContext, type CoachTurn } from './types';
 import { missingPlans, proposeWeek, weekdayName } from './week-plan';
+import {
+  activityAnswer, mealIdeasAnswer, recoveryAnswer, sleepAnswer, todayAnswer,
+  weeklyActivityMinutes, type TopicAnswer,
+} from './topics';
 
-export { parseIntent } from './intent';
+export { parseIntent, refine, looksLikeRefinement } from './intent';
+export type { CoachIntent } from './intent';
 export { screen, LIMITS } from './safety';
 export * from './references';
 export type { CoachContext, CoachTurn, CoachBlock } from './types';
@@ -84,36 +89,68 @@ function dominantGoal(context: CoachContext): 'gain_muscle' | 'lose_weight' | 'i
 /* --- As respostas ---------------------------------------------------------------- */
 
 function createWorkoutTurn(context: CoachContext, intent: CoachIntent): CoachTurn {
-  const minutes = Math.min(120, Math.max(15, intent.minutes ?? 45));
+  // Cada tipo tem uma duração natural: ninguém alonga 45 minutos, e um HIIT
+  // de uma hora deixa de ser HIIT.
+  const byType: Partial<Record<string, number>> = {
+    mobility: 15, pilates: 30, hiit: 25, functional: 35,
+  };
+  const fallback = byType[intent.workoutType ?? 'strength'] ?? 45;
+  const minutes = Math.min(120, Math.max(10, intent.minutes ?? fallback));
   const muscles: MuscleGroup[] = intent.muscles.length > 0 ? intent.muscles : ['full_body'];
-  const wantsMobility = /mobilidade|alongar|alongamento/i.test(intent.raw);
 
   const draft = buildWorkout({
     minutes,
     muscles,
-    type: wantsMobility ? 'mobility' : 'strength',
+    excluded: intent.excluded,
+    type: intent.workoutType ?? 'strength',
+    equipment: intent.equipment,
     goal: dominantGoal(context),
     weekdays: [],
   });
 
+  const main = draft.blocks.filter((block) => block.section === 'main');
   const perGroup = setsByGroup(draft)
     .map((entry) => `${MUSCLE_LABELS[entry.group]}: ${entry.sets} séries`);
+
   const blocks: CoachBlock[] = [
-    text(`Preparei **${draft.title}** — cerca de ${draft.estimatedMin} minutos, `
-      + `${draft.blocks.filter((block) => block.section === 'main').length} exercícios na parte principal.`),
+    // Uma correção merece ser reconhecida: mostra que a conversa foi seguida.
+    text(`${intent.isRefinement ? 'Ajustei. ' : ''}**${draft.title}** — cerca de `
+      + `${draft.estimatedMin} minutos, ${main.length} exercícios na parte principal.`),
   ];
   if (perGroup.length > 0) blocks.push({ kind: 'list', items: perGroup });
-  blocks.push(text(
-    'As repetições e os descansos seguem os intervalos da posição da ACSM para o teu '
-    + 'objetivo. As cargas ficam por tua conta: só tu sabes com quanto peso é que a última '
-    + 'repetição ainda sai com boa técnica.',
-  ));
-  blocks.push(sources('acsm-2009', 'schoenfeld-2017-volume'));
+  if (intent.equipment === 'home' || intent.equipment === 'bodyweight') {
+    blocks.push(text('Só com o peso do corpo, sem material.'));
+  }
+  if (intent.excluded.length > 0) {
+    blocks.push(text(`Deixei de fora: ${intent.excluded.map((group) => MUSCLE_LABELS[group]).join(', ')}.`));
+  }
+
+  if (draft.type === 'strength' || draft.type === 'calisthenics') {
+    blocks.push(text(
+      'As repetições e os descansos seguem os intervalos da posição da ACSM para o teu '
+      + 'objetivo. As cargas ficam por tua conta: só tu sabes com quanto peso é que a última '
+      + 'repetição ainda sai com boa técnica.',
+    ));
+    blocks.push(sources('acsm-2009', 'schoenfeld-2017-volume'));
+  } else if (draft.type === 'mobility') {
+    blocks.push(caveat(
+      'Mobilidade entra aqui pelo conforto e pela consistência. Não te prometo prevenção '
+      + 'de lesões: a evidência nesse ponto é mista.',
+    ));
+  } else {
+    blocks.push(text('Trabalho curto, descanso curto, várias voltas. Se a técnica se '
+      + 'estragar, para a volta — o cansaço não vale a lesão.'));
+    blocks.push(sources('garber-2011'));
+  }
 
   return {
     blocks,
     actions: [{ kind: 'create_workout', label: 'Adicionar treino', draft }],
-    followUps: ['Este treino está equilibrado?', 'Sugere hábitos para o meu objetivo'],
+    followUps: [
+      'Mas só de superiores',
+      'Faz antes em casa, sem equipamento',
+      'Este treino está equilibrado?',
+    ],
   };
 }
 
@@ -307,13 +344,19 @@ function capabilitiesTurn(context: CoachContext): CoachTurn {
       text('Sou um treinador de regras: leio os teus dados, faço contas e proponho — não '
         + 'invento e não decido por ti.'),
       { kind: 'list', items: [
-        'Criar treinos para o tempo que tiveres.',
+        'Criar treinos para o tempo que tiveres — força, HIIT, funcional, pilates, '
+        + 'mobilidade, com ou sem equipamento.',
         'Avaliar volume, frequência, distribuição e descanso da tua semana.',
         'Montar um plano de corrida progressivo e adaptá-lo ao que sentires.',
+        'Progressões de caminhada e bicicleta.',
         'Ler tendências de evolução, consistência e carga.',
         'Olhar para o diário alimentar e dizer o que dá — e o que não dá — para concluir.',
+        'Sono, recuperação e alongamentos: o que a evidência diz e que hábitos criar.',
+        'Dizer-te o que tens marcado para hoje.',
         'Sugerir hábitos e organizar a semana, sempre com confirmação.',
       ] },
+      text('E se corrigires o pedido a meio — "mas só de superiores", "faz antes em casa" '
+        + '— eu sigo a conversa em vez de recomeçar.'),
       text(on.length === 0
         ? 'Neste momento não tenho autorização para ler nada.'
         : `Agora posso ler: ${on.join(', ')}.`),
@@ -331,24 +374,50 @@ const NEEDS: Record<string, AiDataCategory[]> = {
   create_workout: ['training'],
   evaluate_workout: ['training'],
   run_plan: ['activity'],
+  activity_plan: ['activity'],
   performance: ['training', 'activity'],
   nutrition: ['nutrition'],
   habits: ['goals', 'habits'],
   organize_week: ['training', 'habits'],
+  today: ['training', 'habits'],
+  recovery: ['training'],
 };
 
-export function respond(context: CoachContext, message: string): CoachTurn {
+function withIntent(turn: CoachTurn, intent: CoachIntent): CoachTurn {
+  return { ...turn, intent };
+}
+
+/** Uma resposta montada a partir de um tema, com o hábito a propor se houver. */
+function fromTopic(answer: TopicAnswer, label = 'Adicionar à agenda'): CoachTurn {
+  return {
+    blocks: answer.habitDrafts.length > 0
+      ? [...answer.blocks, notice('info', 'Só entra na agenda se disseres que sim.')]
+      : answer.blocks,
+    actions: answer.habitDrafts.length > 0
+      ? [{ kind: 'create_habits', label, drafts: answer.habitDrafts }]
+      : [],
+    followUps: answer.followUps,
+  };
+}
+
+/**
+ * Responde.
+ *
+ * `previous` é a intenção da resposta anterior. Sem ela, "mas eu queria que
+ * fosse só de superiores" não quer dizer nada; com ela, quer dizer tudo.
+ */
+export function respond(
+  context: CoachContext,
+  message: string,
+  previous: CoachIntent | null = null,
+): CoachTurn {
   // Segurança primeiro, sempre: nem sequer se olha para a intenção.
   const verdict = screen(message);
   if (verdict.level !== 'none') {
-    return {
-      blocks: [notice('medical', verdict.message)],
-      actions: [],
-      followUps: [],
-    };
+    return { blocks: [notice('medical', verdict.message)], actions: [], followUps: [] };
   }
 
-  const intent = parseIntent(message);
+  const intent = refine(previous, parseIntent(message));
 
   if (!context.settings.enabled) {
     return {
@@ -362,10 +431,15 @@ export function respond(context: CoachContext, message: string): CoachTurn {
 
   const needs = NEEDS[intent.kind] ?? [];
   const missing = needs.filter((category) => !context.settings.categories[category]);
-  if (missing.length > 0) return consentTurn(missing);
+  if (missing.length > 0) return withIntent(consentTurn(missing), intent);
 
+  return withIntent(route(context, intent), intent);
+}
+
+function route(context: CoachContext, intent: CoachIntent): CoachTurn {
   switch (intent.kind) {
     case 'create_workout': return createWorkoutTurn(context, intent);
+    case 'stretching': return createWorkoutTurn(context, { ...intent, workoutType: 'mobility' });
     case 'evaluate_workout': return evaluateTurn(context);
     case 'run_plan': return runPlanTurn(context, intent);
     case 'performance': return performanceTurn(context);
@@ -373,21 +447,100 @@ export function respond(context: CoachContext, message: string): CoachTurn {
     case 'habits': return habitsTurn(context);
     case 'organize_week': return organizeTurn(context, intent);
     case 'capabilities': return capabilitiesTurn(context);
+
+    case 'sleep':
+      return fromTopic(sleepAnswer(context.sleep != null), 'Criar hábitos de sono');
+
+    case 'recovery': {
+      const reading = readPerformance(
+        context.sessions, context.workouts, context.activities, context.today,
+      );
+      const rpes = context.sessions
+        .map((session) => session.perceivedEffort)
+        .filter((value): value is number => value != null);
+      const avgRpe = rpes.length
+        ? Math.round((rpes.reduce((sum, value) => sum + value, 0) / rpes.length) * 10) / 10
+        : null;
+      return fromTopic(recoveryAnswer(reading.restDaysLastWeek, avgRpe));
+    }
+
+    case 'activity_plan':
+      return fromTopic(
+        activityAnswer(weeklyActivityMinutes(context.activities, context.today)),
+        'Adicionar caminhada à agenda',
+      );
+
+    case 'meal_ideas':
+      return fromTopic(mealIdeasAnswer(), 'Criar o hábito de registar');
+
+    case 'today':
+      return fromTopic(todayAnswer({
+        today: context.today,
+        workouts: context.workouts,
+        habits: context.habits,
+        tasks: [],
+        nextRun: nextRunSession(context),
+      }));
+
     default:
-      return {
-        blocks: [
-          text('Não percebi o suficiente para agir sem arriscar. Diz de outra maneira, ou '
-            + 'escolhe uma destas:'),
-        ],
-        actions: [],
-        followUps: [
-          'Cria-me um treino de pernas de 45 minutos',
-          'Este treino está equilibrado?',
-          'Quero conseguir correr 10 km',
-          'Como está a minha evolução?',
-          'Tenho consumido pouca proteína?',
-          'Sugere hábitos para melhorar a condição física',
-        ],
-      };
+      return helpfulFallback(intent);
   }
+}
+
+function nextRunSession(context: CoachContext): { date: string; label: string } | null {
+  const plan = context.runPlan;
+  if (!plan) return null;
+  const next = plan.sessions.find((session) => session.status === 'planned');
+  if (!next) return null;
+  const label = next.targetDistanceM
+    ? `${(next.targetDistanceM / 1000).toFixed(1).replace('.0', '')} km`
+    : 'corrida e caminhada';
+  return { date: next.date, label };
+}
+
+/**
+ * Quando a leitura não chega.
+ *
+ * Nunca um beco. A mensagem trouxe alguma coisa — um músculo, um tempo, uma
+ * palavra de um tema — e é a partir daí que se oferece o passo seguinte. Só
+ * quando não trouxe mesmo nada é que se pergunta, e mesmo aí com caminhos à
+ * frente em vez de um "não percebi" seco.
+ */
+function helpfulFallback(intent: CoachIntent): CoachTurn {
+  const hints: string[] = [];
+  if (intent.muscles.length > 0) hints.push('um treino para esses grupos');
+  if (intent.minutes != null) hints.push(`uma sessão de ${intent.minutes} minutos`);
+  if (intent.distanceM != null) hints.push('um plano de corrida');
+
+  if (hints.length > 0) {
+    return {
+      blocks: [text(`Não tenho a certeza do que querias, mas dá para fazer ${hints.join(' ou ')}. `
+        + 'Diz-me qual e eu monto.')],
+      actions: [],
+      followUps: [
+        `Cria-me um treino de ${intent.minutes ?? 45} minutos`,
+        intent.distanceM != null
+          ? `Quero conseguir correr ${Math.round(intent.distanceM / 1000)} km`
+          : 'Quero conseguir correr 5 km',
+        'Organiza a minha semana',
+      ],
+    };
+  }
+
+  return {
+    blocks: [
+      text('Não apanhei o pedido. Consigo ajudar com treino, corrida, caminhada, '
+        + 'alimentação, hábitos, sono, recuperação e a organização da semana — diz-me o '
+        + 'tema e eu trato do resto.'),
+    ],
+    actions: [],
+    followUps: [
+      'O que faço hoje?',
+      'Cria-me um treino de 45 minutos',
+      'Quero conseguir correr 5 km',
+      'Sinto-me cansado, o que faço?',
+      'Sugere ideias de refeições',
+      'Como durmo melhor?',
+    ],
+  };
 }

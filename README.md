@@ -404,6 +404,33 @@ Cada resposta que pode virar alguma coisa traz um cartão com o que exatamente
 vai acontecer, e um botão. Nada é escrito na aplicação sem esse toque — e a
 proposta de semana nunca mexe em compromissos que não mostrou.
 
+### A conversa tem memória
+
+Uma mensagem sozinha não chega. "Mas eu queria que fosse só de superiores" não
+tem verbo, não tem a palavra treino e não quer dizer nada — a não ser contra o
+pedido anterior, onde quer dizer tudo.
+
+Por isso cada resposta guarda o que entendeu (`CoachTurn.intent`), e a mensagem
+seguinte é lida contra ela: `refine(anterior, nova)`. O que a correção traz
+ganha, o resto vem de trás. É o que faz com que "só de superiores" continue a
+ser um treino de 45 minutos, e "faz antes em casa" mantenha o HIIT que estava a
+ser montado.
+
+Sem isto, o assistente respondia "não percebi" à segunda frase de qualquer
+conversa normal — que foi exatamente o que aconteceu antes de existir.
+
+### Os temas cobertos
+
+Treino (força, HIIT, funcional, calistenia, pilates, mobilidade, com ou sem
+equipamento, por grupo muscular ou por metade do corpo), corrida, caminhada e
+bicicleta, alimentação e ideias de refeições, hábitos, sono, recuperação,
+alongamentos, o que está marcado para hoje, e a organização da semana.
+
+O vocabulário é deliberadamente largo — "superiores", "inferiores", "em casa",
+"sem pesos", "durmo mal", "estou cansado", "quero alongar" — e quando mesmo
+assim não chega, a resposta **não é um beco**: pega no que a mensagem trouxe
+(um músculo, um tempo, uma distância) e oferece o passo seguinte.
+
 ### Segurança
 
 `domain/coach/safety.ts` corre **antes** de qualquer intenção ser lida. Sinais de
@@ -418,9 +445,9 @@ a mandar procurar ajuda, um falso negativo custa muito mais.
 
 ### Testes
 
-45 testes no domínio do assistente cobrem o triagem clínica, a leitura de
+58 testes no domínio do assistente cobrem o triagem clínica, a leitura de
 intenções, o orçamento de tempo dos treinos, os travões da progressão de corrida,
-a adaptação ao feedback, a dedução de hábitos repetidos e as regras de
+a adaptação ao feedback, a dedução de hábitos repetidos, a continuidade da conversa e as regras de
 consentimento — incluindo a mais importante: que sem dados a resposta é "não
 sei", e não um número.
 

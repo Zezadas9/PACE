@@ -17,7 +17,10 @@ import type {
   AiDataCategory, AiSettings, CoachMessage, Habit, RunPlan, RunSessionFeedback,
   UserPreferences,
 } from '../core/types';
-import type { CoachContext, CoachTurn, HabitDraft, RunPlanDraft, WeekPlanDraft, WorkoutDraft } from '../domain/coach/types';
+import type {
+  CoachContext, CoachTurn, HabitDraft, RunPlanDraft, WeekPlanDraft, WorkoutDraft,
+} from '../domain/coach/types';
+import type { CoachIntent } from '../domain/coach/intent';
 import type { CoachAction } from '../domain/coach/types';
 import { adapt, applyAdaptation } from '../domain/coach/running';
 import type { Platform } from '../platform/types';
@@ -127,10 +130,18 @@ export async function ask(
   preferences: UserPreferences,
   message: string,
 ): Promise<CoachTurn> {
+  // A intenção da última resposta viaja com o pedido: é o que permite que uma
+  // correção — "mas só de superiores" — se cole ao que foi pedido antes.
+  const previous = history(repos)
+    .filter((entry) => entry.role === 'coach')
+    .map((entry) => (entry.turn as CoachTurn | null)?.intent as CoachIntent | undefined)
+    .filter((intent): intent is CoachIntent => intent != null)
+    .pop() ?? null;
+
   repos.coachMessages.create({ role: 'user', text: message.trim(), turn: null });
 
   const context = buildContext(repos, preferences);
-  const reply = await platform.assistant.respond({ message, context });
+  const reply = await platform.assistant.respond({ message, context, previousIntent: previous });
 
   repos.coachMessages.create({ role: 'coach', text: '', turn: reply.turn });
   return reply.turn;

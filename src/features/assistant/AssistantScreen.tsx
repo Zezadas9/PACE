@@ -24,12 +24,18 @@ import { Blocks } from './blocks';
 import { ActionCard } from './ActionCard';
 
 const STARTERS = [
+  'O que faço hoje?',
   'Cria-me um treino de pernas de 45 minutos',
   'Este treino está equilibrado?',
   'Quero conseguir correr 10 km',
-  'Como está a minha evolução?',
+  'Quero caminhar mais',
+  'Sinto-me cansado, o que faço?',
+  'Como durmo melhor?',
+  'Quero alongar mais',
   'Tenho consumido pouca proteína?',
+  'Sugere ideias de refeições',
   'Sugere hábitos para melhorar a condição física',
+  'Organiza a minha semana',
 ];
 
 export function AssistantScreen(): ReactElement {
