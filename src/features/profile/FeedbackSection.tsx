@@ -32,6 +32,7 @@ export function FeedbackSection(): ReactElement {
       <Card variant="flush">
         <Rows>
           <Switch
+            brand="som"
             checked={settings.sound}
             title="Som"
             subtitle="Confirmações curtas ao concluir algo. Toca uma vez para ouvires."
@@ -43,6 +44,7 @@ export function FeedbackSection(): ReactElement {
             }}
           />
           <Switch
+            brand="vibracao"
             checked={settings.haptics && canVibrate}
             disabled={!canVibrate}
             title="Vibração"

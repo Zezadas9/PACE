@@ -17,6 +17,7 @@ import { checkHabitVolume } from '../../../services/notifications';
 import { Sheet } from '../../../ui/Sheet';
 import { Button, Chip } from '../../../ui/primitives';
 import { Field, Input, Segmented } from '../../../ui/form';
+import { TimeField } from '../../../ui/TimeField';
 import { Switch } from '../../../ui/Switch';
 import { EssentialToggle } from './EssentialToggle';
 import { WeekdayPicker } from './WeekdayPicker';
@@ -160,12 +161,9 @@ export function HabitForm({
 
         <div className="grid-2">
           <Field label="Horário">
-            <Input
-              type="text"
-              inputMode="numeric"
+            <TimeField
               value={draft.timeOfDay ?? ''}
               placeholder="08:00"
-              maxLength={5}
               onChange={(value) => patch({ timeOfDay: value || null })}
             />
           </Field>

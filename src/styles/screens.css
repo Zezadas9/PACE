@@ -258,3 +258,335 @@
 /* The hero centres the lockup and gives it room to breathe. */
 .ob-hero .pace-logo { margin-bottom: var(--s-2); }
 .ob-hero .claim { margin-top: var(--s-2); }
+
+/* --- Escolha de tema (onboarding) -------------------------------------------------
+   Dois cartões que mostram o que vão fazer, em vez de dois rótulos. */
+
+.theme-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  text-align: left;
+  transition: transform var(--d-fast) var(--ease-out),
+              border-color var(--d-fast) var(--ease),
+              box-shadow var(--d-base) var(--ease);
+}
+.theme-card:active { transform: scale(0.97); }
+.theme-card[aria-pressed="true"] {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 1px var(--c-accent);
+}
+.theme-card .label { font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+
+/* A pré-visualização: um retângulo com o fundo e a tinta do tema em causa. */
+.theme-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  height: 74px;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-line);
+}
+.theme-preview .bar {
+  display: block;
+  height: 6px;
+  width: 100%;
+  border-radius: var(--r-full);
+}
+.theme-preview .bar.short { width: 60%; }
+.theme-preview .dot {
+  display: block;
+  width: 14px; height: 14px;
+  border-radius: var(--r-full);
+}
+
+.theme-card[data-theme-preview="light"] .theme-preview { background: #FFFFFF; }
+.theme-card[data-theme-preview="light"] .bar { background: #DCDCDC; }
+.theme-card[data-theme-preview="light"] .dot { background: #0A0A0B; }
+
+.theme-card[data-theme-preview="dark"] .theme-preview { background: #000000; }
+.theme-card[data-theme-preview="dark"] .bar { background: #2A2A2E; }
+.theme-card[data-theme-preview="dark"] .dot { background: #FFFFFF; }
+
+/* --- Sequência --------------------------------------------------------------------
+   A peça que faz voltar amanhã. Tem direito a ocupar espaço. */
+
+.streak {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--e-1);
+}
+
+.streak-head { display: flex; align-items: center; gap: var(--s-4); }
+
+.streak-count {
+  font-size: 2.25rem;
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.streak-count span {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  color: var(--c-ink-3);
+  letter-spacing: 0;
+}
+.streak-line {
+  margin-top: 0.35rem;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+  line-height: 1.4;
+}
+
+/* A chama muda de desenho quando a sequência sobe: entra a crescer. */
+.streak-flame { animation: flame-in 520ms var(--ease-out) both; }
+@keyframes flame-in {
+  from { opacity: 0; transform: scale(0.7) translateY(6px); }
+  60%  { transform: scale(1.06); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.streak-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--s-2);
+}
+.streak-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.streak-day .mark {
+  display: grid;
+  place-items: center;
+  width: 34px; height: 34px;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  transition: background var(--d-base) var(--ease), transform var(--d-base) var(--ease-out);
+}
+.streak-day[data-state="perfect"] .mark {
+  background: var(--c-ember-soft);
+  animation: mark-pop 420ms var(--ease-out) both;
+}
+.streak-day[data-today="true"] .mark {
+  box-shadow: 0 0 0 1.5px var(--c-accent);
+}
+.streak-day .weekday {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-3);
+  text-transform: lowercase;
+}
+.streak-day .ring {
+  width: 12px; height: 12px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--c-line-strong);
+}
+.streak-day .dash {
+  width: 12px; height: 1.5px;
+  border-radius: var(--r-full);
+  background: var(--c-line-strong);
+}
+
+@keyframes mark-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  55%  { transform: scale(1.12); opacity: 1; }
+  to   { transform: scale(1); }
+}
+
+.streak-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--c-line);
+}
+/* Três colunas iguais num ecrã de 375 px: o texto tem de poder encolher, senão
+   a terceira sai do cartão. */
+.streak-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+.streak-stat > span { min-width: 0; }
+.streak-stat .value {
+  display: block;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-medium);
+  line-height: 1.15;
+}
+.streak-stat .label {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-3);
+  white-space: nowrap;
+}
+
+/* --- Dia perfeito -----------------------------------------------------------------
+   Uma conquista, não um aviso: entra de baixo, a lista acende item a item. */
+
+.perfect-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-6) var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--e-2);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(10px) scale(0.99);
+  transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
+}
+.perfect-card[data-shown="true"] { opacity: 1; transform: none; }
+
+.perfect-crown { margin-bottom: var(--s-1); }
+
+.perfect-title {
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.02em;
+  max-width: 22ch;
+}
+
+.perfect-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: 100%;
+  margin: var(--s-4) 0 var(--s-2);
+}
+.perfect-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+  text-align: left;
+  opacity: 0;
+  animation: essential-in 380ms var(--ease-out) both;
+}
+.perfect-list .tick {
+  display: grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  flex: none;
+  border-radius: var(--r-full);
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+}
+.perfect-list .tick svg {
+  width: 13px; height: 13px;
+  stroke: currentColor; fill: none;
+  stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+}
+
+@keyframes essential-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.perfect-streak {
+  display: flex;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-top: var(--s-4);
+  margin-top: var(--s-2);
+  border-top: 1px solid var(--c-line);
+  width: 100%;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+}
+.perfect-streak span { display: inline-flex; align-items: center; gap: var(--s-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .perfect-card, .perfect-list li, .streak-flame, .streak-day[data-state="perfect"] .mark {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Avatar ------------------------------------------------------------------------
+   Três formas de aparecer, uma só moldura: o círculo é sempre o mesmo tamanho,
+   venha ele de iniciais, de um desenho ou de uma fotografia. */
+
+.avatar { overflow: hidden; }
+.avatar img,
+.avatar .avatar-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--r-full);
+}
+.avatar .avatar-initials { line-height: 1; }
+
+.avatar-button {
+  position: relative;
+  display: inline-flex;
+  border-radius: var(--r-full);
+  transition: transform var(--d-fast) var(--ease-out);
+}
+.avatar-button:active { transform: scale(0.94); }
+
+/* O sinal de que a foto se pode trocar, sem um botão a mais no cabeçalho. */
+.avatar-edit {
+  position: absolute;
+  right: -2px; bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 24px; height: 24px;
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  color: var(--c-ink-2);
+  box-shadow: var(--e-1);
+}
+.avatar-edit svg {
+  width: 13px; height: 13px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.avatar-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-3);
+}
+.avatar-option {
+  display: grid;
+  place-items: center;
+  padding: var(--s-2);
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  transition: transform var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease);
+}
+.avatar-option:active { transform: scale(0.92); }
+.avatar-option[aria-checked="true"] {
+  border-color: var(--c-accent);
+  background: var(--c-surface-2);
+}

@@ -63,7 +63,7 @@ export function SessionScreen(): ReactElement {
     setRestSeconds(after && rest > 0 ? rest : null);
     // Only the set that ends the workout makes a sound; the rest are felt.
     if (after) feedback.touch('medium');
-    else feedback.play('success');
+    else feedback.play('workout');
   }, [repos, session, current, workout, feedback]);
 
   const leave = useCallback(async () => {

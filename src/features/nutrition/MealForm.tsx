@@ -16,6 +16,7 @@ import { emptyItemDraft } from '../../services/nutrition';
 import { Sheet } from '../../ui/Sheet';
 import { Button, Chip, IconButton } from '../../ui/primitives';
 import { Field, Input, Segmented } from '../../ui/form';
+import { TimeField } from '../../ui/TimeField';
 
 function toQuantity(raw: string): number {
   const value = Number(raw.replace(',', '.'));
@@ -87,12 +88,10 @@ export function MealForm({
             />
           </Field>
           <Field label="Hora" hint="Opcional.">
-            <Input
+            <TimeField
               value={draft.time ?? ''}
               placeholder="13:00"
-              maxLength={5}
-              inputMode="numeric"
-              onChange={(time) => patch({ time: time.trim() || null })}
+              onChange={(time) => patch({ time: time || null })}
             />
           </Field>
         </div>

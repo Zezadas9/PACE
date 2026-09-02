@@ -21,14 +21,22 @@
 import type { Platform } from '../platform/types';
 
 /**
- * Only two, on purpose.
+ * Poucos, e todos por acabar alguma coisa.
  *
- * A sound that fires on every tap stops being information and becomes noise —
- * the fastest way to get an app muted for good. These fire when something is
- * *finished*: a habit reaching its target, a task ticked, a workout closed.
- * Everything else is haptics only.
+ * Um som a cada toque deixa de ser informação e passa a ser barulho — a forma
+ * mais rápida de uma aplicação ser silenciada para sempre. Estes tocam quando
+ * algo **fica feito**, e sobem de importância na mesma ordem em que aparecem:
+ *
+ * - `complete` — um hábito ou uma tarefa;
+ * - `workout` — um treino fechado;
+ * - `goal` — um objetivo cumprido;
+ * - `streak` — a sequência a subir;
+ * - `perfect` — o dia perfeito, o único que se pode dar ao luxo de soar;
+ * - `success` — fim de onboarding e de sessões longas.
+ *
+ * Tudo o resto é só háptica.
  */
-export type Cue = 'complete' | 'success';
+export type Cue = 'complete' | 'workout' | 'goal' | 'streak' | 'perfect' | 'success';
 
 /** Master level. The app should sit under a keyboard, never over it. */
 const MASTER_GAIN = 0.5;
@@ -52,6 +60,33 @@ const CUES: Record<Cue, Strike[]> = {
     { freq: 880.0, at: 0.055, decay: 0.32, gain: 0.55 },
   ],
 
+  // Treino fechado: duas notas graves, mais cheias — o peso de ter acabado.
+  workout: [
+    { freq: 392.0, at: 0, decay: 0.3, gain: 0.7 },
+    { freq: 587.33, at: 0.09, decay: 0.45, gain: 0.6 },
+  ],
+
+  // Objetivo cumprido: uma quarta a subir e a assentar.
+  goal: [
+    { freq: 523.25, at: 0, decay: 0.24, gain: 0.6 },
+    { freq: 698.46, at: 0.07, decay: 0.45, gain: 0.62 },
+  ],
+
+  // Sequência: três notas curtas a subir, como um degrau a mais.
+  streak: [
+    { freq: 659.25, at: 0, decay: 0.16, gain: 0.5 },
+    { freq: 783.99, at: 0.06, decay: 0.18, gain: 0.55 },
+    { freq: 1046.5, at: 0.12, decay: 0.42, gain: 0.6 },
+  ],
+
+  // Dia perfeito: o mais raro, e o único com uma nota a demorar a apagar-se.
+  perfect: [
+    { freq: 523.25, at: 0, decay: 0.22, gain: 0.6 },
+    { freq: 659.25, at: 0.075, decay: 0.24, gain: 0.6 },
+    { freq: 783.99, at: 0.15, decay: 0.28, gain: 0.65 },
+    { freq: 1046.5, at: 0.235, decay: 0.9, gain: 0.7 },
+  ],
+
   // A major triad with a long final note — the only cue allowed to ring, and
   // it should be rare enough to still mean something when it does.
   success: [
@@ -63,6 +98,10 @@ const CUES: Record<Cue, Strike[]> = {
 
 const HAPTIC: Record<Cue, 'light' | 'medium' | 'heavy' | 'success'> = {
   complete: 'light',
+  workout: 'medium',
+  goal: 'medium',
+  streak: 'medium',
+  perfect: 'success',
   success: 'success',
 };
 
@@ -206,6 +245,23 @@ export class FeedbackService {
 
     const start = context.currentTime + 0.005;
     for (const note of CUES[cue]) this.strike(context, bus, note, start);
+  }
+
+  /**
+   * Prepara o áudio no primeiro toque do utilizador.
+   *
+   * Os browsers recusam iniciar áudio fora de um gesto. Chamar isto no
+   * primeiro toque garante que o som existe quando for preciso — mesmo que a
+   * primeira ocasião seja um dia perfeito que apareceu sozinho no ecrã. Se o
+   * browser recusar, não acontece nada: não há erro nem consola suja.
+   */
+  unlock(): void {
+    if (!this.soundOn) return;
+    try {
+      this.ensureContext();
+    } catch {
+      // Sem áudio disponível. A aplicação continua igual, só mais calada.
+    }
   }
 
   /** Releases the audio hardware when the app goes to the background. */

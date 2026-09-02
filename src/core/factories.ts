@@ -26,6 +26,7 @@ export function createUser(partial: Partial<User> = {}): User {
   return {
     ...base(),
     name: '',
+    avatar: { kind: 'initials', presetId: null, photo: null },
     birthDate: null,
     gender: 'undisclosed',
     body: { heightCm: null, weightKg: null, measuredAt: null },
@@ -34,7 +35,7 @@ export function createUser(partial: Partial<User> = {}): User {
       distanceUnit: 'km',
       heightUnit: 'cm',
       locale: APP.locale,
-      theme: 'system',
+      theme: 'dark',
       timezone: null,
     },
     goalIds: [],
@@ -292,6 +293,7 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       highVolumeAccepted: false,
     },
     feedback: { sound: true, haptics: true },
+    celebration: { perfectDay: null, streak: 0, goalsComplete: 0 },
     // O assistente nasce desligado e sem acesso a nada: a autorização é do
     // utilizador, categoria a categoria, e não uma caixa já assinalada.
     ai: {

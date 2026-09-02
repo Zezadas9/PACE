@@ -12,7 +12,8 @@ export type IconName =
   | 'activity' | 'trash' | 'lock' | 'close' | 'bell' | 'bellOff' | 'star'
   | 'trophy' | 'chart' | 'briefcase' | 'graduation' | 'stethoscope' | 'users'
   | 'home' | 'wallet' | 'edit' | 'today' | 'minus' | 'walk' | 'bike'
-  | 'mountain' | 'pause' | 'play' | 'stop' | 'pin' | 'route' | 'flag';
+  | 'mountain' | 'pause' | 'play' | 'stop' | 'pin' | 'route' | 'flag'
+  | 'camera' | 'image';
 
 const PATHS: Record<IconName, ReactNode> = {
   sun: (
@@ -103,6 +104,19 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  camera: (
+    <>
+      <path d="M4 8.5h3l1.5-2h7L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
+  image: (
+    <>
+      <path d="M5.5 5h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
+      <path d="M4 16l4.5-4.5 3.5 3.5 3-3L20 16" />
+      <path d="M9 8.6a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8z" />
+    </>
+  ),
   bell: (
     <>
       <path d="M18 9a6 6 0 0 0-12 0c0 5-2 6-2 6h16s-2-1-2-6z" />

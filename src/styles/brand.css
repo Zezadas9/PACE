@@ -73,6 +73,17 @@
 .brand-icon {
   display: block;
   flex: none;
+  object-fit: contain;
+  /* O asset já traz a sua própria margem; nada aqui recorta nem estica. */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* O perfil é um disco preto: no tema escuro precisa de um contorno para se
+   ver, senão desaparece contra o fundo. */
+:root[data-theme="dark"] .brand-perfil {
+  border-radius: var(--r-full);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c-ink) 22%, transparent);
 }
 
 /* Um disco discreto, so onde o icone precisa de presenca sozinho numa linha.

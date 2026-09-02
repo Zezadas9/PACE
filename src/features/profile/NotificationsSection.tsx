@@ -12,7 +12,8 @@ import { previewPlan, setEnabled, syncReminders } from '../../services/notificat
 import { useApp, useStoreVersion } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
 import { Card, SectionHeader } from '../../ui/primitives';
-import { Field, Input } from '../../ui/form';
+import { Field } from '../../ui/form';
+import { TimeField } from '../../ui/TimeField';
 import { Row, Rows } from '../../ui/data';
 import { Switch } from '../../ui/Switch';
 
@@ -110,7 +111,7 @@ export function NotificationsSection(): ReactElement {
             }
           />
           <Row
-            icon="clock"
+            brand="relogio"
             title="Testar agora"
             sub="Envia um aviso já, para confirmares que chegam"
             chevron
@@ -133,20 +134,14 @@ export function NotificationsSection(): ReactElement {
           </p>
           <div className="grid-2">
             <Field label="A partir das">
-              <Input
-                type="text"
-                inputMode="numeric"
+              <TimeField
                 value={settings.startTime}
-                maxLength={5}
                 onChange={(value) => repos.settings.update({ startTime: value })}
               />
             </Field>
             <Field label="Até às">
-              <Input
-                type="text"
-                inputMode="numeric"
+              <TimeField
                 value={settings.endTime}
-                maxLength={5}
                 onChange={(value) => repos.settings.update({ endTime: value })}
               />
             </Field>

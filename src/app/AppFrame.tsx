@@ -10,7 +10,9 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { ACTIVITY_SESSION_PATH, ONBOARDING_PATH, SESSION_PATH } from '../core/constants';
 import { TabBar } from './navigation/TabBar';
 import { useHardwareBack } from './navigation/useHardwareBack';
-import { useApp, usePreferences, useStoreVersion } from './providers/appContext';
+import {
+  useApp, useFeedback, usePreferences, useStoreVersion,
+} from './providers/appContext';
 import { useUi } from './providers/uiContext';
 import { useReminderSync } from './useReminderSync';
 
@@ -23,6 +25,7 @@ export function AppFrame(): ReactElement {
 
   useHardwareBack();
   useTheme();
+  useAudioUnlock();
   useFlushOnBackground();
   useDegradedStorageWarning();
   useFeedbackPreferences();
@@ -38,6 +41,31 @@ export function AppFrame(): ReactElement {
   );
 }
 
+/**
+ * Prepara o áudio no primeiro toque.
+ *
+ * Os browsers só deixam iniciar áudio dentro de um gesto do utilizador. Sem
+ * isto, o primeiro som da aplicação — que é justamente o do dia perfeito, que
+ * aparece sozinho — sairia mudo. Corre uma vez e desliga-se.
+ */
+function useAudioUnlock(): void {
+  const feedback = useFeedback();
+
+  useEffect(() => {
+    const unlock = (): void => {
+      feedback.unlock();
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [feedback]);
+}
+
 /** Applies the theme preference and keeps the native status bar in step. */
 function useTheme(): void {
   const { platform } = useApp();
@@ -45,14 +73,14 @@ function useTheme(): void {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (preferences.theme === 'system') root.removeAttribute('data-theme');
-    else root.setAttribute('data-theme', preferences.theme);
+    root.setAttribute('data-theme', preferences.theme);
+    // Uma classe de transição só durante a troca: mudar o tema deve ser um
+    // fundido, não um estalo — mas animar cores o tempo todo custa quadros.
+    root.classList.add('theme-switching');
+    const timer = window.setTimeout(() => root.classList.remove('theme-switching'), 320);
 
-    const dark =
-      preferences.theme === 'dark' ||
-      (preferences.theme === 'system' &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches);
-    void platform.device.setStatusBarStyle(dark ? 'dark' : 'light');
+    void platform.device.setStatusBarStyle(preferences.theme === 'dark' ? 'dark' : 'light');
+    return () => window.clearTimeout(timer);
   }, [platform, preferences.theme]);
 }
 

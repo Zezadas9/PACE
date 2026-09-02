@@ -13,6 +13,7 @@ import './styles/training.css';
 import './styles/activity.css';
 import './styles/nutrition.css';
 import './styles/assistant.css';
+import './styles/motion.css';
 import './styles/brand.css';
 import './styles/polish.css';
 import './styles/hues.css';

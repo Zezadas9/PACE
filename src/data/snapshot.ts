@@ -269,6 +269,7 @@ export function normalize(input: Partial<Snapshot> | null): Snapshot {
   snapshot.settings = {
     notifications: { ...defaults.notifications, ...(snapshot.settings?.notifications ?? {}) },
     feedback: { ...defaults.feedback, ...(snapshot.settings?.feedback ?? {}) },
+    celebration: { ...defaults.celebration, ...(snapshot.settings?.celebration ?? {}) },
     ai: {
       ...defaults.ai,
       ...(snapshot.settings?.ai ?? {}),

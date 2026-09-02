@@ -13,7 +13,7 @@ import { ageFromBirthDate, isValidKey, todayKey } from '../../core/utils/date';
 import { LIMITS } from '../../domain/metrics';
 import type { OnboardingDraft } from '../../services/profile';
 
-export const STEP_COUNT = 6;
+export const STEP_COUNT = 7;
 
 export type ErrorKey = 'name' | 'birthDate' | 'height' | 'weight' | 'goals';
 export type Errors = Partial<Record<ErrorKey, string>>;
@@ -26,6 +26,8 @@ export interface Draft extends OnboardingDraft {
 
 const INITIAL: Draft = {
   name: '',
+  // O tema arranca escuro e muda ao vivo no passo que o pergunta.
+  theme: 'dark',
   birthDate: null,
   gender: 'undisclosed',
   weightUnit: 'kg',

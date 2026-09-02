@@ -51,7 +51,11 @@ export function WaterCard({
         <div className="grow">
           <p className="t-eyebrow">Água</p>
           <p className="t-h1" style={{ marginTop: '0.25rem' }}>
-            {format.number(ml, 0)} <span className="t-sm muted-2">ml</span>
+            {/* A chave muda com o valor: é o que faz a animação repetir a cada
+                copo em vez de tocar uma só vez. */}
+            <span className="water-total" key={ml}>{format.number(ml, 0)}</span>
+            {' '}
+            <span className="t-sm muted-2">ml</span>
           </p>
         </div>
         <BrandIcon name="hidratacao" size={44} float />

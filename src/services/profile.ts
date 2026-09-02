@@ -9,7 +9,7 @@
 import { GOAL_CATALOG, APP } from '../core/constants';
 import { createUser } from '../core/factories';
 import type {
-  DayKey, DistanceUnit, Gender, Goal, GoalType, User, WeightUnit,
+  DayKey, DistanceUnit, Gender, Goal, GoalType, ThemePreference, User, WeightUnit,
 } from '../core/types';
 import { heightUnitFor } from '../core/utils/units';
 import { profileMetrics, type ProfileMetrics } from '../domain/metrics';
@@ -17,6 +17,8 @@ import type { Repositories } from '../data/repositories';
 
 export interface OnboardingDraft {
   name: string;
+  /** Escolhido no onboarding: a PACE nunca pergunta o tema duas vezes. */
+  theme: ThemePreference;
   birthDate: DayKey | null;
   gender: Gender;
   weightUnit: WeightUnit;
@@ -60,7 +62,7 @@ export function completeOnboarding(repos: Repositories, draft: OnboardingDraft):
       distanceUnit: draft.distanceUnit,
       heightUnit: heightUnitFor(draft.weightUnit),
       locale: APP.locale,
-      theme: 'system',
+      theme: draft.theme,
       timezone: resolveTimezone(),
     },
     goalIds: goals.map((goal) => goal.id),
@@ -80,6 +82,13 @@ export function updateBody(
   return repos.user.update({
     body: { ...user.body, ...patch, measuredAt: new Date().toISOString() },
   });
+}
+
+/** Guarda a cara escolhida: iniciais, avatar da galeria ou fotografia. */
+export function setAvatar(repos: Repositories, avatar: User['avatar']): User | null {
+  const user = repos.user.get();
+  if (!user) return null;
+  return repos.user.update({ avatar });
 }
 
 export function updatePreferences(

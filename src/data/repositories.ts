@@ -128,6 +128,16 @@ export class SettingsRepository {
     return this.store.snapshot.settings;
   }
 
+  updateCelebration(patch: Partial<AppSettings['celebration']>): AppSettings {
+    const current = this.store.snapshot.settings;
+    this.store.snapshot.settings = {
+      ...current,
+      celebration: { ...current.celebration, ...patch },
+    };
+    this.store.persist();
+    return this.store.snapshot.settings;
+  }
+
   updateAi(patch: Partial<AppSettings['ai']>): AppSettings {
     const current = this.store.snapshot.settings;
     this.store.snapshot.settings = { ...current, ai: { ...current.ai, ...patch } };

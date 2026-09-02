@@ -17,10 +17,12 @@ import {
 import { useApp, useFeedback, usePreferences, useStoreVersion } from '../../app/providers/appContext';
 import { Screen } from '../../app/navigation/Screen';
 import { WeekStrip } from '../../ui/calendar';
-import { Avatar, Card, Chip, Divider, SectionHeader } from '../../ui/primitives';
+import { Card, Chip, Divider, SectionHeader } from '../../ui/primitives';
+import { Avatar } from '../../ui/Avatar';
 import { EmptyState, Metric, ProgressBar, Ring, Row, Rows } from '../../ui/data';
 import { Icon } from '../../ui/Icon';
-import { PerfectDayBanner } from './PerfectDayBanner';
+import { PerfectDayCard } from './PerfectDayCard';
+import { useCelebrations } from './useCelebrations';
 import { StreakCard } from './StreakCard';
 
 export function TodayScreen(): ReactElement {
@@ -33,6 +35,7 @@ export function TodayScreen(): ReactElement {
     () => todayModel(repos, preferences),
     [repos, preferences, version],
   );
+  const celebration = useCelebrations(model);
 
   /**
     * Sound only on the tap that finishes something. Incrementing a counted
@@ -46,7 +49,13 @@ export function TodayScreen(): ReactElement {
   return (
     <Screen>
       <Hero model={model} />
-      {model.summary.isPerfectDay ? <PerfectDayBanner streak={model.streak.current} /> : null}
+      {celebration.perfectDay ? (
+        <PerfectDayCard
+          essentials={model.essentials}
+          streak={model.streak}
+          milestone={celebration.milestone}
+        />
+      ) : null}
       <SummaryCard model={model} />
       <section>
         <SectionHeader title="Sequência" />
@@ -84,6 +93,7 @@ export function TodayScreen(): ReactElement {
 }
 
 function Hero({ model }: { model: TodayModel }): ReactElement {
+  const navigate = useNavigate();
   const name = format.firstName(model.user?.name);
   return (
     <header className="today-hero">
@@ -94,7 +104,14 @@ function Hero({ model }: { model: TodayModel }): ReactElement {
           {name ? `, ${name}` : ''}
         </h1>
       </div>
-      <Avatar name={model.user?.name ?? ''} />
+      <button
+        type="button"
+        className="avatar-button"
+        aria-label="Ver perfil"
+        onClick={() => navigate('/perfil')}
+      >
+        <Avatar name={model.user?.name ?? ''} avatar={model.user?.avatar} size={44} />
+      </button>
     </header>
   );
 }

@@ -7,7 +7,7 @@ import type {
   DistanceUnit, EventCategory, Gender, GoalType, HabitFrequency, HabitKind,
   ActivityGoalMetric, ActivityGoalPeriod, ActivityType, PaceMode,
   FoodUnit, MealType, NutritionGoalMetric, SessionDifficulty, TaskCategory,
-  TaskPriority, WeightUnit, WorkoutSection, WorkoutType,
+  TaskPriority, WeightUnit, WorkoutSection, WorkoutType, ThemePreference,
 } from './types';
 import type { RecurrenceKind } from './scheduling';
 
@@ -30,6 +30,11 @@ export const GENDER_OPTIONS: ReadonlyArray<Option<Gender>> = [
   { id: 'male', label: 'Masculino' },
   { id: 'other', label: 'Outro' },
   { id: 'undisclosed', label: 'Prefiro não dizer' },
+];
+
+export const THEME_OPTIONS: ReadonlyArray<Option<ThemePreference>> = [
+  { id: 'light', label: 'Claro' },
+  { id: 'dark', label: 'Escuro' },
 ];
 
 export const WEIGHT_UNIT_OPTIONS: ReadonlyArray<Option<WeightUnit>> = [

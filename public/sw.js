@@ -14,7 +14,7 @@
  * Bump CACHE_VERSION when the precached list below changes.
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const CACHE = `pace-${CACHE_VERSION}`;
 
 /** Relative on purpose: the app is served from a repository subpath on Pages. */
@@ -24,8 +24,48 @@ const SHELL = [
   './manifest.webmanifest',
   './icon.svg',
   './apple-touch-icon.png',
-  // A barra de navegacao e feita destes icones: sem eles, offline, fica vazia.
-  './brand-icons.png',
+  // A barra de navegacao e os ecras sao feitos destes icones: sem eles,
+  // offline, a aplicacao aparece vazia.
+  './icons/agenda.png',
+  './icons/alimentacao.png',
+  './icons/bicicleta.png',
+  './icons/cadeado.png',
+  './icons/caixote.png',
+  './icons/caminhada-rapida.png',
+  './icons/caminhada.png',
+  './icons/consistencia.png',
+  './icons/corrida.png',
+  './icons/dias-perfeitos.png',
+  './icons/estatisticas.png',
+  './icons/frequencia.png',
+  './icons/hidratacao.png',
+  './icons/ia.png',
+  './icons/imc-alto.png',
+  './icons/imc-baixo.png',
+  './icons/imc-normal.png',
+  './icons/lembretes.png',
+  './icons/melhor-sequencia.png',
+  './icons/objetivos.png',
+  './icons/perfil.png',
+  './icons/planos.png',
+  './icons/progresso.png',
+  './icons/refeicoes.png',
+  './icons/relaxamento.png',
+  './icons/relogio.png',
+  './icons/saude.png',
+  './icons/sequencia.png',
+  './icons/som.png',
+  './icons/sono.png',
+  './icons/streak-1.png',
+  './icons/streak-100.png',
+  './icons/streak-14.png',
+  './icons/streak-3.png',
+  './icons/streak-30.png',
+  './icons/streak-365.png',
+  './icons/streak-60.png',
+  './icons/streak-7.png',
+  './icons/treinos.png',
+  './icons/vibracao.png',
 ];
 
 self.addEventListener('install', (event) => {

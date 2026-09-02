@@ -88,7 +88,7 @@ export function WorkoutScreen(): ReactElement {
           <SectionHeader title="Planos" actionLabel={String(data.workouts.length)} />
           {data.workouts.length === 0 ? (
             <EmptyState
-              brand="treinos"
+              brand="planos"
               title="Sem planos de treino"
               body="Cria o primeiro com o botão +."
             />

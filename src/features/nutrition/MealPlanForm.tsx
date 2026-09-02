@@ -14,6 +14,7 @@ import type { MealItemDraft } from '../../services/nutrition';
 import { Sheet } from '../../ui/Sheet';
 import { Button, Chip } from '../../ui/primitives';
 import { Field, Input } from '../../ui/form';
+import { TimeField } from '../../ui/TimeField';
 import { WeekdayPicker } from '../agenda/forms/WeekdayPicker';
 import { ItemsEditor } from './MealForm';
 
@@ -82,12 +83,10 @@ export function MealPlanForm({
         </Field>
 
         <Field label="Hora" hint="Opcional.">
-          <Input
+          <TimeField
             value={draft.time ?? ''}
             placeholder="13:00"
-            maxLength={5}
-            inputMode="numeric"
-            onChange={(time) => patch({ time: time.trim() || null })}
+            onChange={(time) => patch({ time: time || null })}
           />
         </Field>
 

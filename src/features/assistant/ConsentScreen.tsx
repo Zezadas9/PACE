@@ -72,6 +72,7 @@ export function ConsentScreen(): ReactElement {
 
       <Card>
         <Switch
+          brand="cadeado"
           checked={settings.enabled}
           title="Assistente ligado"
           subtitle={settings.enabled

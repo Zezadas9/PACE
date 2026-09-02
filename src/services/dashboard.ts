@@ -13,7 +13,7 @@ import type {
 import { addDaysToKey, greeting, longDate, todayKey } from '../core/utils/date';
 import * as progress from '../domain/progress';
 import type { DaySummary, EssentialItem } from '../domain/progress';
-import { streakStats, type StreakStats } from '../domain/streak';
+import { streakDetail, type StreakDetail } from '../domain/streak';
 import * as training from '../domain/training';
 import type { GoalProgress } from '../domain/activity';
 import {
@@ -96,7 +96,7 @@ export interface TodayModel {
   nutrition: NutritionView | null;
   /** Progress on the food and water goals, alongside the activity ones. */
   nutritionGoals: NutritionProgress[];
-  streak: StreakStats;
+  streak: StreakDetail;
   week: DaySummary[];
   upcoming: UpcomingEvent[];
   training: TrainingView;
@@ -133,7 +133,7 @@ export function todayModel(
     nutritionGoals: activeGoalProgress(
       repos.nutritionGoals.all(), data.meals, data.foods, repos.waterEntries.all(), date,
     ),
-    streak: streakStats(data, accountStart, date),
+    streak: streakDetail(data, accountStart, date),
     week: progress.weekOverview(data),
     upcoming: buildUpcoming(repos, date),
     training: buildTraining(repos, date),

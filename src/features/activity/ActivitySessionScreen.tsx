@@ -165,7 +165,7 @@ export function ActivitySessionScreen(): ReactElement {
           onClose={() => setFinishing(false)}
           onDone={(input) => {
             finishSession(repos, session.id, input);
-            feedback.play('success');
+            feedback.play('workout');
             navigate('/atividade', { replace: true });
           }}
         />

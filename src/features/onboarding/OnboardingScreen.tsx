@@ -16,7 +16,7 @@ import { useApp, useFeedback } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
 import { Button, IconButton } from '../../ui/primitives';
 import {
-  AboutStep, BodyStep, GoalsStep, NameStep, SummaryStep, UnitsStep, WelcomeStep,
+  AboutStep, BodyStep, GoalsStep, NameStep, SummaryStep, ThemeStep, UnitsStep, WelcomeStep,
 } from './steps';
 import { STEP_COUNT, useOnboardingForm, type OnboardingForm } from './useOnboardingForm';
 
@@ -30,32 +30,38 @@ interface StepCopy {
 
 const COPY: StepCopy[] = [
   { action: 'Começar', hint: 'Demora menos de um minuto.' },
-  { eyebrow: 'Passo 1 de 6', title: 'Como te chamamos?', action: 'Continuar' },
+  { eyebrow: 'Passo 1 de 7', title: 'Como te chamamos?', action: 'Continuar' },
   {
-    eyebrow: 'Passo 2 de 6',
+    eyebrow: 'Passo 2 de 7',
     title: 'Um pouco sobre ti',
     subtitle: 'A idade ajuda a contextualizar as tuas métricas.',
     action: 'Continuar',
   },
   {
-    eyebrow: 'Passo 3 de 6',
+    eyebrow: 'Passo 3 de 7',
     title: 'Que unidades preferes?',
     subtitle: 'Podes mudar a qualquer momento no perfil.',
     action: 'Continuar',
   },
   {
-    eyebrow: 'Passo 4 de 6',
+    eyebrow: 'Passo 4 de 7',
     title: 'Altura e peso',
     subtitle: 'Só para estimar as tuas métricas iniciais.',
     action: 'Continuar',
   },
   {
-    eyebrow: 'Passo 5 de 6',
+    eyebrow: 'Passo 5 de 7',
     title: 'O que queres alcançar?',
     subtitle: 'Escolhe tudo o que se aplica.',
     action: 'Continuar',
   },
-  { eyebrow: 'Passo 6 de 6', title: 'As tuas métricas iniciais', action: 'Entrar na PACE' },
+  {
+    eyebrow: 'Passo 6 de 7',
+    title: 'Como preferes usar a PACE?',
+    subtitle: 'Escolhe o tema. Fica assim até tu quereres outra coisa.',
+    action: 'Continuar',
+  },
+  { eyebrow: 'Passo 7 de 7', title: 'As tuas métricas iniciais', action: 'Entrar na PACE' },
 ];
 
 function StepBody({ step, form }: { step: number; form: OnboardingForm }): ReactElement {
@@ -66,6 +72,7 @@ function StepBody({ step, form }: { step: number; form: OnboardingForm }): React
     case 3: return <UnitsStep form={form} />;
     case 4: return <BodyStep form={form} />;
     case 5: return <GoalsStep form={form} />;
+    case 6: return <ThemeStep form={form} />;
     default: return <SummaryStep form={form} />;
   }
 }

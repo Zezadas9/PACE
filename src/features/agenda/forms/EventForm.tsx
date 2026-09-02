@@ -11,6 +11,7 @@ import { describeRecurrence } from '../../../domain/recurrence';
 import { Sheet } from '../../../ui/Sheet';
 import { Button, Chip } from '../../../ui/primitives';
 import { Field, Input, Segmented } from '../../../ui/form';
+import { TimeField } from '../../../ui/TimeField';
 import { WeekdayPicker } from './WeekdayPicker';
 
 export function EventForm({
@@ -109,20 +110,16 @@ export function EventForm({
             />
             {!draft.allDay ? (
               <div className="grid-2">
-                <Input
-                  type="text"
-                  inputMode="numeric"
+                <TimeField
                   value={draft.startTime}
                   placeholder="09:00"
-                  maxLength={5}
+                  ariaLabel="Hora de início"
                   onChange={(value) => patch({ startTime: value })}
                 />
-                <Input
-                  type="text"
-                  inputMode="numeric"
+                <TimeField
                   value={draft.endTime ?? ''}
                   placeholder="10:00"
-                  maxLength={5}
+                  ariaLabel="Hora de fim"
                   onChange={(value) => patch({ endTime: value || null })}
                 />
               </div>

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createHabit, createHabitEntry, createTask, createWorkoutSession } from '../core/factories';
 import { addDaysToKey } from '../core/utils/date';
 import type { ProgressDataset } from './progress';
-import { historyStart, streakStats } from './streak';
+import { historyStart, streakDetail, streakStats } from './streak';
 
 const TODAY = '2026-08-30';
 
@@ -158,5 +158,34 @@ describe('historyStart', () => {
 
   it('starts at the account creation date when it is recent', () => {
     expect(historyStart('2026-08-01', TODAY)).toBe('2026-08-01');
+  });
+});
+
+describe('streakDetail', () => {
+  it('devolve os últimos sete dias, do mais antigo para hoje', () => {
+    const detail = streakDetail(withHabitOn([TODAY]), null, TODAY);
+    expect(detail.recent).toHaveLength(7);
+    expect(detail.recent[6]?.date).toBe(TODAY);
+    expect(detail.recent[6]?.isToday).toBe(true);
+    expect(detail.recent[6]?.perfect).toBe(true);
+  });
+
+  it('conta os essenciais que faltam hoje', () => {
+    const data = dataset({
+      habits: [
+        createHabit({ id: 'h1', essential: true, frequency: 'daily', startDate: '2026-08-01' }),
+        createHabit({ id: 'h2', essential: true, frequency: 'daily', startDate: '2026-08-01' }),
+      ],
+      habitEntries: [createHabitEntry({ habitId: 'h1', date: TODAY, completed: true })],
+    });
+    expect(streakDetail(data, null, TODAY).remainingToday).toBe(1);
+  });
+
+  it('aponta o próximo marco', () => {
+    expect(streakDetail(dataset(), null, TODAY).nextMilestone).toBe(3);
+  });
+
+  it('marca como neutro um dia sem essenciais', () => {
+    expect(streakDetail(dataset(), null, TODAY).recent.every((day) => day.neutral)).toBe(true);
   });
 });

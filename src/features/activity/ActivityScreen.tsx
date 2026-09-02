@@ -48,6 +48,10 @@ type SheetState =
 export function brandIconFor(type: ActivityType): BrandIconName | null {
   if (type === 'run') return 'corrida';
   if (type === 'ride') return 'bicicleta';
+  if (type === 'walk') return 'caminhada';
+  if (type === 'brisk_walk') return 'caminhada-rapida';
+  // A caminhada na montanha ainda não tem desenho próprio; fica o ícone de
+  // linha, que segue o tema e não destoa ao lado dos outros.
   return null;
 }
 

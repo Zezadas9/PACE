@@ -1,0 +1,104 @@
+/* ============================================================================
+   PACE — Movimento
+   ----------------------------------------------------------------------------
+   O que falta ao que já existe, e nada mais. A regra desta camada: curto
+   (120-320 ms), uma propriedade barata de cada vez (transform e opacity), e
+   sempre com saída para quem pede menos movimento no sistema.
+   ========================================================================== */
+
+/* --- Troca de tema ---------------------------------------------------------------
+   Só durante a troca. Animar cores permanentemente custa quadros em todo o
+   lado; aqui são 300 ms e volta tudo ao normal. */
+
+:root.theme-switching,
+:root.theme-switching body,
+:root.theme-switching .card,
+:root.theme-switching .nav,
+:root.theme-switching .screen,
+:root.theme-switching .input,
+:root.theme-switching .btn,
+:root.theme-switching .row-item {
+  transition: background-color 280ms var(--ease), color 280ms var(--ease),
+              border-color 280ms var(--ease);
+}
+
+/* --- Toque ------------------------------------------------------------------------
+   Tudo o que se toca responde. Sem isto a aplicação parece uma página; com
+   isto parece um objeto. */
+
+.chip,
+.segmented button,
+.weekday-picker button,
+.week-day,
+.start-tile,
+.goal-card,
+.pick-item,
+.switch-row,
+.theme-card,
+.avatar-option,
+.water-add {
+  transition: transform var(--d-fast) var(--ease-out),
+              background var(--d-fast) var(--ease),
+              border-color var(--d-fast) var(--ease);
+}
+.chip:active,
+.segmented button:active,
+.weekday-picker button:active,
+.week-day:active,
+.start-tile:active,
+.goal-card:active,
+.pick-item:active,
+.switch-row:active { transform: scale(0.97); }
+
+/* --- Conclusão --------------------------------------------------------------------
+   O momento que interessa: um item que fica feito. O visto salta uma vez, a
+   linha esbate-se, e acabou. */
+
+.row-item .tick svg { transition: transform var(--d-base) var(--ease-out); }
+.row-item[data-done="true"] .tick svg { animation: tick-pop 320ms var(--ease-out); }
+
+/* --- Barras e anéis ----------------------------------------------------------------
+   Já transicionam; o que faltava era a barra reagir quando salta de valor. */
+
+.bar > i { will-change: width; }
+
+@keyframes value-bump {
+  0%   { transform: translateY(0); }
+  45%  { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+/* --- Água ---------------------------------------------------------------------------
+   Um número que sobe sozinho não se lê como uma resposta ao toque. */
+
+.water-add:active { transform: scale(0.94); }
+.water-total { display: inline-block; animation: value-bump 320ms var(--ease-out); }
+
+/* --- Entradas de lista ---------------------------------------------------------------
+   Um item novo aparece de baixo em vez de surgir feito. */
+
+@keyframes item-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.rows > *:not(:first-child) { animation: none; }
+.card.is-new,
+.goal-card.is-new { animation: item-in 320ms var(--ease-out) both; }
+
+/* --- Interruptores --------------------------------------------------------------------
+   O botão desliza; o fundo acompanha. */
+
+.switch { transition: background var(--d-base) var(--ease); }
+.switch > i {
+  transition: transform var(--d-base) var(--ease-out),
+              background var(--d-base) var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-item[data-done="true"] .tick svg,
+  .water-total,
+  .card.is-new,
+  .goal-card.is-new { animation: none; }
+  :root.theme-switching,
+  :root.theme-switching * { transition: none !important; }
+}

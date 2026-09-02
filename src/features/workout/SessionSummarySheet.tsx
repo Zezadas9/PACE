@@ -40,7 +40,7 @@ export function SessionSummarySheet({
       perceivedEffort: rpe,
       difficulty,
     });
-    feedback.play('success');
+    feedback.play('workout');
     toast('Treino registado.');
     onDone();
   };

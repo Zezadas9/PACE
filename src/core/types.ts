@@ -34,7 +34,14 @@ export type Gender = 'female' | 'male' | 'other' | 'undisclosed';
 export type WeightUnit = 'kg' | 'lb';
 export type DistanceUnit = 'km' | 'mi';
 export type HeightUnit = 'cm' | 'ft_in';
-export type ThemePreference = 'system' | 'light' | 'dark';
+/**
+ * Claro ou escuro, e nada mais.
+ *
+ * "Seguir o sistema" saiu de propósito: a PACE tem duas caras desenhadas à mão
+ * e a escolha é feita no primeiro arranque. Um tema que muda sozinho ao fim da
+ * tarde não é uma preferência, é uma surpresa.
+ */
+export type ThemePreference = 'light' | 'dark';
 
 export type GoalType =
   | 'lose_weight'
@@ -144,8 +151,24 @@ export interface BodyMetrics {
   measuredAt: Timestamp | null;
 }
 
+/**
+ * A cara do perfil.
+ *
+ * Três estados, por ordem de esforço: as iniciais (não custa nada), um avatar
+ * da galeria, ou uma fotografia. A fotografia fica guardada como data URL
+ * depois de reduzida — nesta fase não sai do dispositivo, como o resto.
+ */
+export interface Avatar {
+  kind: 'initials' | 'preset' | 'photo';
+  /** Um dos avatares da galeria, quando `kind` é 'preset'. */
+  presetId: string | null;
+  /** Data URL já reduzida, quando `kind` é 'photo'. */
+  photo: string | null;
+}
+
 export interface User extends Entity {
   name: string;
+  avatar: Avatar;
   birthDate: DayKey | null;
   gender: Gender;
   body: BodyMetrics;
@@ -507,9 +530,25 @@ export interface FeedbackSettings {
   haptics: boolean;
 }
 
+/**
+ * O que já foi celebrado, para não se repetir.
+ *
+ * Sem isto, o dia perfeito toca outra vez a cada abertura da aplicação — e uma
+ * celebração que se repete deixa de ser uma celebração.
+ */
+export interface CelebrationState {
+  /** O dia em que a celebração do dia perfeito já tocou. */
+  perfectDay: DayKey | null;
+  /** A maior sequência já celebrada. */
+  streak: number;
+  /** Quantos objetivos já estavam cumpridos da última vez que se olhou. */
+  goalsComplete: number;
+}
+
 export interface AppSettings {
   notifications: NotificationSettings;
   feedback: FeedbackSettings;
+  celebration: CelebrationState;
   /** Additive, como o feedback: normalize preenche, sem migração. */
   ai: AiSettings;
 }

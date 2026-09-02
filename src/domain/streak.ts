@@ -41,6 +41,9 @@ interface DayVerdict {
   /** No essentials scheduled: the day does not count either way. */
   neutral: boolean;
   perfect: boolean;
+  /** Essenciais do dia, e quantos já estão feitos. */
+  total: number;
+  done: number;
 }
 
 /**
@@ -101,8 +104,8 @@ export function createDayEvaluator(data: ProgressDataset): (date: DayKey) => Day
       if (session.completed) done += 1;
     }
 
-    if (total === 0) return { neutral: true, perfect: false };
-    return { neutral: false, perfect: done === total };
+    if (total === 0) return { neutral: true, perfect: false, total, done };
+    return { neutral: false, perfect: done === total, total, done };
   };
 }
 
@@ -182,4 +185,68 @@ function currentStreak(
     cursor = addDaysToKey(cursor, -1);
   }
   return count;
+}
+
+/* --- A sequência, vista de perto -------------------------------------------- */
+
+/** Os marcos que valem uma celebração. Nem tantos que percam graça. */
+export const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100, 365] as const;
+
+export interface StreakDay {
+  date: DayKey;
+  /** 0 = domingo .. 6 = sábado. */
+  weekday: number;
+  perfect: boolean;
+  /** Dia sem essenciais: não conta nem para bem nem para mal. */
+  neutral: boolean;
+  isToday: boolean;
+}
+
+export interface StreakDetail extends StreakStats {
+  /** Os últimos sete dias, do mais antigo para hoje. */
+  recent: StreakDay[];
+  /** Essenciais que faltam hoje para o dia ficar fechado. */
+  remainingToday: number;
+  /** O próximo marco, quando existe um à frente. */
+  nextMilestone: number | null;
+  /** Dias que faltam para bater o recorde, ou null se já é o recorde. */
+  toRecord: number | null;
+}
+
+export function streakDetail(
+  data: ProgressDataset,
+  accountStart: DayKey | null,
+  today: DayKey = todayKey(),
+): StreakDetail {
+  const stats = streakStats(data, accountStart, today);
+  const verdict = createDayEvaluator(data);
+
+  const recent: StreakDay[] = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const date = addDaysToKey(today, -i);
+    const day = verdict(date);
+    recent.push({
+      date,
+      weekday: new Date(`${date}T12:00:00`).getDay(),
+      perfect: day.perfect,
+      neutral: day.neutral,
+      isToday: date === today,
+    });
+  }
+
+  const todayVerdict = verdict(today);
+  const nextMilestone = STREAK_MILESTONES.find((milestone) => milestone > stats.current) ?? null;
+  // Só é "bater o recorde" quando há um recorde para bater e ainda não se lá
+  // chegou. Empatar com o próprio recorde não é notícia.
+  const toRecord = stats.best > stats.current && stats.best > 0
+    ? stats.best - stats.current + 1
+    : null;
+
+  return {
+    ...stats,
+    recent,
+    remainingToday: Math.max(0, todayVerdict.total - todayVerdict.done),
+    nextMilestone,
+    toRecord,
+  };
 }

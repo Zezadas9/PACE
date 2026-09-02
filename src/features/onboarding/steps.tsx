@@ -1,8 +1,8 @@
-/** The six onboarding questions, one component each. */
+/** As sete perguntas do onboarding, um componente para cada uma. */
 
-import type { ReactElement } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import {
-  DISTANCE_UNIT_OPTIONS, GENDER_OPTIONS, GOAL_CATALOG, WEIGHT_UNIT_OPTIONS,
+  DISTANCE_UNIT_OPTIONS, GENDER_OPTIONS, GOAL_CATALOG, THEME_OPTIONS, WEIGHT_UNIT_OPTIONS,
 } from '../../core/constants';
 import { ageFromBirthDate } from '../../core/utils/date';
 import * as format from '../../core/utils/format';
@@ -261,6 +261,45 @@ export function SummaryStep({ form }: { form: OnboardingForm }): ReactElement {
           suffix={draft.goalTypes.length === 1 ? 'ativo' : 'ativos'}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * O tema, perguntado uma vez e aplicado logo.
+ *
+ * Aplicar ao vivo é metade da pergunta: ninguém escolhe um tema por um rótulo,
+ * escolhe por ver a aplicação mudar à frente.
+ */
+export function ThemeStep({ form }: { form: OnboardingForm }): ReactElement {
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', form.draft.theme);
+  }, [form.draft.theme]);
+
+  return (
+    <div className="stack stack-6">
+      <div className="theme-picker">
+        {THEME_OPTIONS.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className="theme-card"
+            data-theme-preview={option.id}
+            aria-pressed={form.draft.theme === option.id}
+            onClick={() => form.patch({ theme: option.id })}
+          >
+            <span className="theme-preview" aria-hidden="true">
+              <i className="bar" />
+              <i className="bar short" />
+              <i className="dot" />
+            </span>
+            <span className="label">{option.id === 'light' ? '☀︎ Claro' : '☾ Escuro'}</span>
+          </button>
+        ))}
+      </div>
+      <p className="t-sm muted-2">
+        Podes trocar quando quiseres, no perfil.
+      </p>
     </div>
   );
 }

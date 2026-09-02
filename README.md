@@ -471,32 +471,34 @@ esses dois ficheiros — mais nada precisa de mudar.
 
 ### Os ícones ilustrados
 
-A folha original é um JPEG com quinze desenhos sobre preto, cada um com a sua
-legenda por baixo — AGENDA, TREINOS, CORRIDA, BICICLETA, ALIMENTAÇÃO, PROGRESSO,
-OBJETIVOS, HIDRATAÇÃO, IA COACH, LEMBRETES, SONO, PERFIL, SAÚDE, RELAXAMENTO,
-ESTATÍSTICAS. É essa legenda que decide onde cada ícone é usado.
+São duas folhas originais — uma sobre preto, outra sobre branco — e cada ícone
+sai delas como **um ficheiro próprio** em `public/icons/`, com transparência
+verdadeira. Nada de folha recortada em runtime, nada de fundo por baixo.
 
-`tools/build-brand-icons.cjs` transforma a folha em `public/brand-icons.png`:
+`tools/build-brand-icons.cjs` faz o trabalho:
 
-- **Tira o fundo** por preenchimento a partir das margens, só por pixéis quase
-  pretos. O disco escuro do "perfil" e o halter cinzento sobrevivem porque não
-  estão ligados à margem por preto — um limiar global comia-os.
-- **Mede cada ícone ao pixel** (linhas e colunas ocupadas), em vez de assumir uma
-  grelha. Era isso que cortava a bicicleta, que é mais larga do que as outras.
-- **Normaliza**: todos ficam centrados numa célula de 144 px com a mesma margem,
-  por isso o CSS é uma multiplicação e nada pode ficar cortado.
-- **Limpa o ringing do JPEG** com uma rampa de opacidade nos dois pixéis
-  encostados ao fundo, para não sobrar sujidade escura em tema claro.
+- **Tira o fundo** por preenchimento a partir das margens, só onde a cor é a do
+  fundo. O disco escuro do "perfil" e os corpos brancos dos ícones da segunda
+  folha sobrevivem porque não estão ligados à margem.
+- **Mede cada ícone ao pixel** e junta os pedaços soltos (as riscas da corrida,
+  as estrelas do sono, as faíscas das chamas) ao desenho a que pertencem.
+- **Limpa o ringing do JPEG e as sombras suaves** com uma rampa de opacidade
+  nos pixéis encostados ao fundo — é isso que evita o halo em tema claro.
+- **Normaliza**: todos ficam centrados numa tela de 192 px com a mesma área de
+  segurança, por isso aparecem do mesmo tamanho visual venham de onde vierem.
+- **Acerta cores onde é preciso**: a bicicleta tinha pneus pretos que
+  desapareciam no escuro; os escuros são levantados para cinzento e o quadro
+  azul fica como está.
 
-Correr outra vez, se a folha mudar:
+Correr outra vez, se as folhas mudarem:
 
 ```bash
 npm install --no-save jpeg-js pngjs && node tools/build-brand-icons.cjs
 ```
 
-Na barra de navegação, o separador ativo é o único a cores; os outros ficam
-esbatidos e dessaturados. `sono`, `relaxamento` e `ia` ainda não têm sítio —
-ficam guardados para as fases que os pedirem.
+Quarenta ícones, entre navegação, estados vazios, definições, as três faixas de
+IMC e os oito degraus da chama da sequência. O do perfil é um disco preto: no
+tema escuro leva um anel discreto para não desaparecer contra o fundo.
 
 ### Cor
 
@@ -546,6 +548,66 @@ contado, desfazer — é só vibração.
 Um som que toca a cada toque deixa de ser informação e passa a ser ruído, que é
 a forma mais rápida de a aplicação acabar silenciada para sempre. Som e vibração
 desligam-se em **Perfil → Som e vibração**.
+
+---
+
+## Correção e polimento
+
+### Tema: claro ou escuro, escolhido uma vez
+
+A opção "sistema" saiu. A PACE tem duas caras desenhadas à mão e a escolha é
+feita no **sexto passo do onboarding**, com dois cartões que mostram o que vão
+fazer e aplicam o tema ao vivo. Depois disso vive no perfil, e mais nada a
+pergunta. Trocar de tema faz um fundido de 280 ms — só durante a troca, porque
+animar cores permanentemente custa quadros em todo o lado.
+
+### A sequência
+
+Deixou de ser quatro números numa grelha. Agora é uma chama que **cresce com os
+dias** (oito degraus, de 1 a 365), os últimos sete dias à vista, e uma frase que
+diz sempre a coisa mais útil que há para dizer: quanto falta para o recorde,
+para o próximo marco, ou para fechar hoje. Um dia sem essenciais marcados
+aparece com um traço, não com um círculo vazio — não foi falhado, não contava.
+
+O aviso é discreto e tem um limite: *"Falta 1 essencial para manteres a tua
+sequência."* Não há contagens decrescentes nem vermelho.
+
+### O dia perfeito
+
+Continua a ser **calculado**, nunca declarado: não há botão nenhum que o ligue.
+`createDayEvaluator` conta os essenciais do dia — hábitos, tarefas e treinos
+marcados como essenciais — e o dia só fecha quando todos estão feitos. Itens
+normais da agenda não impedem nada.
+
+Quando fecha, aparece um cartão com o troféu, a lista do que foi cumprido item a
+item, a sequência e o recorde. Toca uma vez: `settings.celebration` guarda o dia
+já celebrado, porque uma celebração que se repete a cada abertura deixa de ser
+uma celebração.
+
+### Som
+
+Seis sinais, todos por acabar alguma coisa: hábito ou tarefa, treino fechado,
+objetivo cumprido, sequência a subir, dia perfeito, e o fim do onboarding. São
+sintetizados em WebAudio como barras percutidas — não há ficheiros para
+carregar. O áudio é preparado no primeiro toque do utilizador (`unlock()`),
+porque os browsers recusam iniciar som fora de um gesto e o primeiro som da
+aplicação é justamente um que aparece sozinho. Se o browser recusar, não há erro
+— só silêncio.
+
+### Avatar
+
+Iniciais, um dos oito avatares desenhados em SVG na própria aplicação, ou uma
+fotografia — da câmara ou da galeria. A fotografia é cortada ao centro e
+reduzida a 320 px antes de ser guardada: uma foto de telemóvel são vários
+megabytes e o snapshot não é sítio para isso. Aparece no perfil e no canto do
+ecrã inicial.
+
+### Campos de hora
+
+Escreves dois dígitos e os dois pontos aparecem sozinhos; a partir daí só entram
+mais dois. "930" é lido como 09:30, porque é o que as pessoas escrevem quando
+têm pressa. Está em todos os sítios onde se escreve uma hora: eventos, hábitos,
+refeições, plano alimentar e a janela de silêncio das notificações.
 
 ---
 

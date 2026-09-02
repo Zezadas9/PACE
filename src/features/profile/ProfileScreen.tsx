@@ -5,7 +5,7 @@
  * "1" never lands in storage as a height of one centimetre.
  */
 
-import { useMemo, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DISTANCE_UNIT_OPTIONS, GENDER_OPTIONS, GOAL_CATALOG, ONBOARDING_PATH, APP,
@@ -14,13 +14,16 @@ import type { GoalType } from '../../core/types';
 import * as format from '../../core/utils/format';
 import { length, mass } from '../../core/utils/units';
 import {
-  setGoals, summary as profileSummary, updateBody, updatePreferences,
+  setAvatar, setGoals, summary as profileSummary, updateBody, updatePreferences,
   type ProfileSummary,
 } from '../../services/profile';
-import { useApp, useStoreVersion } from '../../app/providers/appContext';
+import { useApp, useFeedback, useStoreVersion } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
 import { Screen } from '../../app/navigation/Screen';
-import { Avatar, Card, Chip, SectionHeader } from '../../ui/primitives';
+import { Card, Chip, SectionHeader } from '../../ui/primitives';
+import { Avatar } from '../../ui/Avatar';
+import { Icon } from '../../ui/Icon';
+import { AvatarSheet } from './AvatarSheet';
 import { EmptyState, Metric, Row, Rows } from '../../ui/data';
 import { BrandIcon } from '../../ui/BrandIcon';
 import { Field, Input, Segmented } from '../../ui/form';
@@ -70,6 +73,10 @@ export function ProfileScreen(): ReactElement {
 }
 
 function ProfileHead({ summary }: { summary: ProfileSummary }): ReactElement {
+  const { repos } = useApp();
+  const feedback = useFeedback();
+  const { toast } = useUi();
+  const [picking, setPicking] = useState(false);
   const { user, metrics } = summary;
   const genderLabel = GENDER_OPTIONS.find((option) => option.id === user.gender)?.label;
   const subtitle = [
@@ -80,16 +87,53 @@ function ProfileHead({ summary }: { summary: ProfileSummary }): ReactElement {
     .join(' · ');
 
   return (
-    <header className="profile-head">
-      <Avatar name={user.name} large />
-      <div>
-        <h1 className="t-title">{user.name || 'Sem nome'}</h1>
-        <p className="t-sm muted-2" style={{ marginTop: '0.25rem' }}>
-          {subtitle || 'Perfil pessoal'}
-        </p>
-      </div>
-    </header>
+    <>
+      <header className="profile-head">
+        <button
+          type="button"
+          className="avatar-button"
+          aria-label="Mudar a foto de perfil"
+          onClick={() => setPicking(true)}
+        >
+          <Avatar name={user.name} avatar={user.avatar} size={72} />
+          <span className="avatar-edit" aria-hidden="true"><Icon name="camera" /></span>
+        </button>
+        <div>
+          <h1 className="t-title">{user.name || 'Sem nome'}</h1>
+          <p className="t-sm muted-2" style={{ marginTop: '0.25rem' }}>
+            {subtitle || 'Perfil pessoal'}
+          </p>
+        </div>
+      </header>
+
+      {picking ? (
+        <AvatarSheet
+          current={user.avatar}
+          onClose={() => setPicking(false)}
+          onChoose={(avatar) => {
+            setAvatar(repos, avatar);
+            feedback.touch();
+            setPicking(false);
+            toast(avatar.kind === 'initials' ? 'Voltaste às iniciais.' : 'Foto de perfil atualizada.');
+          }}
+        />
+      ) : null}
+    </>
   );
+}
+
+/**
+ * O coração do IMC muda de cor com a faixa.
+ *
+ * Azul, verde e vermelho são as três faixas da folha de ícones, e não um juízo
+ * sobre ninguém: o cartão continua a dizer, por baixo, que isto é uma
+ * estimativa e não um diagnóstico.
+ */
+function bmiIcon(value: number | null): 'saude' | 'imc-baixo' | 'imc-normal' | 'imc-alto' {
+  if (value == null) return 'saude';
+  if (value < 18.5) return 'imc-baixo';
+  if (value < 25) return 'imc-normal';
+  return 'imc-alto';
 }
 
 function MetricsSection({ summary }: { summary: ProfileSummary }): ReactElement {
@@ -125,7 +169,7 @@ function MetricsSection({ summary }: { summary: ProfileSummary }): ReactElement 
                 {metrics.bmiLabel ?? 'Sem dados suficientes'}
               </p>
             </div>
-            <BrandIcon name="saude" size={44} float />
+            <BrandIcon name={bmiIcon(metrics.bmi)} size={44} float />
           </div>
           <div className="scale" aria-hidden="true">
             {metrics.bmiScalePosition != null ? (
@@ -371,7 +415,7 @@ function DataSection(): ReactElement {
             }
           />
           <Row
-            icon="trash"
+            brand="caixote"
             title="Repor aplicação"
             sub="Apaga o perfil e todos os registos locais"
             chevron
