@@ -14,6 +14,7 @@
  */
 
 import type { ActivitySession, DayKey } from '../core/types';
+import type { CoachContext, CoachTurn } from '../domain/coach/types';
 
 export type PlatformName = 'web' | 'ios' | 'android';
 
@@ -210,6 +211,41 @@ export interface AuthPort extends Capability {
 
 /* --- The aggregate --------------------------------------------------------- */
 
+/* --- Assistant ------------------------------------------------------------- */
+
+/**
+ * De onde vem a resposta do assistente.
+ *
+ * Hoje há uma só implementação: o motor local, determinístico, que corre no
+ * dispositivo e não fala com ninguém. É uma escolha, não uma limitação
+ * escondida — a aplicação não tem servidor, e uma chave de API dentro de uma
+ * app instalada é uma chave pública.
+ *
+ * Quando existir back-end, entra aqui uma implementação remota que devolve
+ * exatamente o mesmo `CoachTurn`. Os ecrãs, as ações e as regras de segurança
+ * ficam como estão. O contrato obriga ao que interessa: uma resposta traz
+ * blocos, ações propostas e as referências que a sustentam.
+ */
+export interface AssistantPort extends Capability {
+  /** False no motor local: nada sai do dispositivo. */
+  isRemote(): boolean;
+  /** O nome do motor, para os ecrãs poderem ser honestos sobre o que é. */
+  readonly engine: string;
+  respond(request: AssistantRequest): Promise<AssistantReply>;
+}
+
+export interface AssistantRequest {
+  message: string;
+  /** O contexto já filtrado pelas autorizações do utilizador. */
+  context: CoachContext;
+}
+
+export interface AssistantReply {
+  turn: CoachTurn;
+  /** Milissegundos gastos, para os ecrãs poderem esperar de forma honesta. */
+  elapsedMs: number;
+}
+
 export interface Platform {
   info: DeviceInfo;
   storage: StoragePort;
@@ -221,4 +257,5 @@ export interface Platform {
   sensors: SensorPort;
   network: NetworkPort;
   auth: AuthPort;
+  assistant: AssistantPort;
 }

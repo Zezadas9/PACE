@@ -20,6 +20,9 @@ import { ActivitySessionScreen } from '../features/activity/ActivitySessionScree
 import { ActivityScreen } from '../features/activity/ActivityScreen';
 import { NutritionScreen } from '../features/nutrition/NutritionScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
+import { AssistantScreen } from '../features/assistant/AssistantScreen';
+import { ConsentScreen } from '../features/assistant/ConsentScreen';
+import { RunPlanScreen } from '../features/assistant/RunPlanScreen';
 
 /** Nobody reaches the app before the profile exists. */
 function RequireOnboarding({ children }: { children: ReactNode }): ReactElement {
@@ -64,6 +67,9 @@ export function AppRoutes(): ReactElement {
             {/* Full-screen: a live activity should not lose a tap to the tab bar. */}
             <Route path="/atividade/sessao" element={<ActivitySessionScreen />} />
             <Route path="/alimentacao" element={<NutritionScreen />} />
+            <Route path="/ia" element={<AssistantScreen />} />
+            <Route path="/ia/dados" element={<ConsentScreen />} />
+            <Route path="/ia/corrida" element={<RunPlanScreen />} />
             <Route path="/perfil" element={<ProfileScreen />} />
           </Route>
           <Route path="*" element={<Navigate to={DEFAULT_PATH} replace />} />

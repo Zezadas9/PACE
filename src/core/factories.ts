@@ -7,9 +7,9 @@
 
 import { APP } from './constants';
 import type {
-  ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Entity, Exercise,
-  Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task,
-  User, WaterEntry, Workout, WorkoutSession,
+  ActivityGoal, ActivitySession, AppSettings, CalendarEvent, CoachMessage, Entity,
+  Exercise, Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, RunPlan,
+  Streak, Task, User, WaterEntry, Workout, WorkoutSession,
 } from './types';
 import { noRecurrence } from './scheduling';
 import { createId } from './utils/id';
@@ -292,8 +292,36 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       highVolumeAccepted: false,
     },
     feedback: { sound: true, haptics: true },
+    // O assistente nasce desligado e sem acesso a nada: a autorização é do
+    // utilizador, categoria a categoria, e não uma caixa já assinalada.
+    ai: {
+      enabled: false,
+      categories: {
+        profile: false, goals: false, training: false, activity: false,
+        nutrition: false, habits: false, sleep: false, feedback: false,
+      },
+      acceptedAt: null,
+    },
     ...partial,
   };
+}
+
+export function createRunPlan(partial: Partial<RunPlan> = {}): RunPlan {
+  return {
+    ...base(),
+    title: '',
+    goalDistanceM: 10000,
+    startDate: todayKey(),
+    weekdays: [2, 4, 0],
+    sessions: [],
+    active: true,
+    adjustments: [],
+    ...partial,
+  };
+}
+
+export function createCoachMessage(partial: Partial<CoachMessage> = {}): CoachMessage {
+  return { ...base(), role: 'coach', text: '', turn: null, ...partial };
 }
 
 /** Stamp updatedAt on any mutation that goes through a repository. */

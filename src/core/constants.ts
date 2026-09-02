@@ -15,7 +15,7 @@ export const APP = {
   name: 'PACE',
   version: '0.3.0',
   /** Bump when a stored shape changes; migrations live in data/snapshot.ts */
-  schemaVersion: 6,
+  schemaVersion: 7,
   storageNamespace: 'pace',
   locale: 'pt-PT',
 } as const;
@@ -252,7 +252,8 @@ export const MAX_AGE = 130;
 
 /* --- Navigation ----------------------------------------------------------- */
 
-export type TabId = 'today' | 'agenda' | 'workout' | 'activity' | 'nutrition' | 'profile';
+export type TabId =
+  | 'today' | 'agenda' | 'workout' | 'activity' | 'nutrition' | 'assistant' | 'profile';
 
 export interface TabRoute {
   id: TabId;
@@ -270,6 +271,7 @@ export const TABS: ReadonlyArray<TabRoute> = [
   { id: 'workout', path: '/treino', label: 'Treino', icon: 'dumbbell', brand: 'treinos' },
   { id: 'activity', path: '/atividade', label: 'Atividade', icon: 'run', brand: 'corrida' },
   { id: 'nutrition', path: '/alimentacao', label: 'Alimentação', icon: 'leaf', brand: 'alimentacao' },
+  { id: 'assistant', path: '/ia', label: 'IA', icon: 'sparkle', brand: 'ia' },
   { id: 'profile', path: '/perfil', label: 'Perfil', icon: 'user', brand: 'perfil' },
 ];
 

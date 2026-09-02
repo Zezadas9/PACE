@@ -11,7 +11,7 @@ import { createSettings } from '../core/factories';
 import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Exercise, Food,
   Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task, User,
-  WaterEntry, Workout, WorkoutSession,
+  CoachMessage, RunPlan, WaterEntry, Workout, WorkoutSession,
 } from '../core/types';
 
 export interface Snapshot {
@@ -36,6 +36,8 @@ export interface Snapshot {
   mealPlans: MealPlan[];
   nutritionGoals: NutritionGoal[];
   waterEntries: WaterEntry[];
+  runPlans: RunPlan[];
+  coachMessages: CoachMessage[];
   streaks: Streak[];
 }
 
@@ -47,7 +49,7 @@ export type CollectionKey = Exclude<
 export const COLLECTION_KEYS: CollectionKey[] = [
   'goals', 'habits', 'habitEntries', 'tasks', 'events', 'exercises', 'workouts',
   'workoutSessions', 'activitySessions', 'activityGoals', 'foods', 'meals',
-  'mealPlans', 'nutritionGoals', 'waterEntries', 'streaks',
+  'mealPlans', 'nutritionGoals', 'waterEntries', 'runPlans', 'coachMessages', 'streaks',
 ];
 
 export const STORAGE_KEY = `${APP.storageNamespace}.snapshot`;
@@ -74,6 +76,8 @@ export function emptySnapshot(): Snapshot {
     mealPlans: [],
     nutritionGoals: [],
     waterEntries: [],
+    runPlans: [],
+    coachMessages: [],
     streaks: [],
   };
 }
@@ -96,6 +100,19 @@ const LEGACY_WORKOUT_TYPES: Record<string, Workout['type']> = {
 };
 
 const MIGRATIONS: Record<number, Migration> = {
+  /**
+   * v6 -> v7 — a camada de assistente.
+   *
+   * Só coleções novas e vazias. As definições do assistente entram por
+   * `normalize`, com tudo desligado: uma migração que ligasse o acesso aos
+   * dados estaria a dar uma autorização que ninguém deu.
+   */
+  6: (snapshot) => ({
+    ...snapshot,
+    schemaVersion: 7,
+    runPlans: snapshot.runPlans ?? [],
+    coachMessages: snapshot.coachMessages ?? [],
+  }),
   /**
    * v1 → v2 — agenda, essentials and reminders.
    *
@@ -252,6 +269,13 @@ export function normalize(input: Partial<Snapshot> | null): Snapshot {
   snapshot.settings = {
     notifications: { ...defaults.notifications, ...(snapshot.settings?.notifications ?? {}) },
     feedback: { ...defaults.feedback, ...(snapshot.settings?.feedback ?? {}) },
+    ai: {
+      ...defaults.ai,
+      ...(snapshot.settings?.ai ?? {}),
+      // As categorias são fundidas uma a uma: uma categoria nova nasce
+      // desligada mesmo que o resto do bloco já exista.
+      categories: { ...defaults.ai.categories, ...(snapshot.settings?.ai?.categories ?? {}) },
+    },
   };
   return snapshot;
 }

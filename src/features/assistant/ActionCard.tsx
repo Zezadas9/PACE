@@ -1,0 +1,84 @@
+/**
+ * PACE — a ação que acompanha uma resposta.
+ *
+ * O assistente não é um chat com conselhos: cada resposta que pode virar
+ * qualquer coisa traz um cartão com **o que exatamente** vai acontecer, e um
+ * botão. Ver antes de aceitar é o ponto — sem isto seria uma coisa a mexer na
+ * agenda de alguém com base num palpite.
+ */
+
+import type { ReactElement } from 'react';
+import type { CoachAction } from '../../domain/coach/types';
+import { describeDays } from '../../domain/coach/week-plan';
+import { Button } from '../../ui/primitives';
+
+function summary(action: CoachAction): string[] {
+  switch (action.kind) {
+    case 'create_workout': {
+      const main = action.draft.blocks.filter((block) => block.section === 'main');
+      return [
+        `${action.draft.estimatedMin} minutos · ${main.length} exercícios`,
+        ...main.slice(0, 6).map((block) => `${block.exerciseName} — ${block.sets}×${block.reps ?? '—'}`),
+        main.length > 6 ? `… e mais ${main.length - 6}` : '',
+      ].filter(Boolean);
+    }
+    case 'create_habits':
+      return action.drafts.map((draft) => {
+        const when = draft.frequency === 'daily' ? 'todos os dias' : describeDays(draft.weekdays);
+        return `${draft.title} — ${when}${draft.timeOfDay ? `, ${draft.timeOfDay}` : ''}`;
+      });
+    case 'create_run_plan':
+      return [
+        `${action.draft.weeks} semanas · ${action.draft.sessions.length} sessões`,
+        `Começa a ${action.draft.startDate.split('-').reverse().join('/')}`,
+        'Sobe no máximo 10% por semana.',
+      ];
+    case 'apply_week_plan':
+      return [
+        ...action.draft.workoutAssignments.map(
+          (entry) => `${entry.title} → ${describeDays(entry.weekdays)}`,
+        ),
+        ...action.draft.habitDrafts.map((draft) => `Novo hábito: ${draft.title}`),
+        action.draft.untouched.length > 0
+          ? `${action.draft.untouched.length} coisas ficam como estão`
+          : '',
+      ].filter(Boolean);
+    default:
+      return [];
+  }
+}
+
+export function ActionCard({
+  action, onRun, busy,
+}: {
+  action: CoachAction;
+  onRun: (action: CoachAction) => void;
+  busy: boolean;
+}): ReactElement {
+  const lines = summary(action);
+
+  if (action.kind === 'open') {
+    return (
+      <div className="coach-action">
+        <Button variant="outline" label={action.label} onClick={() => onRun(action)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="coach-action coach-action-card">
+      <p className="t-eyebrow">Proposta</p>
+      <ul>
+        {lines.map((line, index) => <li key={index}>{line}</li>)}
+      </ul>
+      <Button
+        variant="primary"
+        block
+        label={action.label}
+        disabled={busy}
+        onClick={() => onRun(action)}
+      />
+      <p className="t-sm muted-2">Só acontece depois de confirmares.</p>
+    </div>
+  );
+}

@@ -11,7 +11,7 @@ import * as factories from '../core/factories';
 import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Entity, Exercise,
   Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task,
-  User, WaterEntry, Workout, WorkoutSession,
+  User, WaterEntry, Workout, WorkoutSession, CoachMessage, RunPlan,
 } from '../core/types';
 import type { CollectionKey } from './snapshot';
 import type { Store } from './store';
@@ -128,6 +128,13 @@ export class SettingsRepository {
     return this.store.snapshot.settings;
   }
 
+  updateAi(patch: Partial<AppSettings['ai']>): AppSettings {
+    const current = this.store.snapshot.settings;
+    this.store.snapshot.settings = { ...current, ai: { ...current.ai, ...patch } };
+    this.store.persist();
+    return this.store.snapshot.settings;
+  }
+
   updateFeedback(patch: Partial<AppSettings['feedback']>): AppSettings {
     const current = this.store.snapshot.settings;
     this.store.snapshot.settings = {
@@ -157,6 +164,8 @@ export interface Repositories {
   mealPlans: Collection<MealPlan>;
   nutritionGoals: Collection<NutritionGoal>;
   waterEntries: Collection<WaterEntry>;
+  runPlans: Collection<RunPlan>;
+  coachMessages: Collection<CoachMessage>;
   streaks: Collection<Streak>;
 }
 
@@ -179,6 +188,8 @@ export function createRepositories(store: Store): Repositories {
     mealPlans: new Collection(store, 'mealPlans', factories.createMealPlan),
     nutritionGoals: new Collection(store, 'nutritionGoals', factories.createNutritionGoal),
     waterEntries: new Collection(store, 'waterEntries', factories.createWaterEntry),
+    runPlans: new Collection(store, 'runPlans', factories.createRunPlan),
+    coachMessages: new Collection(store, 'coachMessages', factories.createCoachMessage),
     streaks: new Collection(store, 'streaks', factories.createStreak),
   };
 }

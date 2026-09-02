@@ -45,6 +45,7 @@ src/
     metrics.ts           IMC, categoria, idade, intervalo de referência, TMB
     progress.ts          progresso diário, sequências, vista semanal
     nutrition.ts         totais por refeição e por dia, com o que não sabe
+    coach/               o assistente: intenções, segurança, planos, evidência
   data/              persistência
     snapshot.ts          forma do documento guardado + migrações
     store.ts             snapshot em memória, escrita debounced, reatividade
@@ -58,9 +59,10 @@ src/
     profile.ts           criar/editar o perfil, derivar métricas
     dashboard.ts         view-model do ecrã "Hoje"
     nutrition.ts         refeições, plano, água, objetivos, catálogo de alimentos
+    coach.ts             contexto autorizado, conversa e aplicação das propostas
   ui/                sistema de design (Card, Chip, Ring, Row, Dialog, …)
   features/          um módulo por área
-    onboarding/ today/ agenda/ workout/ activity/ nutrition/ profile/
+    onboarding/ today/ agenda/ workout/ activity/ nutrition/ assistant/ profile/
   app/               bootstrap, providers, router, shell
   styles/            tokens · base · layout · components · screens
 ```
@@ -331,6 +333,99 @@ inventar progresso.
 
 ---
 
+## A camada de IA
+
+### A decisão que está por trás de tudo o resto
+
+**Não há um modelo de linguagem nisto.** A PACE não tem servidor e uma chave de
+API dentro de uma aplicação instalada é uma chave pública — qualquer pessoa a
+extrai do bundle em cinco minutos. Havia duas saídas honestas: não fazer a
+secção, ou fazer um treinador que não precise de modelo.
+
+O que existe é o segundo: um motor determinístico que corre no telemóvel, lê os
+dados que o utilizador autorizou, faz contas, cita a fonte e **propõe ações
+concretas**. A mesma pergunta com os mesmos dados dá a mesma resposta, o que
+também quer dizer que é testável — e um treinador que não se consegue testar não
+devia dar conselhos a ninguém.
+
+Quando houver back-end, um modelo entra por `AssistantPort` e devolve o mesmo
+`CoachTurn`. Os ecrãs, as ações, o consentimento e as regras de segurança não
+mudam uma linha:
+
+```ts
+export interface AssistantPort extends Capability {
+  isRemote(): boolean;          // false no motor local: nada sai do dispositivo
+  readonly engine: string;
+  respond(request: AssistantRequest): Promise<AssistantReply>;
+}
+```
+
+### Nunca inventar evidência
+
+`domain/coach/references.ts` é um catálogo de referências reais, escritas por
+extenso e com ligação: OMS 2020, posições da ACSM, as meta-análises de volume e
+frequência de Schoenfeld, Morton 2018 para proteína, Foster 2001 para carga
+interna, Buist 2008 para a regra dos 10%, o consenso da AASM sobre sono, a EFSA
+sobre água.
+
+A regra é simples e não tem meio-termo: **cada afirmação sobre treino,
+recuperação, alimentação ou performance aponta para uma referência, ou é marcada
+como convenção prática sem evidência forte.** O bloco `caveat` existe para isso,
+e é usado — o plano de corrida diz, na cara do utilizador, que a regra dos 10%
+não reduziu lesões no ensaio que a testou.
+
+Uma citação partida não aparece: `referencesByIds` deixa cair ids que não
+existem, para uma fonte inventada nunca chegar ao ecrã.
+
+### O que a IA pode ler
+
+Nada, por omissão. `settings.ai` guarda um interruptor geral e oito categorias
+— perfil, objetivos, treinos, atividade, alimentação, hábitos, sono e feedback —
+e `buildContext` monta o retrato **categoria a categoria**, de forma
+deliberadamente repetitiva, para se ver o que cada autorização abre. Uma
+categoria desligada não chega ao motor vazia por acaso: chega vazia por
+construção, e é por isso que a resposta consegue dizer honestamente que não sabe.
+
+O sono aparece na lista e fica desativado: ainda não há dados de sono na PACE, e
+prometer o contrário seria mentir com uma caixa de seleção.
+
+### O que faz
+
+| Pedido | O que acontece |
+| --- | --- |
+| "Cria-me um treino de pernas de 45 minutos" | Monta a sessão ao contrário, a partir do orçamento de tempo: aquecimento, multiarticulares, acessório, e para quando o tempo acaba. Devolve **[Adicionar treino]**. |
+| "Este treino está equilibrado?" | Lê volume semanal por grupo, frequência, distribuição, duração, RPE e descanso. Diz o que está bem, o que merece atenção, o que falta — e o que não dá para saber. |
+| "Quero conseguir correr 10 km" | Progressão desde o ponto onde a pessoa está (ou desde corrida/caminhada alternadas), com subida travada em 10% e uma semana leve a cada quatro. Depois de cada sessão pergunta como correu e adapta: duas difíceis seguidas baixa, duas fáceis sobe. |
+| "Como está a minha evolução?" | Tendências de consistência, volume levantado, ritmo e carga interna, com saltos de carga assinalados. |
+| "Tenho consumido pouca proteína?" | Lê o diário e converte para g/kg quando há peso. Se um quarto dos alimentos não tiver valores, diz que a estimativa não chega — em vez de dar uma média decorativa. |
+| "Sugere hábitos" / "Organiza a minha semana" | Propõe, com justificação e fonte. A semana mostra o que fica **intocado** antes de perguntar. |
+
+Cada resposta que pode virar alguma coisa traz um cartão com o que exatamente
+vai acontecer, e um botão. Nada é escrito na aplicação sem esse toque — e a
+proposta de semana nunca mexe em compromissos que não mostrou.
+
+### Segurança
+
+`domain/coach/safety.ts` corre **antes** de qualquer intenção ser lida. Sinais de
+urgência (dor no peito, falta de ar, desmaio) devolvem uma resposta que manda
+ligar 112 e recusa dar treino ou alimentação. Sintomas, lesões, medicação,
+gravidez ou perturbações alimentares encaminham para um profissional. Nos dois
+casos a resposta vem **sem ações** — não há nada para adicionar a uma agenda
+quando a pergunta certa é para o médico.
+
+Os termos são propositadamente amplos: um falso positivo custa uma frase a mais
+a mandar procurar ajuda, um falso negativo custa muito mais.
+
+### Testes
+
+45 testes no domínio do assistente cobrem o triagem clínica, a leitura de
+intenções, o orçamento de tempo dos treinos, os travões da progressão de corrida,
+a adaptação ao feedback, a dedução de hábitos repetidos e as regras de
+consentimento — incluindo a mais importante: que sem dados a resposta é "não
+sei", e não um número.
+
+---
+
 ## Marca, cor e som
 
 ### O logo
@@ -575,6 +670,7 @@ quando `data-native="true"`.
 ## O que falta (fases seguintes)
 
 - Base de dados de alimentos e leitura de código de barras.
-- Camada de IA (o separador ainda não existe na navegação, por desenho).
+- Um modelo de linguagem por trás do assistente, quando houver back-end para
+  guardar a chave.
 - Autenticação e sincronização com backend.
 - Empacotamento nativo, seguindo a secção acima.

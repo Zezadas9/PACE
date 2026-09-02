@@ -26,6 +26,7 @@ import {
   UnimplementedAuthPort, WebGeolocationPort, WebNetworkPort,
 } from './web/capabilities';
 import { WebNotificationsPort } from './web/notifications';
+import { LocalAssistantPort } from './web/assistant';
 import type { Platform } from './types';
 
 export async function createWebPlatform(): Promise<Platform> {
@@ -41,6 +42,7 @@ export async function createWebPlatform(): Promise<Platform> {
     sensors: new UnavailableSensorPort(),
     network: new WebNetworkPort(),
     auth: new UnimplementedAuthPort(),
+    assistant: new LocalAssistantPort(),
   };
 }
 

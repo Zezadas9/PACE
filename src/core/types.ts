@@ -510,4 +510,87 @@ export interface FeedbackSettings {
 export interface AppSettings {
   notifications: NotificationSettings;
   feedback: FeedbackSettings;
+  /** Additive, como o feedback: normalize preenche, sem migração. */
+  ai: AiSettings;
+}
+
+/* --- Assistant ------------------------------------------------------------- */
+
+/**
+ * What the assistant is allowed to read.
+ *
+ * Nothing here is on by default. The brief says "com autorização do
+ * utilizador", and the honest reading of that is per-category consent that can
+ * be withdrawn — not one switch that quietly means everything.
+ */
+export type AiDataCategory =
+  | 'profile'    // idade, género, altura, peso
+  | 'goals'
+  | 'training'   // treinos, exercícios, cargas, repetições, RPE
+  | 'activity'   // corrida, caminhada, bicicleta
+  | 'nutrition'
+  | 'habits'
+  | 'sleep'      // ainda sem dados; fica declarado para quando existirem
+  | 'feedback';  // dificuldade e notas subjetivas
+
+export interface AiSettings {
+  /** Master switch. False means the assistant reads nothing at all. */
+  enabled: boolean;
+  categories: Record<AiDataCategory, boolean>;
+  acceptedAt: Timestamp | null;
+}
+
+/** One step of a running plan. A rest day is a session too — it is planned. */
+export interface RunPlanSession {
+  id: string;
+  /** 1-based position in the plan. */
+  index: number;
+  weekIndex: number;
+  date: DayKey;
+  kind: 'walk_run' | 'easy_run' | 'long_run' | 'rest';
+  /** Alternating run/walk minutes, for the early weeks. */
+  segments: Array<{ runSec: number; walkSec: number; repeats: number }>;
+  targetDistanceM: number | null;
+  targetDurationSec: number | null;
+  note: string | null;
+  status: 'planned' | 'done' | 'skipped';
+  /** Filled after the session, and what the next weeks are adapted from. */
+  feedback: RunSessionFeedback | null;
+  /** The activity this was completed with, when there is one. */
+  activityId: string | null;
+}
+
+export interface RunSessionFeedback {
+  difficulty: SessionDifficulty;
+  /** Borg CR10, when the user gives one. */
+  rpe: number | null;
+  note: string | null;
+  at: Timestamp;
+}
+
+export interface RunPlan extends Entity {
+  title: string;
+  goalDistanceM: number;
+  startDate: DayKey;
+  /** 0 = Sunday .. 6 = Saturday. */
+  weekdays: number[];
+  sessions: RunPlanSession[];
+  active: boolean;
+  /** How many times the plan has been eased or pushed, for the history. */
+  adjustments: RunPlanAdjustment[];
+}
+
+export interface RunPlanAdjustment {
+  at: Timestamp;
+  direction: 'easier' | 'harder' | 'hold';
+  reason: string;
+  fromSessionIndex: number;
+}
+
+/** A turn in the assistant conversation, kept so the thread survives a reload. */
+export interface CoachMessage extends Entity {
+  role: 'user' | 'coach';
+  text: string;
+  /** Structured payload for a coach turn; the user's turns are plain text. */
+  turn: unknown | null;
 }

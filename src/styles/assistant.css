@@ -1,0 +1,215 @@
+/* ============================================================================
+   PACE — Assistente
+   ========================================================================== */
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.coach-head .t-title { margin-top: 0.1rem; }
+
+.coach-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.coach-empty {
+  padding: var(--s-6) var(--s-2);
+  text-align: center;
+}
+.coach-empty .t-sm { margin-top: var(--s-2); }
+
+/* O que o utilizador disse: curto, encostado à direita, sem enfeites. */
+.coach-bubble {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-lg);
+  border-bottom-right-radius: var(--r-sm);
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  font-size: var(--fs-body);
+}
+
+/* O que o assistente respondeu: um bloco de leitura, não um balão. */
+.coach-turn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+}
+
+.coach-text { font-size: var(--fs-body); line-height: var(--lh-body); }
+.coach-list { display: flex; flex-direction: column; gap: var(--s-2); }
+.coach-list li {
+  position: relative;
+  padding-left: var(--s-4);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+.coach-list li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0.55em;
+  width: 4px; height: 4px;
+  border-radius: var(--r-full);
+  background: var(--c-ink-3);
+}
+
+.coach-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: var(--s-2);
+}
+.coach-metrics > div {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.coach-metrics .value { font-size: var(--fs-h2); font-weight: var(--fw-medium); }
+.coach-metrics .label { font-size: var(--fs-xs); color: var(--c-ink-2); }
+.coach-metrics .note { font-size: var(--fs-xs); color: var(--c-ink-3); }
+
+.coach-notice {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+.coach-notice svg {
+  width: 18px; height: 18px; flex: none; margin-top: 2px;
+  stroke: currentColor; fill: none; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+/* Um aviso clínico não pode ler-se como mais um parágrafo. */
+.coach-notice[data-tone="medical"] {
+  background: var(--c-ember-soft);
+  color: var(--c-ember);
+}
+.coach-notice[data-tone="caution"] { background: var(--c-ember-soft); color: var(--c-ember); }
+
+/* Uma afirmação sem evidência forte por trás diz-se assim, e não em rodapé. */
+.coach-caveat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px dashed var(--c-line-strong);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-2);
+  line-height: 1.45;
+}
+.coach-caveat .tag {
+  align-self: flex-start;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+}
+
+.coach-refs { font-size: var(--fs-sm); }
+.coach-refs summary {
+  cursor: pointer;
+  color: var(--c-ink-3);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.coach-refs ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-3);
+}
+.coach-refs a {
+  color: var(--c-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+}
+.coach-refs .what {
+  display: block;
+  margin-top: 2px;
+  color: var(--c-ink-3);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+}
+
+/* A proposta: vê-se o que vai acontecer antes de tocar no botão. */
+.coach-action { display: flex; flex-direction: column; gap: var(--s-2); }
+.coach-action-card {
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.coach-action-card ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--s-2) 0 var(--s-3);
+}
+.coach-action-card li { font-size: var(--fs-sm); color: var(--c-ink-2); }
+.coach-action-card .t-sm { margin-top: var(--s-2); text-align: center; }
+
+.coach-typing {
+  display: flex;
+  gap: 4px;
+  padding: var(--s-3) 0;
+}
+.coach-typing span {
+  width: 6px; height: 6px;
+  border-radius: var(--r-full);
+  background: var(--c-ink-3);
+  animation: coach-blink 1.1s var(--ease) infinite;
+}
+.coach-typing span:nth-child(2) { animation-delay: 0.15s; }
+.coach-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes coach-blink {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50%      { opacity: 1; transform: translateY(-2px); }
+}
+
+.coach-suggestions {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  padding-bottom: var(--s-1);
+  scrollbar-width: none;
+}
+.coach-suggestions::-webkit-scrollbar { display: none; }
+.coach-suggestions .chip { flex: none; }
+
+.coach-composer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+  padding: var(--s-2) 0;
+  background: linear-gradient(to top, var(--c-bg) 70%, transparent);
+}
+.coach-composer .input { flex: 1; }
+
+.coach-clear {
+  align-self: center;
+  padding: var(--s-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-typing span { animation: none; }
+}
