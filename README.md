@@ -494,10 +494,36 @@ verdadeira. Nada de folha recortada em runtime, nada de fundo por baixo.
   desapareciam no escuro; os escuros são levantados para cinzento e o quadro
   azul fica como está.
 
+- **Recupera a cor das arestas.** Um pixel meio transparente da folha original
+  não tem a cor do desenho: tem a cor do desenho *misturada com o fundo*. Guardar
+  essa mistura deixava um rebordo escuro nos ícones da folha preta e um rebordo
+  claro nos da folha branca — invisíveis sobre o fundo de origem, óbvios sobre o
+  oposto. A conta da composição, ao contrário, devolve a cor verdadeira.
+- **Tira o halo, quando dá.** Alguns desenhos trazem um brilho à volta — a lua
+  tem dezoito pixéis de azul quase preto — que o preenchimento não apanha e que
+  ficava opaco. `stripHalo` remove o que não é claramente desenho e consegue
+  chegar ao exterior; o que está fechado por arte fica (é assim que o disco preto
+  do "perfil" e o corpo branco do calendário sobrevivem).
+- **Desfaz a limpeza se ela estragar.** A regra do halo funciona mal em desenhos
+  com partes tão escuras como o fundo: parte-os em bocados. Por isso mede-se o
+  antes e o depois e, se o ícone se partiu, a limpeza é revertida — o
+  `build` diz quais. Uma lista afinada à mão envelheceria em silêncio; esta
+  guarda não.
+
+Verificar o resultado:
+
+```bash
+npm run icons:check
+```
+
+Procura três coisas que só se veem tarde demais: arte encostada à margem
+(recorte a cortar o desenho), migalhas soltas (limpeza a levar arte com ela) e
+franja (pixéis quase transparentes que aparecem como sujidade no tema oposto).
+
 Correr outra vez, se as folhas mudarem:
 
 ```bash
-npm install --no-save jpeg-js pngjs && node tools/build-brand-icons.cjs
+npm install --no-save jpeg-js pngjs && npm run icons:build
 ```
 
 Quarenta ícones, entre navegação, estados vazios, definições, as três faixas de

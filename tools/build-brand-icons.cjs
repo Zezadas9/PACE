@@ -30,6 +30,60 @@ const MIN_AREA = 60;     // abaixo disto e ruido de compressao, nao arte
 const OUT_DIR = 'public/icons';
 
 /**
+ * Icones com brilho a volta do desenho, que stripHalo tira.
+ *
+ * Sao os casos em que o desenho e escuro e o fundo original o envolveu com um
+ * halo: a lua tem um brilho azul quase preto na folha preta; as figuras a
+ * preto e o cronometro tem sombra suave na folha branca. Em qualquer um deles
+ * a arte e nitidamente distinta do fundo, por isso a regra do stripHalo agarra
+ * bem — ao contrario dos icones com grandes zonas planas (o disco do perfil,
+ * o corpo branco do calendario), que ficam de fora desta lista de proposito.
+ */
+const HALO = {
+  // A lua traz um brilho forte a volta: e preciso subir a fasquia do que conta
+  // como desenho para o cortar todo. O corpo dela comeca acima de 150, por
+  // isso 70 corta o brilho sem lhe tocar.
+  sono: 120,
+
+  // Folha preta, arte clara: o que fica a volta e ringing do JPEG.
+  agenda: 34,
+  alimentacao: 34,
+  progresso: 34,
+  objetivos: 34,
+  hidratacao: 34,
+  ia: 34,
+  lembretes: 34,
+  saude: 34,
+  relaxamento: 34,
+  estatisticas: 34,
+
+  // Folha branca: sombras suaves por baixo dos desenhos.
+  caminhada: 34,
+  'caminhada-rapida': 34,
+  relogio: 34,
+  som: 34,
+  cadeado: 34,
+  caixote: 34,
+  vibracao: 34,
+  frequencia: 34,
+  sequencia: 34,
+  'melhor-sequencia': 34,
+  consistencia: 34,
+  refeicoes: 34,
+  'imc-baixo': 34,
+  'imc-normal': 34,
+  'imc-alto': 34,
+  'streak-1': 34,
+  'streak-3': 34,
+  'streak-7': 34,
+  'streak-14': 34,
+  'streak-30': 34,
+  'streak-60': 34,
+  'streak-100': 34,
+  'streak-365': 34,
+};
+
+/**
  * Acertos de cor, icone a icone.
  *
  * A bicicleta tem pneus pretos que desaparecem no tema escuro: `lift` levanta
@@ -91,8 +145,9 @@ function extract(sheet) {
   /** Quanto um pixel se afasta da cor do fundo. */
   const distance = (x, y) => (dark ? lumAt(x, y) : 255 - lumAt(x, y));
 
-  // Limiares: o do preenchimento e apertado para nao entrar pelo desenho
-  // dentro; o da franja e largo para apanhar sombras suaves.
+  // O preenchimento e apertado de proposito: um limiar generoso atravessa a
+  // orla de um disco escuro e come-lhe o interior. O halo a volta dos desenhos
+  // e tratado a seguir, icone a icone, por `stripHalo`.
   const T_FILL = dark ? 4 : 10;
   const T_EDGE = dark ? 40 : 46;
 
@@ -187,7 +242,7 @@ function extract(sheet) {
     }
   }
 
-  return { W, H, data, alpha };
+  return { W, H, data, alpha, background: dark ? 0 : 255 };
 }
 
 /** As caixas de cada icone dentro de uma banda, medidas ao pixel. */
@@ -238,9 +293,27 @@ function boxesIn(sheet, image, band, expected) {
   });
 }
 
-/** Media de area em cor pre-multiplicada: reduz sem franjas. */
+/**
+ * A cor verdadeira de um pixel da orla.
+ *
+ * Um pixel meio transparente da folha original nao tem a cor do desenho: tem a
+ * cor do desenho **misturada com o fundo** onde foi composto. Guardar essa
+ * mistura deixa um rebordo escuro nos icones da folha preta e um rebordo claro
+ * nos da folha branca — invisiveis sobre o fundo de origem, obvios sobre o
+ * oposto. Era isto que fazia os icones aparecerem "com bocados".
+ *
+ * A conta e a da composicao, ao contrario: observado = a*cor + (1-a)*fundo,
+ * logo cor = (observado - (1-a)*fundo) / a.
+ */
+function unmix(value, alpha, background) {
+  if (alpha >= 0.98) return value;
+  const recovered = (value - (1 - alpha) * background) / alpha;
+  return Math.max(0, Math.min(255, recovered));
+}
+
+/** Media de area em cor ja limpa do fundo: reduz sem franjas. */
 function sample(image, box, sx0, sy0, sx1, sy1) {
-  const { W, data, alpha } = image;
+  const { W, data, alpha, background } = image;
   let r = 0, g = 0, b = 0, a = 0, n = 0;
   const x0 = Math.max(box.x0, Math.floor(sx0));
   const x1 = Math.min(box.x1, Math.max(x0, Math.ceil(sx1) - 1));
@@ -251,15 +324,147 @@ function sample(image, box, sx0, sy0, sx1, sy1) {
       const k = y * W + x;
       const av = alpha[k] / 255;
       const i = k * 4;
-      r += data[i] * av;
-      g += data[i + 1] * av;
-      b += data[i + 2] * av;
-      a += av;
       n += 1;
+      // Abaixo de 15% de cobertura a divisao amplifica ruido em vez de cor:
+      // esses pixeis pesam quase nada e ficam de fora.
+      if (av < 0.15) continue;
+      r += unmix(data[i], av, background) * av;
+      g += unmix(data[i + 1], av, background) * av;
+      b += unmix(data[i + 2], av, background) * av;
+      a += av;
     }
   }
   if (n === 0 || a === 0) return [0, 0, 0, 0];
   return [r / a, g / a, b / a, (a / n) * 255];
+}
+
+/**
+ * Tira o halo de um icone, sem lhe tirar as formas escuras.
+ *
+ * Alguns desenhos trazem um brilho a volta — a lua tem dezoito pixeis de azul
+ * quase preto — que o preenchimento apertado nao apanha. Ficava opaco: um
+ * rebordo invisivel sobre o fundo de origem e obvio sobre o oposto. Era isto
+ * que fazia os icones aparecerem com bocados.
+ *
+ * A regra que os separa: dentro da caixa do icone, olha-se so para os pixeis
+ * que sao **claramente arte** (longe da cor do fundo). Tudo o que nao e arte e
+ * consegue chegar a margem da caixa sem atravessar arte e halo — sai. O que
+ * nao consegue esta fechado por arte, e fica: e assim que o disco escuro do
+ * "perfil" e o corpo branco do calendario sobrevivem inteiros.
+ */
+function stripHalo(image, box, threshold) {
+  const { W, data, alpha } = image;
+  const dark = image.background === 0;
+  // Folgado de proposito: a caixa e justa a arte, e o preenchimento precisa de
+  // uma margem por onde dar a volta ao desenho todo.
+  const pad = 10;
+  const x0 = Math.max(0, box.x0 - pad);
+  const x1 = Math.min(W - 1, box.x1 + pad);
+  const y0 = Math.max(0, box.y0 - pad);
+  const y1 = Math.min(image.H - 1, box.y1 + pad);
+  const w = x1 - x0 + 1;
+  const h = y1 - y0 + 1;
+
+  // "Claramente arte": longe o suficiente da cor do fundo para nao ser halo.
+  const T_ART = threshold;
+  const isArt = (x, y) => {
+    const i = (y * W + x) * 4;
+    const l = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    return (dark ? l : 255 - l) >= T_ART;
+  };
+
+  const reachable = new Uint8Array(w * h);
+  const stack = [];
+  for (let x = x0; x <= x1; x += 1) { stack.push(x, y0, x, y1); }
+  for (let y = y0; y <= y1; y += 1) { stack.push(x0, y, x1, y); }
+
+  while (stack.length) {
+    const y = stack.pop();
+    const x = stack.pop();
+    if (x < x0 || y < y0 || x > x1 || y > y1) continue;
+    const k = (y - y0) * w + (x - x0);
+    if (reachable[k] || isArt(x, y)) continue;
+    reachable[k] = 1;
+    stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+  }
+
+  for (let y = y0; y <= y1; y += 1) {
+    for (let x = x0; x <= x1; x += 1) {
+      if (reachable[(y - y0) * w + (x - x0)]) alpha[y * W + x] = 0;
+    }
+  }
+}
+
+/** Area e numero de pedacos de um icone, para saber se a limpeza o estragou. */
+function measure(image, box) {
+  const { W, alpha } = image;
+  let area = 0;
+  const seen = new Set();
+  let pieces = 0;
+  for (let y = box.y0; y <= box.y1; y += 1) {
+    for (let x = box.x0; x <= box.x1; x += 1) {
+      const k = y * W + x;
+      if (alpha[k] <= 20) continue;
+      area += 1;
+      if (seen.has(k)) continue;
+      // Um pedaco novo: conta-o e marca tudo o que lhe esta ligado.
+      let size = 0;
+      const stack = [k];
+      seen.add(k);
+      while (stack.length) {
+        const current = stack.pop();
+        size += 1;
+        const cx = current % W;
+        const cy = (current - cx) / W;
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+          const nx = cx + dx;
+          const ny = cy + dy;
+          if (nx < box.x0 || ny < box.y0 || nx > box.x1 || ny > box.y1) continue;
+          const nk = ny * W + nx;
+          if (seen.has(nk) || alpha[nk] <= 20) continue;
+          seen.add(nk);
+          stack.push(nk);
+        }
+      }
+      if (size >= 60) pieces += 1;
+    }
+  }
+  return { area, pieces };
+}
+
+/**
+ * Limpa o halo — mas so se a limpeza nao estragar o desenho.
+ *
+ * A regra do halo funciona bem quando a arte se distingue do fundo, e mal
+ * quando o desenho tem partes proprias tao escuras (ou tao claras) como o
+ * fundo: nesses casos parte-o em bocados. Em vez de manter uma lista afinada
+ * a mao — que envelhece em silencio — mede-se o antes e o depois: se o icone
+ * perdeu area a serio ou se partiu, a limpeza e desfeita.
+ */
+function stripHaloSafely(image, box, threshold) {
+  const { W, alpha } = image;
+  const before = measure(image, box);
+
+  const backup = new Map();
+  for (let y = box.y0; y <= box.y1; y += 1) {
+    for (let x = box.x0; x <= box.x1; x += 1) {
+      const k = y * W + x;
+      if (alpha[k] > 0) backup.set(k, alpha[k]);
+    }
+  }
+
+  stripHalo(image, box, threshold);
+  const after = measure(image, box);
+
+  // O sinal fiavel de estrago e o desenho partir-se: perder area e o que se
+  // quer, quando o que se perde e sombra. O limite de area fica largo, so para
+  // apanhar um corte catastrofico.
+  const danificado = after.pieces > before.pieces || after.area < before.area * 0.55;
+  if (danificado) {
+    for (const [k, value] of backup) alpha[k] = value;
+    return false;
+  }
+  return true;
 }
 
 /** Escreve um icone: centrado, do mesmo tamanho visual, com a mesma margem. */
@@ -309,6 +514,8 @@ function writeIcon(image, box, name) {
 fs.mkdirSync(OUT_DIR, { recursive: true });
 let written = 0;
 let bytes = 0;
+/** Icones onde a limpeza do halo foi desfeita por estragar o desenho. */
+const recusados = [];
 
 for (const sheet of SHEETS) {
   const image = extract(sheet);
@@ -318,6 +525,10 @@ for (const sheet of SHEETS) {
     boxes.forEach((box, position) => {
       const name = names[position];
       if (!name || sheet.skip.includes(name)) return;
+      const halo = HALO[name];
+      if (halo != null && !stripHaloSafely(image, box, halo)) {
+        recusados.push(name);
+      }
       bytes += writeIcon(image, box, name);
       written += 1;
     });
@@ -326,3 +537,6 @@ for (const sheet of SHEETS) {
 }
 
 console.log(`${written} icones em ${OUT_DIR}, ${(bytes / 1024).toFixed(0)} KB`);
+if (recusados.length > 0) {
+  console.log(`limpeza de halo desfeita (estragava o desenho): ${recusados.join(', ')}`);
+}

@@ -19,7 +19,9 @@
     "worker:secret": "npm --prefix worker run secret",
     "worker:login": "npm --prefix worker run login",
     "worker:secrets": "npm --prefix worker run secret:list",
-    "worker:whoami": "npm --prefix worker run whoami"
+    "worker:whoami": "npm --prefix worker run whoami",
+    "icons:build": "node tools/build-brand-icons.cjs",
+    "icons:check": "node tools/check-brand-icons.cjs"
   },
   "dependencies": {
     "react": "^19.2.0",
