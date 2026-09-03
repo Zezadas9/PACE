@@ -11,6 +11,13 @@ export interface Env {
   ANTHROPIC_API_KEY?: string;
   ANTHROPIC_MODEL?: string;
   ALLOWED_ORIGINS?: string;
+  /**
+   * O espaço de trabalho da Anthropic, quando a chave está ligada a uma
+   * identidade em vez de a um workspace. É um identificador, não um segredo.
+   */
+  ANTHROPIC_WORKSPACE_ID?: string;
+  /** "1" faz os erros trazerem a mensagem de quem recusou. Só para diagnóstico. */
+  DEBUG_UPSTREAM?: string;
 }
 
 const DEFAULT_ORIGINS = ['http://localhost:5173', 'http://localhost:4173'];

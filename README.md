@@ -621,6 +621,24 @@ npm run worker:deploy        # imprime o URL: https://pace-coach.<conta>.workers
 `claude-sonnet-4-6`. Podes trocá-lo por outro (por exemplo `claude-opus-5`, mais
 capaz e mais caro) sem tocar em código.
 
+**Chaves ligadas a uma identidade.** Se a chave da Anthropic estiver ligada à
+tua conta e não a um espaço de trabalho, a API responde `400` a dizer que falta
+o `anthropic-workspace-id`. Duas saídas: criar a chave já dentro de um workspace
+(no ecrã *Create Key* há um campo para isso), ou dar o identificador ao Worker:
+
+```bash
+cd worker && echo "wrkspc_o-teu-id" | npx wrangler secret put ANTHROPIC_WORKSPACE_ID
+```
+
+Encontra-lo em *console.anthropic.com* → *Settings* → *Workspaces* → clica no
+workspace: fica no endereço, a seguir a `/workspaces/`.
+
+**Diagnóstico.** Os erros trazem sempre o código HTTP de quem recusou
+(`upstreamStatus`) — um número, nunca conteúdo. Para ver também a mensagem da
+Anthropic durante uma investigação, publica com `--var DEBUG_UPSTREAM:1` e
+volta a publicar sem essa opção quando acabares. Fica desligado por omissão
+porque uma mensagem de erro pode devolver pedaços do pedido.
+
 **Origens.** `ALLOWED_ORIGINS`, no mesmo ficheiro, é a lista separada por
 vírgulas das origens autorizadas — o teu domínio do GitHub Pages e o
 `http://localhost:5173` do desenvolvimento. Nunca `*`: um backend que aceita

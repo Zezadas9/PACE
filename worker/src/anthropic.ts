@@ -105,6 +105,15 @@ export interface CoachSuccess {
 export interface CoachError {
   ok: false;
   failure: CoachFailure;
+  /** Código HTTP de quem recusou. Um número — nunca a mensagem nem os dados. */
+  upstreamStatus?: number;
+  /**
+   * A mensagem de quem recusou, só quando DEBUG_UPSTREAM está ligado.
+   *
+   * Fica desligada por omissão: uma mensagem de erro da API pode devolver
+   * pedaços do pedido, e o pedido tem dados do utilizador.
+   */
+  upstreamMessage?: string;
 }
 
 /**
@@ -140,8 +149,17 @@ export async function askClaude(
   request: CoachRequest,
   apiKey: string,
   model: string,
+  debug = false,
+  workspaceId?: string,
 ): Promise<CoachSuccess | CoachError> {
-  const client = new Anthropic({ apiKey, maxRetries: 1 });
+  const client = new Anthropic({
+    apiKey,
+    maxRetries: 1,
+    // Uma chave ligada a uma identidade (e não a um espaço de trabalho) obriga
+    // a dizer em que workspace o pedido age. Uma chave já ligada a um workspace
+    // não precisa disto, e o cabeçalho simplesmente não vai.
+    defaultHeaders: workspaceId ? { 'anthropic-workspace-id': workspaceId } : undefined,
+  });
 
   let response: Anthropic.Message;
   try {
@@ -154,9 +172,20 @@ export async function askClaude(
       tool_choice: { type: 'tool', name: TOOL_NAME },
     });
   } catch (error) {
-    // Nada do erro original sai daqui: pode trazer partes do pedido.
-    if (error instanceof Anthropic.RateLimitError) return { ok: false, failure: 'rate_limited' };
-    if (error instanceof Anthropic.APIError) return { ok: false, failure: 'upstream_error' };
+    // Nada do conteúdo do erro sai daqui: pode trazer partes do pedido. O
+    // código de estado, sim — é o que permite perceber o que se passou.
+    if (error instanceof Anthropic.RateLimitError) {
+      return { ok: false, failure: 'rate_limited', upstreamStatus: error.status };
+    }
+    if (error instanceof Anthropic.APIError) {
+      console.warn('anthropic', error.status ?? 0, error.name);
+      return {
+        ok: false,
+        failure: 'upstream_error',
+        upstreamStatus: error.status,
+        upstreamMessage: debug ? error.message.slice(0, 400) : undefined,
+      };
+    }
     return { ok: false, failure: 'unavailable' };
   }
 

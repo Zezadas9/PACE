@@ -75,13 +75,25 @@ export default {
 
     const result = await askClaude(
       parsed.data,
-      env.ANTHROPIC_API_KEY,
+      // Um espaço ou uma quebra de linha colados a mais na chave dão 401 e
+      // parecem uma chave errada. Cortam-se aqui.
+      env.ANTHROPIC_API_KEY.trim(),
       env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL,
+      env.DEBUG_UPSTREAM === '1',
+      env.ANTHROPIC_WORKSPACE_ID?.trim() || undefined,
     );
 
     if (!result.ok) {
       const status = result.failure === 'rate_limited' ? 429 : 502;
-      return fail(result.failure, status, cors);
+      return json(
+        {
+          error: result.failure,
+          upstreamStatus: result.upstreamStatus,
+          upstreamMessage: result.upstreamMessage,
+        },
+        status,
+        cors,
+      );
     }
 
     return json({ turn: result.turn }, 200, cors);
