@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { CoachAction, CoachTurn } from '../../domain/coach/types';
+import type { CoachAction, CoachTurn , ScheduleDraft } from '../../domain/coach/types';
 import {
   aiSettings, applyAction, ask, clearHistory, history, runPlanView,
 } from '../../services/coach';
@@ -18,6 +18,7 @@ import {
 import { useUi } from '../../app/providers/uiContext';
 import { Screen } from '../../app/navigation/Screen';
 import { BrandIcon } from '../../ui/BrandIcon';
+import { SchedulePlanSheet } from './SchedulePlanSheet';
 import { Button, Card } from '../../ui/primitives';
 import { Icon } from '../../ui/Icon';
 import { Blocks } from './blocks';
@@ -55,6 +56,8 @@ export function AssistantScreen(): ReactElement {
    * escrever tudo de novo.
    */
   const [notice, setNotice] = useState<{ text: string; retry: string | null } | null>(null);
+  /** A proposta de semana aberta para rever — aceitar, editar ou rejeitar. */
+  const [schedule, setSchedule] = useState<ScheduleDraft | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   const settings = useMemo(() => aiSettings(repos), [repos, version]);
@@ -98,6 +101,12 @@ export function AssistantScreen(): ReactElement {
     void (async () => {
       if (action.kind === 'open') {
         navigate(action.path);
+        return;
+      }
+      // A proposta de semana não cabe num "confirmas?": abre-se para ser lida,
+      // mudada linha a linha, e só depois aceite.
+      if (action.kind === 'apply_schedule') {
+        setSchedule(action.draft);
         return;
       }
       const ok = await confirm({
@@ -250,6 +259,26 @@ export function AssistantScreen(): ReactElement {
         >
           Apagar conversa
         </button>
+      ) : null}
+      {schedule ? (
+        <SchedulePlanSheet
+          draft={schedule}
+          onClose={() => setSchedule(null)}
+          onConfirm={(edited) => {
+            const result = applyAction(repos, {
+              kind: 'apply_schedule',
+              label: 'Confirmar',
+              draft: edited,
+            });
+            setSchedule(null);
+            if (!result.ok) {
+              toast(result.message || 'Não consegui aplicar isso.');
+              return;
+            }
+            feedback.play('complete');
+            toast(result.message);
+          }}
+        />
       ) : null}
     </Screen>
   );

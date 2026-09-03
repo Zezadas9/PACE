@@ -36,6 +36,8 @@ export interface WorkoutDraft {
   type: WorkoutType;
   /** 0 = Sunday .. 6 = Saturday. Empty means the plan is not on a schedule. */
   weekdays: number[];
+  /** A hora a que o treino acontece, quando há uma. */
+  timeOfDay: string | null;
   estimatedMin: number | null;
   description: string | null;
   blocks: BlockDraft[];
@@ -61,6 +63,7 @@ export function emptyWorkoutDraft(): WorkoutDraft {
     title: '',
     type: 'strength',
     weekdays: [],
+    timeOfDay: null,
     estimatedMin: 45,
     description: null,
     blocks: [emptyBlockDraft()],
@@ -74,6 +77,7 @@ export function draftFromWorkout(workout: Workout, exercises: Exercise[]): Worko
     title: workout.title,
     type: workout.type,
     weekdays: workout.weekdays,
+    timeOfDay: workout.timeOfDay,
     estimatedMin: workout.estimatedMin,
     description: workout.tags[0] ?? null,
     blocks: workout.blocks.map((block) => ({
@@ -126,6 +130,7 @@ export function saveWorkout(repos: Repositories, draft: WorkoutDraft): Workout {
     title: draft.title.trim(),
     type: draft.type,
     weekdays: draft.weekdays,
+    timeOfDay: draft.timeOfDay,
     estimatedMin: draft.estimatedMin,
     blocks,
     // Description rides in tags[0] rather than adding a field the model does

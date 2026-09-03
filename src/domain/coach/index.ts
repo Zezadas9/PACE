@@ -30,7 +30,10 @@ import { readPerformance } from './performance';
 import { baselineFrom, buildRunPlan } from './running';
 import { screen } from './safety';
 import { caveat, notice, sources, text, type CoachBlock, type CoachContext, type CoachTurn } from './types';
-import { missingPlans, proposeWeek, weekdayName } from './week-plan';
+import {
+  formatMinutes, planWeek, readCommitments, readExisting, requestFromIntent,
+  subtractExisting, summarize, WEEKDAY_NAMES, type SchedulePlan,
+} from './agenda-plan';
 import {
   activityAnswer, mealIdeasAnswer, recoveryAnswer, sleepAnswer, todayAnswer,
   weeklyActivityMinutes, type TopicAnswer,
@@ -303,39 +306,6 @@ function habitsTurn(context: CoachContext): CoachTurn {
   };
 }
 
-function organizeTurn(context: CoachContext, intent: CoachIntent): CoachTurn {
-  const draft = proposeWeek(intent.perWeek, context.workouts, context.habits);
-  const missing = missingPlans(intent.perWeek, context.workouts);
-
-  const lines = draft.days.map((day) => {
-    const labels = day.items
-      .map((item) => (item.existing ? `${item.label} (já tinhas)` : item.label))
-      .join(' · ');
-    return `**${weekdayName(day.weekday)}** — ${labels}`;
-  });
-
-  const blocks: CoachBlock[] = [
-    text('Uma proposta de semana. Nada disto muda até dizeres que sim.'),
-    { kind: 'list', items: lines },
-  ];
-  if (missing > 0) {
-    blocks.push(notice('caution',
-      `Faltam ${missing} planos de treino para cobrir todos os dias propostos. Posso criar `
-      + 'um se me disseres o que queres treinar e em quanto tempo.'));
-  }
-  if (draft.untouched.length > 0) {
-    blocks.push(text('Fica como está:'));
-    blocks.push({ kind: 'list', items: draft.untouched });
-  }
-  blocks.push(sources('who-2020', 'garber-2011'));
-
-  return {
-    blocks,
-    actions: [{ kind: 'apply_week_plan', label: 'Aplicar proposta', draft }],
-    followUps: ['Cria-me um treino de 45 minutos', 'Este treino está equilibrado?'],
-  };
-}
-
 function capabilitiesTurn(context: CoachContext): CoachTurn {
   const on = (Object.keys(context.settings.categories) as AiDataCategory[])
     .filter((category) => context.settings.categories[category]);
@@ -369,6 +339,246 @@ function capabilitiesTurn(context: CoachContext): CoachTurn {
   };
 }
 
+/**
+ * "Quero treinar 4 vezes, correr 2 e caminhar todos os dias."
+ *
+ * A resposta segue a ordem que faz sentido a quem lê: primeiro o que há de
+ * livre, depois a proposta, depois o que fica intocado, e só no fim o resumo do
+ * que vai ser criado. Nada acontece sem o toque de confirmação.
+ */
+function scheduleTurn(context: CoachContext, intent: CoachIntent): CoachTurn {
+  const plans = context.workouts.filter((workout) => !workout.archived);
+  const request = requestFromIntent(
+    intent,
+    plans[0]?.title ?? (intent.workoutType === 'strength' ? 'Musculação' : 'Treino'),
+  );
+
+  if (request.workouts === 0 && request.runs === 0 && !request.walksDaily && !request.water) {
+    return {
+      blocks: [text('Diz-me quantas vezes por semana queres cada coisa — por exemplo '
+        + '"treinar 3 vezes, correr 2 e caminhar todos os dias" — e eu procuro espaço na '
+        + 'tua agenda.')],
+      actions: [],
+      followUps: [
+        'Quero treinar 4 vezes por semana e correr 2',
+        'Quero começar a caminhar todos os dias',
+      ],
+    };
+  }
+
+  const commitments = readCommitments({
+    habits: context.habits,
+    workouts: context.workouts,
+    events: [],
+    tasks: [],
+  });
+
+  // O que já está feito não se propõe outra vez: quem já caminha todos os dias
+  // não precisa de uma segunda caminhada diária.
+  const cover = readExisting(context.habits, context.workouts);
+  const falta = subtractExisting(request, cover);
+  const plan = planWeek(falta, commitments);
+
+  const nadaAFazer = plan.items.length === 0 && plan.unplaced.length === 0;
+  if (nadaAFazer && cover.labels.length > 0) {
+    return {
+      blocks: [
+        text('Isso já está tratado na tua agenda:'),
+        { kind: 'list', items: cover.labels },
+        text('Se quiseres mais do que isto, diz-me quantas vezes — por exemplo '
+          + '"quero treinar 5 vezes por semana".'),
+      ],
+      actions: [{ kind: 'open', label: 'Ver agenda', path: '/agenda' }],
+      followUps: ['Quero treinar mais uma vez por semana', 'Não consigo treinar à quarta'],
+    };
+  }
+
+  const blocks: CoachBlock[] = [
+    text('**Encontrei estes horários disponíveis.**'),
+    { kind: 'list', items: freeSummary(plan) },
+    text('E esta é a proposta:'),
+    { kind: 'list', items: proposalLines(plan) },
+  ];
+
+  if (plan.untouched.length > 0) {
+    blocks.push(text('Fica tudo como está — não apago nem mudo nada do que já tens:'));
+    blocks.push({
+      kind: 'list',
+      items: [...new Set(plan.untouched.map(
+        (item) => `${WEEKDAY_NAMES[item.weekday]}, ${formatMinutes(item.startMin)} — ${item.label}`,
+      ))].slice(0, 6),
+    });
+  }
+
+  if (plan.unplaced.length > 0) {
+    blocks.push(notice('caution',
+      `Não encontrei espaço para: ${plan.unplaced.slice(0, 4).join(', ')}. `
+      + 'Diz-me o que posso trocar e eu proponho outra coisa.'));
+  }
+
+  if (cover.labels.length > 0) {
+    blocks.push(text('Já tinhas, e não mexo: ' + cover.labels.join('; ') + '.'));
+  }
+
+  const summary = summarize(plan);
+  if (summary.length > 0) {
+    blocks.push(text(`Se confirmares, vou adicionar: **${summary.join(', ')}**.`));
+  }
+  blocks.push(sources('who-2020', 'garber-2011'));
+
+  return {
+    blocks,
+    actions: [{
+      kind: 'apply_schedule',
+      label: 'Ver e confirmar',
+      draft: {
+        items: plan.items.map((item) => ({
+          weekday: item.weekday,
+          time: item.startMin == null ? null : formatMinutes(item.startMin),
+          durationMin: item.durationMin,
+          kind: item.kind,
+          label: item.label,
+        })),
+        untouched: [...new Set(plan.untouched.map(
+          (item) => `${WEEKDAY_NAMES[item.weekday]}, ${formatMinutes(item.startMin)} — ${item.label}`,
+        ))],
+        unplaced: plan.unplaced,
+        summary,
+      },
+    }],
+    followUps: ['Não consigo treinar à quarta', 'Quero correr de manhã'],
+  };
+}
+
+/** As janelas livres, em linguagem de pessoa e sem encher o ecrã. */
+function freeSummary(plan: SchedulePlan): string[] {
+  return plan.windows
+    .slice()
+    .sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7))
+    .map((day) => {
+      const janelas = day.free
+        .filter((window) => window.endMin - window.startMin >= 30)
+        .slice(0, 3)
+        .map((window) => `${formatMinutes(window.startMin)}–${formatMinutes(window.endMin)}`);
+      return `**${WEEKDAY_NAMES[day.weekday]}**: ${janelas.length > 0 ? janelas.join(', ') : 'sem espaço livre'}`;
+    });
+}
+
+function proposalLines(plan: SchedulePlan): string[] {
+  return plan.items.map((item) => (item.startMin == null
+    ? `**Todos os dias** — ${item.label}`
+    : `**${WEEKDAY_NAMES[item.weekday]}** ${formatMinutes(item.startMin)} — ${item.label}`
+      + (item.durationMin ? ` (${item.durationMin} min)` : '')));
+}
+
+/**
+ * "Passa o treino de sexta para sábado."
+ *
+ * Mover um compromisso existente é a única coisa aqui que mexe no que já
+ * estava, por isso é a que mais cuidado leva: identifica-se o plano em causa,
+ * diz-se exatamente o que muda, e só se aplica com confirmação.
+ */
+function moveTurn(context: CoachContext, intent: CoachIntent): CoachTurn {
+  const move = intent.move;
+  if (!move) return helpfulFallback(intent);
+
+  const candidato = context.workouts.find(
+    (workout) => !workout.archived && workout.weekdays.includes(move.from),
+  );
+
+  if (!candidato) {
+    return {
+      blocks: [text(`Não tenho nenhum treino marcado para ${WEEKDAY_NAMES[move.from]}. `
+        + 'Se quiseres, digo-te o que tens marcado na semana.')],
+      actions: [{ kind: 'open', label: 'Ver treinos', path: '/treino' }],
+      followUps: ['Organiza a minha semana'],
+    };
+  }
+
+  const outros = candidato.weekdays
+    .filter((day) => day !== move.from)
+    .map((day) => WEEKDAY_NAMES[day]);
+
+  return {
+    blocks: [
+      text(`**${candidato.title}** passa de ${WEEKDAY_NAMES[move.from]} para `
+        + `${WEEKDAY_NAMES[move.to]}.`),
+      ...(outros.length > 0
+        ? [text(`Os outros dias deste plano ficam como estão: ${outros.join(', ')}.`)]
+        : []),
+      notice('info', 'Só muda depois de confirmares.'),
+    ],
+    actions: [{
+      kind: 'move_workout',
+      label: `Passar para ${WEEKDAY_NAMES[move.to]}`,
+      workoutId: candidato.id,
+      from: move.from,
+      to: move.to,
+    }],
+    followUps: ['Organiza a minha semana', 'Este treino está equilibrado?'],
+  };
+}
+
+/**
+ * "Não consigo treinar à quarta."
+ *
+ * Não é um pedido para apagar nada: é uma restrição. Se houver treino nesse
+ * dia, propõe-se movê-lo — com confirmação — para o dia livre mais próximo.
+ */
+function blockDayTurn(context: CoachContext, intent: CoachIntent): CoachTurn {
+  const dia = intent.excludedWeekdays[0];
+  if (dia == null) return helpfulFallback(intent);
+
+  const afetados = context.workouts.filter(
+    (workout) => !workout.archived && workout.weekdays.includes(dia),
+  );
+
+  if (afetados.length === 0) {
+    return {
+      blocks: [
+        text(`Está anotado: ${WEEKDAY_NAMES[dia]} fica livre. Não tens nada de treino `
+          + 'marcado nesse dia, por isso não há nada a mudar.'),
+        text('Quando organizarmos a semana, não vou propor nada para esse dia.'),
+      ],
+      actions: [],
+      followUps: ['Organiza a minha semana', 'Quero treinar 3 vezes por semana'],
+    };
+  }
+
+  const alvo = candidateDay(context, dia);
+  const plano = afetados[0]!;
+
+  return {
+    blocks: [
+      text(`Tens **${plano.title}** marcado para ${WEEKDAY_NAMES[dia]}.`),
+      text(alvo == null
+        ? 'Não encontrei outro dia livre para o pôr. Diz-me qual preferes.'
+        : `Posso passá-lo para ${WEEKDAY_NAMES[alvo]}, que é o dia livre mais próximo.`),
+      notice('info', 'Nada muda sem tu confirmares.'),
+    ],
+    actions: alvo == null ? [] : [{
+      kind: 'move_workout',
+      label: `Passar para ${WEEKDAY_NAMES[alvo]}`,
+      workoutId: plano.id,
+      from: dia,
+      to: alvo,
+    }],
+    followUps: ['Organiza a minha semana'],
+  };
+}
+
+/** O dia mais próximo sem treino marcado, à frente do dia bloqueado. */
+function candidateDay(context: CoachContext, blocked: number): number | null {
+  const ocupados = new Set(
+    context.workouts.filter((workout) => !workout.archived).flatMap((workout) => workout.weekdays),
+  );
+  for (let step = 1; step <= 6; step += 1) {
+    const day = (blocked + step) % 7;
+    if (!ocupados.has(day)) return day;
+  }
+  return null;
+}
+
 /** Que dados é que cada pedido precisa de ler. */
 const NEEDS: Record<string, AiDataCategory[]> = {
   create_workout: ['training'],
@@ -379,6 +589,8 @@ const NEEDS: Record<string, AiDataCategory[]> = {
   nutrition: ['nutrition'],
   habits: ['goals', 'habits'],
   organize_week: ['training', 'habits'],
+  move_session: ['training'],
+  block_day: ['training'],
   today: ['training', 'habits'],
   recovery: ['training'],
 };
@@ -445,7 +657,9 @@ function route(context: CoachContext, intent: CoachIntent): CoachTurn {
     case 'performance': return performanceTurn(context);
     case 'nutrition': return nutritionTurn(context);
     case 'habits': return habitsTurn(context);
-    case 'organize_week': return organizeTurn(context, intent);
+    case 'organize_week': return scheduleTurn(context, intent);
+    case 'move_session': return moveTurn(context, intent);
+    case 'block_day': return blockDayTurn(context, intent);
     case 'capabilities': return capabilitiesTurn(context);
 
     case 'sleep':

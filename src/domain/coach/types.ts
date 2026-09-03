@@ -111,25 +111,32 @@ export interface RunPlanDraft {
   }>;
 }
 
-export interface WeekPlanDraft {
-  /** Uma linha por dia da semana, 0 = domingo. */
-  days: Array<{
-    weekday: number;
-    items: Array<{ kind: 'workout' | 'run' | 'walk' | 'rest'; label: string; existing: boolean }>;
-  }>;
-  /** Planos de treino a que a proposta atribui dias, e quais. */
-  workoutAssignments: Array<{ workoutId: string; title: string; weekdays: number[] }>;
-  /** Hábitos a criar para as corridas e caminhadas. */
-  habitDrafts: HabitDraft[];
-  /** O que já estava marcado e fica exatamente como está. */
+/** Uma linha da proposta de semana, tal como vai para a agenda. */
+export interface ScheduleDraftItem {
+  weekday: number;
+  /** "18:00", ou null para um hábito sem hora. */
+  time: string | null;
+  durationMin: number | null;
+  kind: 'workout' | 'run' | 'walk' | 'water';
+  label: string;
+}
+
+export interface ScheduleDraft {
+  items: ScheduleDraftItem[];
+  /** O que já estava marcado e não é tocado. */
   untouched: string[];
+  /** O que não coube na semana. */
+  unplaced: string[];
+  /** "4 treinos", "2 corridas" — para o resumo da confirmação. */
+  summary: string[];
 }
 
 export type CoachAction =
   | { kind: 'create_workout'; label: string; draft: WorkoutDraft }
   | { kind: 'create_habits'; label: string; drafts: HabitDraft[] }
   | { kind: 'create_run_plan'; label: string; draft: RunPlanDraft }
-  | { kind: 'apply_week_plan'; label: string; draft: WeekPlanDraft }
+  | { kind: 'apply_schedule'; label: string; draft: ScheduleDraft }
+  | { kind: 'move_workout'; label: string; workoutId: string; from: number; to: number }
   | { kind: 'open'; label: string; path: string };
 
 export interface CoachTurn {

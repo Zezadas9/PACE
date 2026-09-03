@@ -10,6 +10,7 @@ import type { DayKey, Task } from '../../../core/types';
 import { Sheet } from '../../../ui/Sheet';
 import { Button, Chip } from '../../../ui/primitives';
 import { Field, Input, Segmented } from '../../../ui/form';
+import { TimeField } from '../../../ui/TimeField';
 import { EssentialToggle } from './EssentialToggle';
 
 export function TaskForm({
@@ -74,12 +75,10 @@ export function TaskForm({
             />
           </Field>
           <Field label="Hora">
-            <Input
-              type="text"
-              inputMode="numeric"
+            <TimeField
               value={draft.time ?? ''}
               placeholder="18:30"
-              maxLength={5}
+              ariaLabel="Hora da tarefa"
               onChange={(value) => patch({ time: value || null })}
             />
           </Field>

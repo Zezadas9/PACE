@@ -101,6 +101,20 @@ const LEGACY_WORKOUT_TYPES: Record<string, Workout['type']> = {
 
 const MIGRATIONS: Record<number, Migration> = {
   /**
+   * v7 -> v8 — a hora do treino.
+   *
+   * Os planos existentes ficam com `null`: nenhum deles tinha hora, e inventar
+   * uma seria pôr no calendário do utilizador um compromisso que ele nunca fez.
+   */
+  7: (snapshot) => ({
+    ...snapshot,
+    schemaVersion: 8,
+    workouts: (snapshot.workouts ?? []).map((workout) => ({
+      ...workout,
+      timeOfDay: workout.timeOfDay ?? null,
+    })),
+  }),
+  /**
    * v6 -> v7 — a camada de assistente.
    *
    * Só coleções novas e vazias. As definições do assistente entram por

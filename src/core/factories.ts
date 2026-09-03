@@ -131,6 +131,7 @@ export function createWorkout(partial: Partial<Workout> = {}): Workout {
     title: '',
     type: 'strength',
     weekdays: [],
+    timeOfDay: null,
     estimatedMin: null,
     blocks: [],
     goalId: null,

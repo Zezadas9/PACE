@@ -106,6 +106,7 @@ export function WorkoutScreen(): ReactElement {
                       `${workout.blocks.length} exercícios`,
                       workout.estimatedMin ? `${workout.estimatedMin} min` : null,
                       describeWeekdays(workout.weekdays),
+                      workout.timeOfDay,
                     ].filter(Boolean).join(' · ')}
                     chevron
                     onClick={() =>

@@ -408,6 +408,42 @@ Cada resposta que pode virar alguma coisa traz um cartão com o que exatamente
 vai acontecer, e um botão. Nada é escrito na aplicação sem esse toque — e a
 proposta de semana nunca mexe em compromissos que não mostrou.
 
+### A agenda, por escrito
+
+Escreve-se a semana como se fala:
+
+> "Quero treinar musculação 4 vezes por semana, correr 2 vezes, caminhar todos
+> os dias e beber água regularmente."
+
+E o que sai é uma proposta com dias e horas, pela ordem que faz sentido a quem
+lê: **primeiro o que está livre**, depois a proposta, depois o que fica
+intocado, e só no fim o resumo do que vai ser criado.
+
+O que `agenda-plan.ts` faz antes de propor seja o que for:
+
+- **Lê o que já está marcado** — hábitos com hora, planos de treino com dia e
+  hora, eventos, tarefas — e transforma isso em espaço ocupado. As janelas
+  livres são o que sobra.
+- **Desconta o que já existe.** Quem já caminha todos os dias às 18:00 não
+  recebe uma proposta para caminhar todos os dias às 13:00. A resposta diz o que
+  encontrou: *"Já tinhas, e não mexo: …"*.
+- **Espaça os treinos.** Quatro sessões caem em segunda, quarta, sexta e
+  domingo, não em quatro dias seguidos: o descanso faz parte do treino.
+- **Afasta as corridas dos dias de força**, quando há dias livres para isso.
+- **Respeita a altura do dia** — "quero correr de manhã" muda as horas, e uma
+  sessão que não caiba na janela pedida desliza para a mais próxima que a
+  aguente.
+- **Diz o que não coube**, em vez de o encaixar por cima de alguma coisa.
+
+Também entende correções: *"não consigo treinar à quarta"* (propõe passar o
+treino desse dia para o dia livre mais próximo) e *"passa o treino de sexta para
+sábado"* (troca só esse dia, e diz que os outros ficam).
+
+**Nada disto escreve na agenda.** A ação abre uma folha onde cada linha pode
+mudar de dia, mudar de hora ou ser apagada, com o resumo em cima — *"Vou
+adicionar: 4 treinos, 2 corridas, 7 caminhadas"* — e dois botões. Aceitar,
+editar ou rejeitar são três coisas que existem mesmo, não uma frase no ecrã.
+
 ### A conversa tem memória
 
 Uma mensagem sozinha não chega. "Mas eu queria que fosse só de superiores" não

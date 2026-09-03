@@ -14,7 +14,6 @@ import {
 import { screen } from './safety';
 import { respond } from './index';
 import type { CoachContext } from './types';
-import { proposeWeek } from './week-plan';
 
 const TODAY = '2026-09-07';
 
@@ -276,24 +275,6 @@ describe('suggestHabits', () => {
   });
 });
 
-describe('proposeWeek', () => {
-  it('mostra o que já existe como intocado', () => {
-    const draft = proposeWeek(
-      { workouts: 4, runs: 2, walksDaily: true },
-      [createWorkout({ title: 'Corpo inteiro A', weekdays: [1, 3] })],
-      [createHabit({ title: 'Ler 20 minutos', frequency: 'daily' })],
-    );
-    expect(draft.untouched.join(' ')).toContain('Corpo inteiro A');
-    expect(draft.untouched.join(' ')).toContain('Ler 20 minutos');
-  });
-
-  it('nunca propõe mais corridas do que o limite', () => {
-    const draft = proposeWeek({ workouts: 3, runs: 9, walksDaily: false }, [], []);
-    const runDays = draft.habitDrafts.find((habit) => habit.title === 'Correr')?.weekdays ?? [];
-    expect(runDays.length).toBeLessThanOrEqual(4);
-  });
-});
-
 describe('respond', () => {
   it('põe a segurança à frente de tudo', () => {
     const turn = respond(context(), 'Tenho dor no joelho, cria-me um treino de pernas');
@@ -379,28 +360,6 @@ describe('applyAdaptation', () => {
       { difficulty: 'hard', rpe: null }, { difficulty: 'hard', rpe: null },
     ]), 0);
     expect(eased[0]?.segments[0]?.repeats).toBe(3);
-  });
-});
-
-describe('proposeWeek, com o que já existe', () => {
-  it('reparte os dias pelos planos que existem', () => {
-    const draft = proposeWeek(
-      { workouts: 4, runs: 0, walksDaily: false },
-      [createWorkout({ id: 'a', title: 'A' }), createWorkout({ id: 'b', title: 'B' })],
-      [],
-    );
-    const days = draft.workoutAssignments.flatMap((entry) => entry.weekdays);
-    expect(days).toHaveLength(4);
-    expect(draft.workoutAssignments).toHaveLength(2);
-  });
-
-  it('não propõe um hábito que a pessoa já tem', () => {
-    const draft = proposeWeek(
-      { workouts: 2, runs: 0, walksDaily: true },
-      [],
-      [createHabit({ title: 'Caminhar 30 minutos', frequency: 'daily' })],
-    );
-    expect(draft.habitDrafts.some((habit) => habit.title === 'Caminhar 30 minutos')).toBe(false);
   });
 });
 
@@ -522,5 +481,76 @@ describe('o título diz o que lá está', () => {
       const group = { peito: 'chest', costas: 'back', ombros: 'shoulders', 'braços': 'arms' }[word];
       if (draft.title.includes(word)) expect(trained.has(group as never)).toBe(true);
     }
+  });
+});
+
+describe('a IA e a agenda', () => {
+  it('lê o pedido do exemplo inteiro', () => {
+    const intent = parseIntent(
+      'Quero treinar musculação 4 vezes por semana, correr 2 vezes, caminhar todos os dias '
+      + 'e beber água regularmente.',
+    );
+    expect(intent.kind).toBe('organize_week');
+    expect(intent.perWeek).toMatchObject({ workouts: 4, runs: 2, walksDaily: true, water: true });
+  });
+
+  it('lê a altura do dia', () => {
+    expect(parseIntent('Quero correr de manhã').partOfDay).toBe('morning');
+    expect(parseIntent('Prefiro treinar à noite').partOfDay).toBe('evening');
+  });
+
+  it('lê um dia que a pessoa não pode', () => {
+    const intent = parseIntent('Não consigo treinar quarta-feira');
+    expect(intent.kind).toBe('block_day');
+    expect(intent.excludedWeekdays).toEqual([3]);
+  });
+
+  it('lê uma mudança de dia', () => {
+    const intent = parseIntent('Passa o treino de sexta para sábado');
+    expect(intent.kind).toBe('move_session');
+    expect(intent.move).toEqual({ from: 5, to: 6 });
+  });
+
+  it('propõe a semana com horas e não escreve nada sozinha', () => {
+    const turn = respond(
+      context(),
+      'Quero treinar 4 vezes por semana, correr 2 e caminhar todos os dias',
+    );
+    const said = JSON.stringify(turn.blocks);
+    expect(said).toContain('Encontrei estes horários disponíveis');
+    const action = turn.actions.find((candidate) => candidate.kind === 'apply_schedule');
+    expect(action).toBeDefined();
+    if (action?.kind === 'apply_schedule') {
+      expect(action.draft.summary).toEqual(['4 treinos', '2 corridas', '7 caminhadas']);
+      // Cada linha traz dia e hora: é uma proposta, não uma intenção vaga.
+      const comHora = action.draft.items.filter((item) => item.time != null);
+      expect(comHora.length).toBe(action.draft.items.length);
+    }
+  });
+
+  it('não propõe mexer no que já está marcado', () => {
+    const turn = respond(context(), 'Organiza a minha semana com 3 treinos');
+    for (const action of turn.actions) {
+      expect(action.kind).not.toBe('move_workout');
+    }
+  });
+
+  it('mover um treino é uma proposta, não um facto', () => {
+    const comTreino = context({
+      workouts: [createWorkout({ id: 'w1', title: 'Corpo inteiro', weekdays: [5] })],
+    });
+    const turn = respond(comTreino, 'Passa o treino de sexta para sábado');
+    const action = turn.actions[0];
+    expect(action).toMatchObject({ kind: 'move_workout', from: 5, to: 6, workoutId: 'w1' });
+    expect(JSON.stringify(turn.blocks)).toContain('confirmares');
+  });
+
+  it('bloquear um dia não apaga nada', () => {
+    const comTreino = context({
+      workouts: [createWorkout({ id: 'w1', title: 'Corpo inteiro', weekdays: [3] })],
+    });
+    const turn = respond(comTreino, 'Não consigo treinar à quarta');
+    expect(turn.actions[0]?.kind).toBe('move_workout');
+    expect(JSON.stringify(turn.blocks)).toContain('Nada muda sem tu confirmares');
   });
 });

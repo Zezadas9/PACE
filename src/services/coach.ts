@@ -18,7 +18,7 @@ import type {
   UserPreferences,
 } from '../core/types';
 import type {
-  CoachContext, CoachTurn, HabitDraft, RunPlanDraft, WeekPlanDraft, WorkoutDraft,
+  CoachContext, CoachTurn, HabitDraft, RunPlanDraft, ScheduleDraft, WorkoutDraft,
 } from '../domain/coach/types';
 import type { CoachIntent } from '../domain/coach/intent';
 import type { CoachAction } from '../domain/coach/types';
@@ -224,7 +224,8 @@ export function applyAction(repos: Repositories, action: CoachAction): ApplyResu
     case 'create_workout': return createWorkout(repos, action.draft);
     case 'create_habits': return createHabits(repos, action.drafts);
     case 'create_run_plan': return createRunPlan(repos, action.draft);
-    case 'apply_week_plan': return applyWeekPlan(repos, action.draft);
+    case 'apply_schedule': return applySchedule(repos, action.draft);
+    case 'move_workout': return moveWorkout(repos, action.workoutId, action.from, action.to);
     case 'open': return { ok: true, message: '', path: action.path };
     default: return { ok: false, message: 'Ação desconhecida.', path: null };
   }
@@ -323,30 +324,123 @@ function createRunPlan(repos: Repositories, draft: RunPlanDraft): ApplyResult {
 }
 
 /**
- * A proposta de semana.
+ * Aplica a proposta de semana.
  *
- * Só toca no que a proposta mostrou: marca os dias dos planos listados e cria
- * os hábitos listados. O que já lá estava e não aparece na proposta continua
- * exatamente como estava — é a promessa que o ecrã faz antes de perguntar.
+ * Cada tipo entra no sítio onde a aplicação já o sabe mostrar: os treinos vão
+ * para o plano de treino existente (dias e hora), o resto vira hábitos com dia
+ * e hora marcados. Nada é apagado e nada é movido — o que já estava fica onde
+ * estava, e o que entra ocupa só o espaço que a proposta encontrou livre.
  */
-function applyWeekPlan(repos: Repositories, draft: WeekPlanDraft): ApplyResult {
-  for (const assignment of draft.workoutAssignments) {
-    repos.workouts.update(assignment.workoutId, { weekdays: assignment.weekdays });
-  }
-  if (draft.habitDrafts.length > 0) createHabits(repos, draft.habitDrafts);
+function applySchedule(repos: Repositories, draft: ScheduleDraft): ApplyResult {
+  const criados: string[] = [];
 
-  const parts = [
-    draft.workoutAssignments.length > 0
-      ? `${draft.workoutAssignments.length} planos com dia marcado`
-      : null,
-    draft.habitDrafts.length > 0 ? `${draft.habitDrafts.length} hábitos criados` : null,
-  ].filter(Boolean);
+  const treinos = draft.items.filter((item) => item.kind === 'workout');
+  if (treinos.length > 0) {
+    const dias = [...new Set(treinos.map((item) => item.weekday))];
+    const hora = treinos.find((item) => item.time)?.time ?? null;
+    const plano = repos.workouts.where((workout) => !workout.archived)[0];
+
+    if (plano) {
+      // Junta-se aos dias que o plano já tinha: tirar um dia sem o utilizador
+      // pedir seria mexer no que já estava.
+      repos.workouts.update(plano.id, {
+        weekdays: [...new Set([...plano.weekdays, ...dias])].sort(),
+        timeOfDay: plano.timeOfDay ?? hora,
+      });
+      criados.push(`${treinos.length} ${treinos.length === 1 ? 'treino' : 'treinos'}`);
+    } else {
+      // Sem plano nenhum, marca-se o compromisso como hábito: a hora fica na
+      // agenda e o conteúdo do treino fica para quem o quiser escrever.
+      repos.habits.create({
+        title: treinos[0]?.label ?? 'Treino',
+        kind: 'check',
+        frequency: 'custom',
+        weekdays: dias,
+        target: 1,
+        timeOfDay: hora,
+        durationMin: treinos[0]?.durationMin ?? 60,
+        startDate: todayKey(),
+      });
+      criados.push(`${treinos.length} ${treinos.length === 1 ? 'treino' : 'treinos'}`);
+    }
+  }
+
+  const corridas = draft.items.filter((item) => item.kind === 'run');
+  if (corridas.length > 0) {
+    repos.habits.create({
+      title: 'Correr',
+      kind: 'check',
+      frequency: 'custom',
+      weekdays: [...new Set(corridas.map((item) => item.weekday))],
+      target: 1,
+      timeOfDay: corridas[0]?.time ?? null,
+      durationMin: corridas[0]?.durationMin ?? 40,
+      startDate: todayKey(),
+    });
+    criados.push(`${corridas.length} ${corridas.length === 1 ? 'corrida' : 'corridas'}`);
+  }
+
+  const caminhadas = draft.items.filter((item) => item.kind === 'walk');
+  if (caminhadas.length > 0) {
+    const todosOsDias = caminhadas.length >= 7;
+    repos.habits.create({
+      title: 'Caminhar',
+      kind: 'duration',
+      frequency: todosOsDias ? 'daily' : 'custom',
+      weekdays: todosOsDias ? [] : [...new Set(caminhadas.map((item) => item.weekday))],
+      target: caminhadas[0]?.durationMin ?? 30,
+      unit: 'min',
+      timeOfDay: caminhadas[0]?.time ?? null,
+      durationMin: caminhadas[0]?.durationMin ?? 30,
+      startDate: todayKey(),
+    });
+    criados.push(`${caminhadas.length} ${caminhadas.length === 1 ? 'caminhada' : 'caminhadas'}`);
+  }
+
+  if (draft.items.some((item) => item.kind === 'water')) {
+    repos.habits.create({
+      title: 'Beber água',
+      kind: 'count',
+      frequency: 'daily',
+      weekdays: [],
+      target: 8,
+      unit: 'copos',
+      timeOfDay: null,
+      startDate: todayKey(),
+    });
+    criados.push('hábito de água');
+  }
 
   return {
-    ok: true,
-    message: parts.length > 0 ? `Semana aplicada: ${parts.join(' e ')}.` : 'Nada a aplicar.',
+    ok: criados.length > 0,
+    message: criados.length > 0
+      ? `Semana organizada: ${criados.join(', ')}.`
+      : 'Não havia nada para adicionar.',
     path: '/agenda',
   };
+}
+
+/**
+ * Passa um treino de um dia para outro.
+ *
+ * Troca o dia, e mais nada: os outros dias do plano ficam como estavam, e o
+ * conteúdo do treino não é tocado.
+ */
+function moveWorkout(
+  repos: Repositories,
+  workoutId: string,
+  from: number,
+  to: number,
+): ApplyResult {
+  const workout = repos.workouts.byId(workoutId);
+  if (!workout) return { ok: false, message: 'Já não encontro esse treino.', path: null };
+
+  const weekdays = [...new Set(
+    workout.weekdays.filter((day) => day !== from).concat(to),
+  )].sort();
+  repos.workouts.update(workoutId, { weekdays });
+
+  return { ok: true, message: `"${workout.title}" mudou de dia.`, path: '/treino' };
 }
 
 /* --- O plano de corrida, sessão a sessão ------------------------------------------- */

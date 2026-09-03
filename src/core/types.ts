@@ -286,6 +286,13 @@ export interface Workout extends Entity {
   type: WorkoutType;
   /** Days this plan is scheduled on. 0 = Sunday .. 6 = Saturday; empty = unscheduled. */
   weekdays: number[];
+  /**
+   * A hora a que o treino acontece, quando há uma.
+   *
+   * Sem isto um plano sabe em que dias é mas não a que horas, e a agenda não o
+   * consegue pôr ao lado do resto do dia.
+   */
+  timeOfDay: ClockTime | null;
   estimatedMin: number | null;
   blocks: WorkoutBlock[];
   goalId: string | null;

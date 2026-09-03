@@ -15,7 +15,7 @@ export const APP = {
   name: 'PACE',
   version: '0.3.0',
   /** Bump when a stored shape changes; migrations live in data/snapshot.ts */
-  schemaVersion: 7,
+  schemaVersion: 8,
   storageNamespace: 'pace',
   locale: 'pt-PT',
 } as const;

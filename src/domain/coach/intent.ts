@@ -30,6 +30,8 @@ export type CoachIntentKind =
   | 'recovery'
   | 'today'
   | 'organize_week'
+  | 'move_session'
+  | 'block_day'
   | 'capabilities'
   | 'unknown';
 
@@ -45,7 +47,19 @@ export interface CoachIntent {
   excluded: MuscleGroup[];
   workoutType: WorkoutType | null;
   equipment: Equipment;
-  perWeek: { workouts: number | null; runs: number | null; walksDaily: boolean };
+  perWeek: {
+    workouts: number | null;
+    runs: number | null;
+    walksDaily: boolean;
+    /** "beber água regularmente" — um hábito sem hora marcada. */
+    water: boolean;
+  };
+  /** "de manhã", "à tarde", "à noite" — a altura do dia preferida. */
+  partOfDay: 'morning' | 'afternoon' | 'evening' | null;
+  /** Dias que o utilizador disse que não pode. 0 = domingo. */
+  excludedWeekdays: number[];
+  /** "passa o treino de sexta para sábado". */
+  move: { from: number; to: number } | null;
   /** Verdadeiro quando a mensagem só faz sentido contra a anterior. */
   isRefinement: boolean;
   raw: string;
@@ -139,14 +153,21 @@ function readPerWeek(text: string): CoachIntent['perWeek'] {
   let workouts: number | null = null;
   let runs: number | null = null;
   let walksDaily = false;
+  let water = false;
 
   for (const clause of clauses) {
-    const count = clause.match(/(\d+)\s*(?:x\b|vezes?\b)/);
+    // "correr 2" nao traz a palavra "vezes", e e assim que as pessoas
+    // escrevem. Um numero solto na oracao conta — a nao ser que venha com
+    // uma unidade de distancia, que e outra conversa.
+    const temDistancia = /(?:km|quil|metros)/.test(clause);
+    const count = clause.match(/(\d+)\s*(?:x\b|vezes?\b)/)
+      ?? (temDistancia ? null : clause.match(/(\d+)/));
     const value = count?.[1] ? Number(count[1]) : null;
     const isRun = has(clause, 'corr');
     const isWalk = has(clause, 'caminh', 'andar', 'passear');
 
     if (isWalk && has(clause, 'todos os dias', 'diariamente', 'todo o dia')) walksDaily = true;
+    if (has(clause, 'agua', 'água', 'hidrat', 'beber')) water = true;
     if (value == null) continue;
     if (isRun) runs = value;
     else if (isWalk) walksDaily = value >= 7;
@@ -154,7 +175,65 @@ function readPerWeek(text: string): CoachIntent['perWeek'] {
     else if (workouts == null) workouts = value;
   }
 
-  return { workouts, runs, walksDaily };
+  return { workouts, runs, walksDaily, water };
+}
+
+const WEEKDAY_TERMS: Array<[number, string[]]> = [
+  [0, ['domingo']],
+  [1, ['segunda', '2a feira', 'segunda-feira']],
+  [2, ['terça', 'terca', '3a feira']],
+  [3, ['quarta', '4a feira']],
+  [4, ['quinta', '5a feira']],
+  [5, ['sexta', '6a feira']],
+  [6, ['sábado', 'sabado']],
+];
+
+function readWeekday(text: string): number | null {
+  for (const [day, terms] of WEEKDAY_TERMS) {
+    if (has(text, ...terms)) return day;
+  }
+  return null;
+}
+
+/** "de manhã", "à tarde", "ao fim do dia". */
+function readPartOfDay(text: string): CoachIntent['partOfDay'] {
+  if (has(text, 'de manha', 'de manhã', 'manha', 'manhã', 'cedo', 'antes do trabalho')) {
+    return 'morning';
+  }
+  if (has(text, 'a tarde', 'à tarde', 'depois de almo', 'almoço', 'almoco')) return 'afternoon';
+  if (has(text, 'a noite', 'à noite', 'fim do dia', 'depois do trabalho', 'ao jantar')) {
+    return 'evening';
+  }
+  return null;
+}
+
+/**
+ * "Não consigo treinar quarta-feira", "quarta não dá".
+ *
+ * Um dia excluído é uma restrição, não um pedido: entra na proposta como um
+ * dia que não se toca, e não como um dia a esvaziar.
+ */
+function readExcludedWeekdays(text: string): number[] {
+  const out: number[] = [];
+  for (const [day, terms] of WEEKDAY_TERMS) {
+    for (const term of terms) {
+      const negado = new RegExp(
+        `(?:nao|não|nunca|sem|evitar|tirando|exceto|excepto)[^.,;]{0,30}${term}`,
+      ).test(text) || new RegExp(`${term}[^.,;]{0,20}(?:nao|não|nunca) (?:posso|consigo|da|dá)`).test(text);
+      if (negado && !out.includes(day)) out.push(day);
+    }
+  }
+  return out;
+}
+
+/** "passa o treino de sexta para sábado". */
+function readMove(text: string): CoachIntent['move'] {
+  const match = text.match(/(?:de|da|do|na|em)\s+([a-zçãáéíóêôõ-]+)[^.]{0,20}?\bpara\s+(?:a|o)?\s*([a-zçãáéíóêôõ-]+)/);
+  if (!match) return null;
+  const from = readWeekday(match[1] ?? '');
+  const to = readWeekday(match[2] ?? '');
+  if (from == null || to == null || from === to) return null;
+  return { from, to };
 }
 
 function readMuscles(text: string): { muscles: MuscleGroup[]; excluded: MuscleGroup[] } {
@@ -215,11 +294,32 @@ function classify(text: string, parsed: Omit<CoachIntent, 'kind' | 'isRefinement
     return 'capabilities';
   }
 
+  // Mover uma sessão e bloquear um dia vêm antes de tudo: falam de treino e de
+  // dias, e seriam lidas como um pedido de treino novo.
+  if (parsed.move && has(text, 'passa', 'muda', 'troca', 'move', 'adia', 'antecipa')) {
+    return 'move_session';
+  }
+  if (parsed.excludedWeekdays.length > 0
+    && has(text, 'trein', 'corr', 'caminh', 'consigo', 'posso', 'da', 'dá')) {
+    return 'block_day';
+  }
+
   // A semana inteira vem primeiro: fala de treinos e de corridas ao mesmo
   // tempo, e seria lida como qualquer uma das duas.
   const spread = parsed.perWeek.workouts != null || parsed.perWeek.runs != null
-    || parsed.perWeek.walksDaily;
-  if (spread && has(text, 'semana', 'organiz', 'distribu', 'rotina')) return 'organize_week';
+    || parsed.perWeek.walksDaily || parsed.perWeek.water;
+  // Dois ou mais compromissos na mesma frase são um pedido de semana, mesmo
+  // sem a palavra "semana": "treinar 4 vezes, correr 2 e caminhar todos os
+  // dias" não é um pedido de treino, é um horário.
+  const partes = [
+    parsed.perWeek.workouts != null,
+    parsed.perWeek.runs != null,
+    parsed.perWeek.walksDaily,
+    parsed.perWeek.water,
+  ].filter(Boolean).length;
+  if (spread && (partes >= 2 || has(text, 'semana', 'organiz', 'distribu', 'rotina', 'agenda'))) {
+    return 'organize_week';
+  }
 
   if (has(text, 'que faco hoje', 'que faço hoje', 'o que tenho hoje', 'o que faço agora',
     'que treino hoje', 'hoje faço', 'plano de hoje', 'o que fazer hoje')) {
@@ -295,6 +395,9 @@ export function parseIntent(message: string): CoachIntent {
     workoutType: readType(text),
     equipment: readEquipment(text),
     perWeek: readPerWeek(text),
+    partOfDay: readPartOfDay(text),
+    excludedWeekdays: readExcludedWeekdays(text),
+    move: readMove(text),
     raw: message.trim(),
   };
 
@@ -340,7 +443,13 @@ export function refine(previous: CoachIntent | null, next: CoachIntent): CoachIn
       workouts: next.perWeek.workouts ?? previous.perWeek.workouts,
       runs: next.perWeek.runs ?? previous.perWeek.runs,
       walksDaily: next.perWeek.walksDaily || previous.perWeek.walksDaily,
+      water: next.perWeek.water || previous.perWeek.water,
     },
+    partOfDay: next.partOfDay ?? previous.partOfDay,
+    excludedWeekdays: next.excludedWeekdays.length > 0
+      ? next.excludedWeekdays
+      : previous.excludedWeekdays,
+    move: next.move ?? null,
     isRefinement: true,
     raw: next.raw,
   };

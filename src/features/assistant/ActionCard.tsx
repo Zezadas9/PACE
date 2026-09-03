@@ -9,7 +9,18 @@
 
 import type { ReactElement } from 'react';
 import type { CoachAction } from '../../domain/coach/types';
-import { describeDays } from '../../domain/coach/week-plan';
+import { WEEKDAY_NAMES } from '../../domain/coach/agenda-plan';
+
+/** "seg, qua, sex" — os dias como se leem, não como estão guardados. */
+function describeDays(weekdays: number[]): string {
+  if (weekdays.length === 0) return 'sem dia marcado';
+  if (weekdays.length === 7) return 'todos os dias';
+  return weekdays
+    .slice()
+    .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+    .map((day) => WEEKDAY_NAMES[day]?.slice(0, 3) ?? '')
+    .join(', ');
+}
 import { Button } from '../../ui/primitives';
 
 function summary(action: CoachAction): string[] {
@@ -33,16 +44,24 @@ function summary(action: CoachAction): string[] {
         `Começa a ${action.draft.startDate.split('-').reverse().join('/')}`,
         'Sobe no máximo 10% por semana.',
       ];
-    case 'apply_week_plan':
+    case 'apply_schedule': {
+      const linhas = action.draft.items.slice(0, 5).map((item) => (item.time == null
+        ? `${item.label} — todos os dias`
+        : `${WEEKDAY_NAMES[item.weekday]} ${item.time} — ${item.label}`));
       return [
-        ...action.draft.workoutAssignments.map(
-          (entry) => `${entry.title} → ${describeDays(entry.weekdays)}`,
-        ),
-        ...action.draft.habitDrafts.map((draft) => `Novo hábito: ${draft.title}`),
+        action.draft.summary.length > 0 ? `Vou adicionar: ${action.draft.summary.join(', ')}` : '',
+        ...linhas,
+        action.draft.items.length > 5 ? `… e mais ${action.draft.items.length - 5}` : '',
         action.draft.untouched.length > 0
-          ? `${action.draft.untouched.length} coisas ficam como estão`
+          ? `${action.draft.untouched.length} compromissos ficam como estão`
           : '',
       ].filter(Boolean);
+    }
+    case 'move_workout':
+      return [
+        `De ${WEEKDAY_NAMES[action.from]} para ${WEEKDAY_NAMES[action.to]}`,
+        'Os outros dias do plano não mudam.',
+      ];
     default:
       return [];
   }

@@ -18,6 +18,7 @@ import {
 import { Sheet } from '../../ui/Sheet';
 import { Button, Chip } from '../../ui/primitives';
 import { Field, Input } from '../../ui/form';
+import { TimeField } from '../../ui/TimeField';
 import { Icon } from '../../ui/Icon';
 
 /** Whole minutes read better than "1.5 min"; anything else stays in seconds. */
@@ -159,6 +160,15 @@ export function WorkoutBuilder({
           <WeekdayPicker
             value={draft.weekdays}
             onChange={(weekdays) => patch({ weekdays })}
+          />
+        </Field>
+
+        <Field label="Hora" hint="Opcional. Com hora, o treino entra no teu dia.">
+          <TimeField
+            value={draft.timeOfDay ?? ''}
+            placeholder="18:00"
+            ariaLabel="Hora do treino"
+            onChange={(value) => patch({ timeOfDay: value || null })}
           />
         </Field>
 
