@@ -27,8 +27,15 @@ const TOOL: Anthropic.Tool = {
   description:
     'Envia a resposta ao utilizador da PACE. É a única forma de responder: todo o '
     + 'conteúdo vai nos blocos.',
-  // `strict` obriga o modelo a devolver argumentos que validam contra o schema.
-  strict: true,
+  /*
+   * Sem `strict`, de propósito.
+   *
+   * O modo estrito da Anthropic aceita só um subconjunto de JSON Schema e
+   * recusa `maxItems` e companhia — e são precisamente os limites que dizem ao
+   * modelo o tamanho da resposta. Aqui o schema serve de guia, e quem garante
+   * o formato é o Zod do outro lado: uma resposta fora dele nunca chega ao
+   * ecrã, com ou sem modo estrito.
+   */
   input_schema: {
     type: 'object',
     additionalProperties: false,

@@ -578,6 +578,8 @@ formato. O ecrã diz, numa linha discreta, quando isso aconteceu.
 
 O Claude responde **apenas** através de uma ferramenta obrigatória,
 `submit_coach_turn`, e o resultado é validado com Zod no Worker antes de sair.
+O schema da ferramenta orienta o modelo; quem garante o formato é a validação,
+não o schema.
 A validação recusa: tipos de bloco fora dos seis conhecidos, textos acima dos
 limites, mais de três sugestões, e **qualquer ação**. Nesta versão `actions` é
 sempre `[]` — o modelo não cria treinos, hábitos, planos nem eventos. As ações
