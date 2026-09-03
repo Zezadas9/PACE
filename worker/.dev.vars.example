@@ -1,0 +1,5 @@
+# Copia para .dev.vars (que esta ignorado pelo Git) para desenvolvimento local.
+# Nunca commitar valores reais.
+ANTHROPIC_API_KEY=sk-ant-COLOCA-A-TUA-CHAVE-AQUI
+ANTHROPIC_MODEL=claude-sonnet-4-6
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173

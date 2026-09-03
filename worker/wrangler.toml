@@ -1,0 +1,15 @@
+name = "pace-coach"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+# O SDK da Anthropic usa APIs de Node (streams, buffers) mesmo quando so se
+# fazem pedidos simples.
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# O modelo e configuravel sem tocar no codigo. Ver README para as alternativas.
+ANTHROPIC_MODEL = "claude-sonnet-4-6"
+# Origens autorizadas, separadas por virgula. Nunca "*" em producao.
+ALLOWED_ORIGINS = "https://zezadas9.github.io,http://localhost:5173,http://localhost:4173"
+
+# A chave NAO vive aqui. Fica como secret:
+#   npx wrangler secret put ANTHROPIC_API_KEY

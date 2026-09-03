@@ -14,3 +14,14 @@ dist-ssr/
 
 # Editor and tooling scratch.
 .claude/
+
+# Segredos locais do Worker e estado do Wrangler.
+worker/.dev.vars
+worker/node_modules/
+worker/.wrangler/
+.wrangler/
+
+# Variáveis do frontend (o .env.example é que fica versionado).
+.env
+.env.local
+.env.*.local

@@ -36,7 +36,11 @@ jobs:
 
       # The build fails on a type error, so a broken commit never reaches the
       # phone: `npm run build` runs tsc before vite.
+      # O URL do Worker e publico: entra no bundle de proposito. A chave da
+      # Anthropic nunca passa por aqui — vive como secret no Worker.
       - run: npm run build
+        env:
+          VITE_PACE_API_URL: ${{ vars.VITE_PACE_API_URL }}
 
       - run: npm test
 

@@ -124,15 +124,69 @@ export function clearHistory(repos: Repositories): void {
   for (const message of repos.coachMessages.all()) repos.coachMessages.remove(message.id);
 }
 
+/** Quantas mensagens acompanham o pedido. Chega para a conversa fazer sentido. */
+const HISTORY_TURNS = 8;
+const HISTORY_CHARS = 1200;
+
+/**
+ * A conversa, reduzida ao que vale a pena enviar.
+ *
+ * Só o texto: as respostas do assistente viram a soma dos seus blocos de texto,
+ * e tudo o que exceda o limite é cortado. Nada de contexto, nada de rascunhos
+ * de ações, nada do snapshot — isso já viaja no `context`, e só com o que foi
+ * autorizado.
+ */
+export function compactHistory(
+  messages: CoachMessage[],
+  turns = HISTORY_TURNS,
+): Array<{ role: 'user' | 'assistant'; text: string }> {
+  return messages
+    .slice(-turns)
+    .map((message) => {
+      const text = message.role === 'user'
+        ? message.text
+        : textOf(message.turn as CoachTurn | null);
+      return {
+        role: message.role === 'user' ? ('user' as const) : ('assistant' as const),
+        text: text.slice(0, HISTORY_CHARS),
+      };
+    })
+    .filter((entry) => entry.text.trim() !== '');
+}
+
+function textOf(turn: CoachTurn | null): string {
+  if (!turn) return '';
+  return turn.blocks
+    .map((block) => {
+      if (block.kind === 'text' || block.kind === 'notice' || block.kind === 'caveat') {
+        return block.text;
+      }
+      if (block.kind === 'list') return block.items.join(' · ');
+      return '';
+    })
+    .filter((line) => line !== '')
+    .join('\n');
+}
+
+export interface AskResult {
+  turn: CoachTurn;
+  /** Quem respondeu: o motor local ou o backend. */
+  engine: string;
+  /** Verdadeiro quando o remoto falhou e a resposta veio do motor local. */
+  fallback: boolean;
+}
+
 export async function ask(
   repos: Repositories,
   platform: Platform,
   preferences: UserPreferences,
   message: string,
-): Promise<CoachTurn> {
+): Promise<AskResult> {
+  const previousMessages = history(repos);
+
   // A intenção da última resposta viaja com o pedido: é o que permite que uma
   // correção — "mas só de superiores" — se cole ao que foi pedido antes.
-  const previous = history(repos)
+  const previous = previousMessages
     .filter((entry) => entry.role === 'coach')
     .map((entry) => (entry.turn as CoachTurn | null)?.intent as CoachIntent | undefined)
     .filter((intent): intent is CoachIntent => intent != null)
@@ -141,10 +195,19 @@ export async function ask(
   repos.coachMessages.create({ role: 'user', text: message.trim(), turn: null });
 
   const context = buildContext(repos, preferences);
-  const reply = await platform.assistant.respond({ message, context, previousIntent: previous });
+  const reply = await platform.assistant.respond({
+    message,
+    context,
+    previousIntent: previous,
+    history: compactHistory(previousMessages),
+  });
 
   repos.coachMessages.create({ role: 'coach', text: '', turn: reply.turn });
-  return reply.turn;
+  return {
+    turn: reply.turn,
+    engine: reply.engine ?? platform.assistant.engine,
+    fallback: reply.fallback === true,
+  };
 }
 
 /* --- Aplicar o que foi aceite ----------------------------------------------------- */

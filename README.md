@@ -337,20 +337,24 @@ inventar progresso.
 
 ### A decisão que está por trás de tudo o resto
 
-**Não há um modelo de linguagem nisto.** A PACE não tem servidor e uma chave de
-API dentro de uma aplicação instalada é uma chave pública — qualquer pessoa a
-extrai do bundle em cinco minutos. Havia duas saídas honestas: não fazer a
-secção, ou fazer um treinador que não precise de modelo.
+Há **dois** motores por trás do mesmo ecrã, e a mesma interface para os dois.
 
-O que existe é o segundo: um motor determinístico que corre no telemóvel, lê os
-dados que o utilizador autorizou, faz contas, cita a fonte e **propõe ações
-concretas**. A mesma pergunta com os mesmos dados dá a mesma resposta, o que
-também quer dizer que é testável — e um treinador que não se consegue testar não
-devia dar conselhos a ninguém.
+O **motor local** é determinístico e corre no telemóvel: lê os dados que o
+utilizador autorizou, faz contas, cita a fonte e **propõe ações concretas**. A
+mesma pergunta com os mesmos dados dá a mesma resposta, o que também quer dizer
+que é testável — e um treinador que não se consegue testar não devia dar
+conselhos a ninguém. É ele que responde quando não há backend configurado, e é
+ele que continua a ser dono das ações que escrevem na aplicação.
 
-Quando houver back-end, um modelo entra por `AssistantPort` e devolve o mesmo
-`CoachTurn`. Os ecrãs, as ações, o consentimento e as regras de segurança não
-mudam uma linha:
+O **motor remoto** é o Claude, através de um Cloudflare Worker (ver a secção do
+backend, mais abaixo). Nunca houve — nem há — uma chave de API no bundle: uma
+chave dentro de uma aplicação instalada é uma chave pública, extraída em cinco
+minutos. A chave vive no Worker, o browser conhece só o endereço dele, e a
+resposta do modelo é validada antes de chegar ao ecrã.
+
+Os dois entram pela mesma porta, `AssistantPort`, e devolvem o mesmo
+`CoachTurn`. Os ecrãs, o consentimento e as regras de segurança não mudam uma
+linha entre um e outro:
 
 ```ts
 export interface AssistantPort extends Capability {
@@ -548,6 +552,130 @@ contado, desfazer — é só vibração.
 Um som que toca a cada toque deixa de ser informação e passa a ser ruído, que é
 a forma mais rápida de a aplicação acabar silenciada para sempre. Som e vibração
 desligam-se em **Perfil → Som e vibração**.
+
+---
+
+## O backend: Claude através de um Cloudflare Worker
+
+O GitHub Pages serve só o frontend. Quando o assistente responde com o Claude,
+o pedido vai a um **Cloudflare Worker** publicado à parte, em `worker/`:
+
+```
+PWA (GitHub Pages) → Worker /api/coach → Anthropic Messages API → Worker → PWA
+```
+
+O Worker é a única peça que conhece a `ANTHROPIC_API_KEY`. Ela nunca está no
+bundle, nunca é uma variável `VITE_*`, nunca entra num commit. O browser só
+conhece `VITE_PACE_API_URL` — o endereço público do Worker.
+
+**Sem `VITE_PACE_API_URL`, a aplicação funciona na mesma**: o assistente usa o
+motor local, determinístico, que corre no dispositivo. Com a variável definida,
+tenta o Claude primeiro e **cai no motor local** se a rede falhar, se o Worker
+não estiver configurado, se der timeout (12 s) ou se a resposta não couber no
+formato. O ecrã diz, numa linha discreta, quando isso aconteceu.
+
+### O que o modelo pode e não pode fazer
+
+O Claude responde **apenas** através de uma ferramenta obrigatória,
+`submit_coach_turn`, e o resultado é validado com Zod no Worker antes de sair.
+A validação recusa: tipos de bloco fora dos seis conhecidos, textos acima dos
+limites, mais de três sugestões, e **qualquer ação**. Nesta versão `actions` é
+sempre `[]` — o modelo não cria treinos, hábitos, planos nem eventos. As ações
+que escrevem na aplicação continuam a nascer do motor local, onde são código e
+não texto gerado, e continuam a precisar de confirmação explícita.
+
+Os blocos de fontes são filtrados contra o catálogo real
+(`src/domain/coach/references.ts`): um identificador inventado é removido antes
+de chegar ao ecrã. Um teste do Worker falha se as duas listas se afastarem.
+
+### Privacidade
+
+O pedido leva apenas o contexto que o utilizador autorizou, categoria a
+categoria, no ecrã "O que posso ler" — é o mesmo `buildContext()` de sempre.
+O Worker resume esse contexto antes de o enviar ao modelo (planos, sessões
+recentes, atividades, hábitos, contagens de alimentação) em vez de despejar o
+snapshot. Vão também as últimas 8 mensagens da conversa, cortadas. Nada mais.
+
+O Worker não regista mensagens, perfil, contexto nem a chave: os erros que
+devolve são códigos curtos (`invalid_request`, `rate_limited`, `upstream_error`)
+sem detalhes internos.
+
+### Configurar, do zero
+
+```bash
+# 1. Dependências do frontend e do Worker
+npm install
+npm run worker:install
+
+# 2. Criar o Worker na Cloudflare (uma vez; abre o browser para autenticar)
+npm --prefix worker exec -- wrangler login
+
+# 3. A chave da Anthropic, como secret do Worker — nunca num ficheiro
+npm run worker:secret        # pede a chave e guarda-a na Cloudflare
+
+# 4. Publicar
+npm run worker:deploy        # imprime o URL: https://pace-coach.<conta>.workers.dev
+```
+
+**Modelo.** `ANTHROPIC_MODEL` está em `worker/wrangler.toml` e arranca em
+`claude-sonnet-4-6`. Podes trocá-lo por outro (por exemplo `claude-opus-5`, mais
+capaz e mais caro) sem tocar em código.
+
+**Origens.** `ALLOWED_ORIGINS`, no mesmo ficheiro, é a lista separada por
+vírgulas das origens autorizadas — o teu domínio do GitHub Pages e o
+`http://localhost:5173` do desenvolvimento. Nunca `*`: um backend que aceita
+qualquer origem é um backend que qualquer página usa à custa da tua chave.
+
+**Frontend.** No GitHub, em *Settings → Secrets and variables → Actions →
+Variables*, cria `VITE_PACE_API_URL` com o URL do Worker. É uma **variável**,
+não um secret: entra no bundle de propósito.
+
+### Correr localmente
+
+Dois terminais:
+
+```bash
+npm run worker:dev     # Worker em http://localhost:8787
+npm run dev            # frontend em http://localhost:5173
+```
+
+Para o Worker local ter chave, copia `worker/.dev.vars.example` para
+`worker/.dev.vars` (ignorado pelo Git) e preenche a tua. Para o frontend falar
+com ele, cria um `.env.local` na raiz:
+
+```
+VITE_PACE_API_URL=http://localhost:8787
+```
+
+### Confirmar que nenhuma chave chega ao browser
+
+```bash
+npm run build
+grep -ri "sk-ant" dist/ ; echo "saída vazia = nada de chaves"
+grep -ri "anthropic" dist/assets/*.js | head
+```
+
+O segundo comando não devia encontrar nada além, quando muito, de texto da
+interface: o frontend não importa o SDK da Anthropic nem conhece o endereço da
+API — conhece o do teu Worker. Nas DevTools, o separador *Network* mostra um só
+pedido, para `…workers.dev/api/coach`, sem cabeçalho de autenticação.
+
+### Verificações
+
+```bash
+npm run typecheck && npm test && npm run build   # frontend
+npm run worker:typecheck && npm run worker:test  # Worker
+```
+
+### O que falta antes de isto ser público
+
+O Worker tem um limite por IP (20 pedidos por minuto), e convém dizer o que
+isso é: proteção básica. Cada isolate da Cloudflare tem a sua própria memória,
+portanto o limite é por isolate, e um IP partilhado conta como um utilizador
+só. **Antes de abrir isto ao público é preciso autenticação** — sem saber quem
+está a pedir, não há forma de impor um limite por pessoa nem de responsabilizar
+o uso. Um contador partilhado (Durable Object ou KV) resolve a parte técnica; a
+identidade é que ainda não existe.
 
 ---
 

@@ -217,15 +217,17 @@ export interface AuthPort extends Capability {
 /**
  * De onde vem a resposta do assistente.
  *
- * Hoje há uma só implementação: o motor local, determinístico, que corre no
- * dispositivo e não fala com ninguém. É uma escolha, não uma limitação
- * escondida — a aplicação não tem servidor, e uma chave de API dentro de uma
- * app instalada é uma chave pública.
+ * Há duas implementações, e o contrato é o mesmo para as duas:
  *
- * Quando existir back-end, entra aqui uma implementação remota que devolve
- * exatamente o mesmo `CoachTurn`. Os ecrãs, as ações e as regras de segurança
- * ficam como estão. O contrato obriga ao que interessa: uma resposta traz
- * blocos, ações propostas e as referências que a sustentam.
+ * - o **motor local**, determinístico, que corre no dispositivo e não fala com
+ *   ninguém;
+ * - o **remoto**, que fala com o Worker da PACE — e só com ele, porque a chave
+ *   da Anthropic nunca sai do backend. Uma chave dentro de uma app instalada é
+ *   uma chave pública.
+ *
+ * O remoto tem sempre o local por baixo: se a rede falhar, se o backend não
+ * estiver configurado ou se a resposta não couber no formato, responde o motor
+ * local e o ecrã diz que foi assim.
  */
 export interface AssistantPort extends Capability {
   /** False no motor local: nada sai do dispositivo. */
@@ -246,12 +248,25 @@ export interface AssistantRequest {
    * correção ao pedido de treino que veio antes.
    */
   previousIntent?: CoachIntent | null;
+  /**
+   * As últimas mensagens da conversa, já reduzidas.
+   *
+   * Vai só o que a conversa precisa para fazer sentido — nunca o snapshot da
+   * aplicação nem nada fora do contexto autorizado.
+   */
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>;
 }
 
 export interface AssistantReply {
   turn: CoachTurn;
   /** Milissegundos gastos, para os ecrãs poderem esperar de forma honesta. */
   elapsedMs: number;
+  /** Quem respondeu, para o ecrã poder ser honesto sobre isso. */
+  engine?: string;
+  /** Verdadeiro quando a resposta veio do backend. */
+  remote?: boolean;
+  /** Verdadeiro quando o remoto falhou e respondeu o motor local. */
+  fallback?: boolean;
 }
 
 export interface Platform {

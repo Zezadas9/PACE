@@ -10,7 +10,13 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "worker:dev": "npm --prefix worker run dev",
+    "worker:deploy": "npm --prefix worker run deploy",
+    "worker:test": "npm --prefix worker run test",
+    "worker:typecheck": "npm --prefix worker run typecheck",
+    "worker:install": "npm --prefix worker install",
+    "worker:secret": "npm --prefix worker exec -- wrangler secret put ANTHROPIC_API_KEY"
   },
   "dependencies": {
     "react": "^19.2.0",

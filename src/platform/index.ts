@@ -27,6 +27,7 @@ import {
 } from './web/capabilities';
 import { WebNotificationsPort } from './web/notifications';
 import { LocalAssistantPort } from './web/assistant';
+import { RemoteAssistantPort, withLocalFallback } from './web/remoteAssistant';
 import type { Platform } from './types';
 
 export async function createWebPlatform(): Promise<Platform> {
@@ -42,8 +43,25 @@ export async function createWebPlatform(): Promise<Platform> {
     sensors: new UnavailableSensorPort(),
     network: new WebNetworkPort(),
     auth: new UnimplementedAuthPort(),
-    assistant: new LocalAssistantPort(),
+    assistant: createAssistant(),
   };
+}
+
+/**
+ * O assistente que a aplicação vai usar.
+ *
+ * Com `VITE_PACE_API_URL` definido, fala com o Worker e tem o motor local por
+ * baixo. Sem ele — que é o caso de quem clona o repositório e corre o `dev` —
+ * fica só o motor local, que responde a tudo sem rede nenhuma.
+ *
+ * A variável é um URL público, não um segredo: é o endereço do backend, e a
+ * chave da API vive lá dentro.
+ */
+function createAssistant(): Platform['assistant'] {
+  const local = new LocalAssistantPort();
+  const url = import.meta.env.VITE_PACE_API_URL?.trim();
+  if (!url) return local;
+  return withLocalFallback(new RemoteAssistantPort(url), local);
 }
 
 export async function createPlatform(): Promise<Platform> {

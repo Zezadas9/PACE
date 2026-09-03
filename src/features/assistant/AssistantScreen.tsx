@@ -48,6 +48,13 @@ export function AssistantScreen(): ReactElement {
 
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  /**
+   * O que correu mal da última vez, e o que se tinha escrito.
+   *
+   * Guarda-se a mensagem para o botão "Tentar outra vez" não obrigar ninguém a
+   * escrever tudo de novo.
+   */
+  const [notice, setNotice] = useState<{ text: string; retry: string | null } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   const settings = useMemo(() => aiSettings(repos), [repos, version]);
@@ -68,9 +75,20 @@ export function AssistantScreen(): ReactElement {
     if (!message || busy) return;
     setDraft('');
     setBusy(true);
+    setNotice(null);
     try {
-      await ask(repos, platform, preferences, message);
+      const result = await ask(repos, platform, preferences, message);
       feedback.touch();
+      // Quando o backend falha, a resposta local sai à mesma — mas convém
+      // dizê-lo, sem alarme e sem esconder.
+      setNotice(result.fallback
+        ? { text: 'Sem ligação ao assistente online: respondi com o motor local.', retry: message }
+        : null);
+    } catch {
+      setNotice({
+        text: 'Não consegui responder agora. Tenta outra vez daqui a pouco.',
+        retry: message,
+      });
     } finally {
       setBusy(false);
     }
@@ -170,6 +188,22 @@ export function AssistantScreen(): ReactElement {
         ))}
 
         {busy ? <div className="coach-typing"><span /><span /><span /></div> : null}
+
+        {notice ? (
+          <div className="coach-notice-line" role="status">
+            <span>{notice.text}</span>
+            {notice.retry ? (
+              <button
+                type="button"
+                className="link"
+                onClick={() => { const again = notice.retry; setNotice(null); if (again) void send(again); }}
+              >
+                Tentar outra vez
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         <div ref={endRef} />
       </div>
 
