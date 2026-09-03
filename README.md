@@ -608,7 +608,7 @@ npm install
 npm run worker:install
 
 # 2. Criar o Worker na Cloudflare (uma vez; abre o browser para autenticar)
-npm --prefix worker exec -- wrangler login
+npm run worker:login
 
 # 3. A chave da Anthropic, como secret do Worker — nunca num ficheiro
 npm run worker:secret        # pede a chave e guarda-a na Cloudflare

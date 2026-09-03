@@ -16,7 +16,10 @@
     "worker:test": "npm --prefix worker run test",
     "worker:typecheck": "npm --prefix worker run typecheck",
     "worker:install": "npm --prefix worker install",
-    "worker:secret": "npm --prefix worker exec -- wrangler secret put ANTHROPIC_API_KEY"
+    "worker:secret": "npm --prefix worker run secret",
+    "worker:login": "npm --prefix worker run login",
+    "worker:secrets": "npm --prefix worker run secret:list",
+    "worker:whoami": "npm --prefix worker run whoami"
   },
   "dependencies": {
     "react": "^19.2.0",

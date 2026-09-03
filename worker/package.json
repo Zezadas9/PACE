@@ -9,7 +9,11 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "secret": "wrangler secret put ANTHROPIC_API_KEY",
+    "secret:list": "wrangler secret list",
+    "login": "wrangler login",
+    "whoami": "wrangler whoami"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
