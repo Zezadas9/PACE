@@ -9,7 +9,7 @@
 import { useCallback, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AiDataCategory } from '../../core/types';
-import { aiSettings, setCategory, setEnabled } from '../../services/coach';
+import { aiSettings, grantAll, grantedCount, setCategory, setEnabled } from '../../services/coach';
 import { useApp, useFeedback, useStoreVersion } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
 import { Screen } from '../../app/navigation/Screen';
@@ -48,12 +48,13 @@ const CATEGORIES: CategoryEntry[] = [
 ];
 
 export function ConsentScreen(): ReactElement {
-  const { repos } = useApp();
+  const { repos, platform } = useApp();
   const feedback = useFeedback();
-  const { toast } = useUi();
+  const { confirm, toast } = useUi();
   const navigate = useNavigate();
   const version = useStoreVersion();
   const settings = aiSettings(repos);
+  const counts = grantedCount(settings);
   void version;
 
   const toggleAll = useCallback((enabled: boolean) => {
@@ -61,6 +62,25 @@ export function ConsentScreen(): ReactElement {
     feedback.touch();
     if (!enabled) toast('Assistente desligado. Deixa de ler os teus dados.');
   }, [repos, feedback, toast]);
+
+  /**
+   * Ligar tudo continua a ser uma decisão, não um atalho silencioso: o diálogo
+   * diz o que abre antes de abrir, e qualquer categoria se desliga depois.
+   */
+  const enableEverything = useCallback(() => {
+    void (async () => {
+      const ok = await confirm({
+        title: 'Dar acesso a tudo?',
+        body: 'O assistente passa a ler perfil, objetivos, treinos, atividade, '
+          + 'alimentação, hábitos e feedback. Podes desligar qualquer um a seguir.',
+        confirmLabel: 'Dar acesso',
+      });
+      if (!ok) return;
+      grantAll(repos);
+      feedback.play('complete');
+      toast('Acesso dado a todas as categorias.');
+    })();
+  }, [confirm, repos, feedback, toast]);
 
   return (
     <Screen>
@@ -83,7 +103,11 @@ export function ConsentScreen(): ReactElement {
       </Card>
 
       <section>
-        <SectionHeader title="Categorias" />
+        <SectionHeader
+          title="Categorias"
+          actionLabel={counts.on < counts.total ? 'Ativar tudo' : undefined}
+          onAction={counts.on < counts.total ? enableEverything : undefined}
+        />
         <Card variant="flush">
           <Rows>
             {CATEGORIES.map((category) => (
@@ -104,10 +128,17 @@ export function ConsentScreen(): ReactElement {
       </section>
 
       <Card variant="quiet">
+        {/* O texto segue o motor que esta instalacao tem, e nao uma promessa
+            escrita uma vez. Dizer "nada sai do dispositivo" numa build ligada
+            ao Worker seria falso, e e exatamente aqui que nao pode ser. */}
         <p className="t-sm muted">
-          Tudo isto acontece no teu telemóvel: o assistente corre localmente e nada é
-          enviado para fora. Se um dia existir um modelo na nuvem, será uma escolha
-          separada e explícita — não um detalhe que muda por baixo.
+          {platform.assistant.isRemote()
+            ? 'Para responder, as categorias que ligares acima são enviadas ao servidor '
+              + 'da PACE, que fala com o modelo. Nada disto é guardado lá: o servidor '
+              + 'responde e esquece. Se ficar sem rede, responde o motor que corre no '
+              + 'teu telemóvel.'
+            : 'Tudo isto acontece no teu telemóvel: o assistente corre localmente e '
+              + 'nada é enviado para fora.'}
         </p>
       </Card>
 

@@ -46,6 +46,43 @@ export function setEnabled(repos: Repositories, enabled: boolean): AiSettings {
   return ai;
 }
 
+/**
+ * Liga o assistente e todas as categorias de uma vez.
+ *
+ * Existe porque oito interruptores seguidos sao oito decisoes iguais tomadas
+ * uma a uma, e quem ja decidiu confiar nao ganha nada em repeti-la. O que nao
+ * muda e o que esta em jogo: o ecra pede confirmacao antes de chamar isto, e
+ * qualquer categoria continua a poder ser desligada depois, sozinha.
+ *
+ * "Sono" fica de fora por nao haver dados de sono na PACE. Liga-lo seria
+ * prometer uma leitura que nao acontece.
+ */
+export function grantAll(repos: Repositories): AiSettings {
+  const current = repos.settings.get().ai;
+  const categories = { ...current.categories };
+  for (const key of Object.keys(categories) as AiDataCategory[]) {
+    categories[key] = key !== 'sleep';
+  }
+  const ai: AiSettings = {
+    ...current,
+    enabled: true,
+    categories,
+    acceptedAt: new Date().toISOString(),
+  };
+  repos.settings.updateAi(ai);
+  return ai;
+}
+
+/** Quantas categorias estao ligadas, e quantas podiam estar. */
+export function grantedCount(settings: AiSettings): { on: number; total: number } {
+  const keys = (Object.keys(settings.categories) as AiDataCategory[])
+    .filter((key) => key !== 'sleep');
+  return {
+    on: settings.enabled ? keys.filter((key) => settings.categories[key]).length : 0,
+    total: keys.length,
+  };
+}
+
 export function setCategory(
   repos: Repositories,
   category: AiDataCategory,
