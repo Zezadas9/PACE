@@ -96,7 +96,11 @@ export function AssistantScreen(): ReactElement {
       // Quando o backend falha, a resposta local sai à mesma — mas convém
       // dizê-lo, sem alarme e sem esconder.
       setNotice(result.fallback
-        ? { text: 'Sem ligação ao assistente online: respondi com o motor local.', retry: message }
+        ? {
+          text: 'Não cheguei ao assistente online. Esta resposta veio do motor que corre '
+            + 'no telemóvel, que sabe menos e pode ter percebido mal o pedido.',
+          retry: message,
+        }
         : null);
     } catch {
       setNotice({

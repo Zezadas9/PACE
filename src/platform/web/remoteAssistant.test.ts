@@ -190,3 +190,43 @@ describe('withLocalFallback', () => {
     expect((await pending).fallback).toBe(true);
   });
 });
+
+describe('tamanho do pedido', () => {
+  function bigContext(rows: number): AssistantRequest {
+    const base = request();
+    const habitEntries = Array.from({ length: rows }, (_, i) => ({
+      id: `h${i}`, habitId: 'x', date: '2026-08-01', completed: true, value: 1,
+    }));
+    return { ...base, context: { ...base.context, habitEntries } as never };
+  }
+
+  it('deixa passar um pedido normal por inteiro', async () => {
+    const fetchMock = vi.fn(
+      async (_url: string, _init: RequestInit) => new Response(JSON.stringify({ turn }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new RemoteAssistantPort('https://worker.dev').respond(bigContext(10));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
+    expect(body.context.habitEntries).toHaveLength(10);
+  });
+
+  it('corta o contexto quando o pedido nao cabe', async () => {
+    const fetchMock = vi.fn(
+      async (_url: string, _init: RequestInit) => new Response(JSON.stringify({ turn }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new RemoteAssistantPort('https://worker.dev').respond(bigContext(40_000));
+
+    const sent = fetchMock.mock.calls[0]![1].body as string;
+    const body = JSON.parse(sent);
+    expect(sent.length).toBeLessThanOrEqual(900 * 1024);
+    expect(body.context.habitEntries.length).toBeLessThan(40_000);
+    // A mensagem e o perfil sobrevivem sempre: sao eles que fazem a pergunta
+    // ter sentido.
+    expect(body.message).toBe('Cria-me um treino de 45 minutos');
+    expect(body.context.today).toBe('2026-09-02');
+  });
+});

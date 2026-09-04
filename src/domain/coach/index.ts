@@ -128,6 +128,18 @@ function createWorkoutTurn(context: CoachContext, intent: CoachIntent): CoachTur
     blocks.push(text(`Deixei de fora: ${intent.excluded.map((group) => MUSCLE_LABELS[group]).join(', ')}.`));
   }
 
+  // O motor local monta trabalho de forca. Nao sabe montar uma sessao com bola,
+  // nem com raquete: dizer que sabe seria entregar um treino de ginasio com o
+  // nome de um treino de futebol.
+  if (draft.type === 'sport') {
+    blocks.push(notice(
+      'info',
+      'Isto é trabalho físico de apoio ao teu desporto, não uma sessão com bola. '
+      + 'Para exercícios técnicos e táticos, o assistente online consegue ajudar-te '
+      + 'melhor do que eu — ou fala com quem te treina.',
+    ));
+  }
+
   if (draft.type === 'strength' || draft.type === 'calisthenics') {
     blocks.push(text(
       'As repetições e os descansos seguem os intervalos da posição da ACSM para o teu '

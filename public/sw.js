@@ -14,7 +14,7 @@
  * Bump CACHE_VERSION when the precached list below changes.
  */
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE = `pace-${CACHE_VERSION}`;
 
 /** Relative on purpose: the app is served from a repository subpath on Pages. */
@@ -39,6 +39,7 @@ const SHELL = [
   './icons/estatisticas.png',
   './icons/frequencia.png',
   './icons/hidratacao.png',
+  './icons/hiking.png',
   './icons/ia.png',
   './icons/imc-alto.png',
   './icons/imc-baixo.png',

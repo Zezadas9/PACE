@@ -282,9 +282,24 @@ const REFINEMENT_STARTERS = [
   'menos ', 'e ', 'faz antes', 'refaz', 'outra vez', 'igual mas',
 ];
 
+/**
+ * Verbos que abrem um pedido novo.
+ *
+ * "Podes" comeca tanto uma correcao ("podes tirar os agachamentos") como um
+ * pedido inteiro ("podes criar-me um treino de futebol"). Sem esta lista, o
+ * segundo era lido como correcao do primeiro: a resposta comecava por
+ * "Ajustei" e o pedido novo perdia-se pelo caminho.
+ */
+const NEW_REQUEST = [
+  'cria', 'criar', 'monta', 'montar', 'faz-me', 'faz me', 'fazer-me', 'prepara',
+  'preparar', 'da-me', 'da me', 'dá-me', 'dá me', 'arranja', 'planeia', 'preciso de', 'quero um',
+  'quero uma', 'gostava de um', 'gostava de uma', 'sugere', 'organiza',
+];
+
 export function looksLikeRefinement(message: string): boolean {
   const text = normalize(message);
   if (text.length > 120) return false;
+  if (NEW_REQUEST.some((verb) => text.includes(verb))) return false;
   return REFINEMENT_STARTERS.some((starter) => text.startsWith(starter));
 }
 

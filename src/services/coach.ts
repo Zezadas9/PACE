@@ -11,10 +11,10 @@
  */
 
 import { createId } from '../core/utils/id';
-import { todayKey } from '../core/utils/date';
+import { addDaysToKey, todayKey } from '../core/utils/date';
 import { age } from '../domain/metrics';
 import type {
-  AiDataCategory, AiSettings, CoachMessage, Habit, RunPlan, RunSessionFeedback,
+  AiDataCategory, AiSettings, CoachMessage, DayKey, Habit, RunPlan, RunSessionFeedback,
   UserPreferences,
 } from '../core/types';
 import type {
@@ -132,16 +132,35 @@ export function buildContext(
     goals: can('goals') ? repos.goals.all() : [],
     workouts: can('training') ? repos.workouts.all() : [],
     exercises: can('training') ? repos.exercises.all() : [],
-    sessions: can('training') ? repos.workoutSessions.all() : [],
-    activities: can('activity') ? repos.activitySessions.all() : [],
+    sessions: can('training') ? recent(repos.workoutSessions.all(), today, 120) : [],
+    activities: can('activity') ? recent(repos.activitySessions.all(), today, 180) : [],
     habits: can('habits') ? repos.habits.all() : [],
-    habitEntries: can('habits') ? repos.habitEntries.all() : [],
-    meals: can('nutrition') ? repos.meals.all() : [],
+    habitEntries: can('habits') ? recent(repos.habitEntries.all(), today, 60) : [],
+    meals: can('nutrition') ? recent(repos.meals.all(), today, 30) : [],
     foods: can('nutrition') ? repos.foods.all() : [],
-    water: can('nutrition') ? repos.waterEntries.all() : [],
+    water: can('nutrition') ? recent(repos.waterEntries.all(), today, 30) : [],
     runPlan: can('activity') ? activePlan(repos) : null,
     sleep: null,
   };
+}
+
+/**
+ * Só o que é recente.
+ *
+ * Não é uma otimização: é o que faz o assistente funcionar de todo. O pedido
+ * viaja num corpo com limite, e o histórico cresce todos os dias — ao fim de
+ * uns meses de uso o pedido passava do limite, o backend recusava-o, e a
+ * aplicação caía sem barulho no motor local. O sintoma era a IA responder a
+ * outra pergunta.
+ *
+ * Cortar também melhora a resposta. Dois mil registos de hábitos não dizem mais
+ * do que os dos últimos dois meses; dizem o mesmo, com mais ruído pelo meio.
+ */
+function recent<T extends { date: DayKey }>(rows: T[], today: DayKey, days: number): T[] {
+  const from = addDaysToKey(today, -days);
+  return rows
+    .filter((row) => row.date >= from)
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export function activePlan(repos: Repositories): RunPlan | null {

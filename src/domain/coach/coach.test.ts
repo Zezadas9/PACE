@@ -554,3 +554,40 @@ describe('a IA e a agenda', () => {
     expect(JSON.stringify(turn.blocks)).toContain('Nada muda sem tu confirmares');
   });
 });
+
+describe('um pedido novo não é uma correção', () => {
+  it('"Podes criar-me um treino de futebol" abre um pedido, não corrige o anterior', () => {
+    expect(looksLikeRefinement('Podes criar me um treino de futebol individual de duas horas?'))
+      .toBe(false);
+  });
+
+  it('"Podes tirar os agachamentos" continua a ser uma correção', () => {
+    expect(looksLikeRefinement('Podes tirar os agachamentos?')).toBe(true);
+  });
+
+  it('"mas só de superiores" continua a ser uma correção', () => {
+    expect(looksLikeRefinement('mas só de superiores')).toBe(true);
+  });
+
+  it('"Cria-me um plano de corrida" abre um pedido', () => {
+    expect(looksLikeRefinement('Cria-me um plano de corrida')).toBe(false);
+  });
+});
+
+describe('desporto com bola', () => {
+  it('avisa que não sabe montar uma sessão técnica', () => {
+    const turn = respond(context(), 'Podes criar-me um treino de futebol de duas horas?');
+    const aviso = turn.blocks.find(
+      (block) => block.kind === 'notice' && block.text.includes('não uma sessão com bola'),
+    );
+    expect(aviso).toBeDefined();
+  });
+
+  it('num treino de força não aparece esse aviso', () => {
+    const turn = respond(context(), 'Cria-me um treino de pernas de 45 minutos');
+    const aviso = turn.blocks.find(
+      (block) => block.kind === 'notice' && block.text.includes('sessão com bola'),
+    );
+    expect(aviso).toBeUndefined();
+  });
+});

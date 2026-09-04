@@ -21,6 +21,48 @@ import type { AssistantPort, AssistantReply, AssistantRequest } from '../types';
 
 const TIMEOUT_MS = 12_000;
 
+/**
+ * O tamanho maximo do pedido, com folga sobre o que o backend aceita.
+ *
+ * O corpo cresce com os dados do utilizador. Sem este corte, ao fim de uns
+ * meses de uso o pedido passava o limite do backend, o backend recusava-o, e a
+ * aplicacao caia sem barulho no motor local — que responde a outra coisa. Era
+ * um problema que so aparecia a quem usasse a aplicacao a serio.
+ */
+const MAX_BODY_BYTES = 900 * 1024;
+
+/**
+ * A ordem por que o contexto se desfaz quando nao cabe.
+ *
+ * Do menos ao mais util para responder: mil registos de hábitos dizem o mesmo
+ * que cem, e os planos e o perfil ficam sempre.
+ */
+const SHEDDABLE = [
+  'habitEntries', 'water', 'meals', 'sessions', 'activities', 'foods', 'exercises',
+] as const;
+
+/** Corta o contexto ate o pedido caber, e diz o que cortou. */
+function fit(body: Record<string, unknown>): string {
+  let json = JSON.stringify(body);
+  if (json.length <= MAX_BODY_BYTES) return json;
+
+  const context = body.context as Record<string, unknown>;
+  for (const key of SHEDDABLE) {
+    const rows = context[key];
+    if (!Array.isArray(rows) || rows.length === 0) continue;
+    // Metade de cada vez, os mais recentes primeiro — o contexto ja vem
+    // ordenado do mais novo para o mais velho.
+    let kept = rows;
+    while (kept.length > 0 && json.length > MAX_BODY_BYTES) {
+      kept = kept.slice(0, Math.floor(kept.length / 2));
+      context[key] = kept;
+      json = JSON.stringify(body);
+    }
+    if (json.length <= MAX_BODY_BYTES) break;
+  }
+  return json;
+}
+
 const BLOCK_KINDS = ['text', 'list', 'metrics', 'notice', 'references', 'caveat'];
 
 const ACTION_KINDS = [
@@ -99,11 +141,12 @@ export class RemoteAssistantPort implements AssistantPort {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({
+        body: fit({
           message: request.message,
           context: request.context,
           previousIntent: request.previousIntent ?? null,
           history: request.history ?? [],
+          attachment: request.attachment ?? null,
         }),
       });
 
@@ -154,6 +197,30 @@ export function withLocalFallback(
         }
       }
       const reply = await local.respond(request);
+
+      // O motor local nao le imagens nem ficheiros. Se a pergunta trazia um,
+      // a resposta tem de dizer que ele nao foi visto — calar isso seria deixar
+      // o utilizador a achar que a fotografia contou para a resposta.
+      if (request.attachment) {
+        return {
+          ...reply,
+          fallback: true,
+          turn: {
+            ...reply.turn,
+            blocks: [
+              {
+                kind: 'notice',
+                tone: 'caution',
+                text: 'Não consegui ligar-me ao assistente online, e o motor que corre '
+                  + 'aqui no telemóvel não lê imagens nem ficheiros. Esta resposta não '
+                  + 'teve em conta o que enviaste.',
+              },
+              ...reply.turn.blocks,
+            ],
+          },
+        };
+      }
+
       return { ...reply, fallback: true };
     },
   };
