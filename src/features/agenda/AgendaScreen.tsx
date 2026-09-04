@@ -26,6 +26,7 @@ import { AgendaList } from './AgendaList';
 import { CreatePicker, type CreateKind } from './CreatePicker';
 import { MonthView, WeekView, YearView } from './views';
 import { AgendaSheets, type SheetState } from './AgendaSheets';
+import { AskPace } from '../assistant/AskPace';
 
 export function AgendaScreen(): ReactElement {
   const { repos } = useApp();
@@ -163,6 +164,12 @@ export function AgendaScreen(): ReactElement {
             onSelectMonth={(monthAnchor) => { setAnchor(monthAnchor); setView('month'); }}
           />
         ) : null}
+
+        <AskPace questions={[
+          'Organiza-me a semana à volta do que já está marcado',
+          'Onde tenho tempo livre esta semana?',
+          'Passa o treino de sexta para sábado',
+        ]} />
       </Screen>
 
       <Fab label="Adicionar" onClick={() => setSheet({ kind: 'picker' })} />

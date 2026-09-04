@@ -24,6 +24,7 @@ import { Icon } from '../../ui/Icon';
 import { PerfectDayCard } from './PerfectDayCard';
 import { useCelebrations } from './useCelebrations';
 import { StreakCard } from './StreakCard';
+import { AskPace } from '../assistant/AskPace';
 
 export function TodayScreen(): ReactElement {
   const { repos } = useApp();
@@ -88,6 +89,11 @@ export function TodayScreen(): ReactElement {
       <NutritionSection model={model} />
       <UpcomingSection model={model} />
       <RecapSection model={model} />
+      <AskPace questions={[
+        'Como está o meu dia?',
+        'O que me falta fazer hoje?',
+        'Organiza-me o resto do dia',
+      ]} />
     </Screen>
   );
 }

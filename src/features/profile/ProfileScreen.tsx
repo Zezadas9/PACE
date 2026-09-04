@@ -32,6 +32,7 @@ import { FeedbackSection } from './FeedbackSection';
 import { IdentitySection } from './IdentitySection';
 import { NotificationsSection } from './NotificationsSection';
 import type { Repositories } from '../../data/repositories';
+import { AskPace } from '../assistant/AskPace';
 
 function toNumber(raw: string): number | null {
   if (raw.trim() === '') return null;
@@ -67,6 +68,10 @@ export function ProfileScreen(): ReactElement {
       <GoalsSection summary={summary} repos={repos} />
       <NotificationsSection />
       <FeedbackSection />
+      <AskPace questions={[
+        'Que objetivo faz sentido para mim?',
+        'O que os meus dados dizem sobre o último mês?',
+      ]} />
       <DataSection />
     </Screen>
   );

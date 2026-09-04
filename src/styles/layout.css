@@ -43,6 +43,13 @@
            calc(var(--nav-h) + var(--safe-bottom) + var(--s-8));
 }
 
+/* Um ecra com botao flutuante precisa de mais chao: o botao tem 3,5rem e fica
+   por cima do que estiver no fim da pagina. Sem isto, o ultimo cartao de cada
+   ecra com FAB nasce meio tapado. */
+.screens:has(> .fab) .screen {
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + var(--s-8) + 4rem);
+}
+
 /* Screens without the bottom nav (onboarding) reclaim the space. */
 .app[data-chrome="bare"] .screen {
   padding-bottom: calc(var(--safe-bottom) + var(--s-6));

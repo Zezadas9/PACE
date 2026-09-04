@@ -33,6 +33,7 @@ import { NutritionGoalForm } from './NutritionGoalForm';
 import {
   GoalsSection, HistorySection, MealsSection, PlanSection, TotalsCard, WaterCard,
 } from './sections';
+import { AskPace } from '../assistant/AskPace';
 
 type View = 'diary' | 'plan' | 'history';
 
@@ -202,6 +203,12 @@ export function NutritionScreen(): ReactElement {
         {view === 'history' ? (
           <HistorySection day={model} recent={history} onOpen={openMeal} />
         ) : null}
+
+        <AskPace questions={[
+          'Dá-me ideias para o jantar',
+          'Como está a minha alimentação esta semana?',
+          'Quanta proteína devo comer por dia?',
+        ]} />
       </Screen>
 
       {view !== 'history' ? (

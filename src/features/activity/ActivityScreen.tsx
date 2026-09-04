@@ -32,6 +32,7 @@ import { GoalsSection, SummarySection } from './sections';
 import {
   EvolutionSection, FrequencySection, InsightsSection, RecordsSection,
 } from './EvolutionSection';
+import { AskPace } from '../assistant/AskPace';
 
 type SheetState =
   | { kind: 'manual'; entry?: ManualEntry; id?: string }
@@ -158,10 +159,12 @@ export function ActivityScreen(): ReactElement {
         <FrequencySection frequency={model.frequency} unit={unit} />
         <EvolutionSection unit={unit} />
         <RecordsSection records={model.records} />
-        <InsightsSection
-          insights={model.insights}
-          onAsk={(question) => navigate(`/ia?pergunta=${encodeURIComponent(question)}`)}
-        />
+        <InsightsSection insights={model.insights} />
+        <AskPace questions={[
+          'Como está a minha evolução na atividade?',
+          'Devo aumentar o volume de corrida?',
+          'Cria-me um plano para correr 10 km',
+        ]} />
       </Screen>
 
       <Fab label="Registar atividade" onClick={() => setSheet({ kind: 'manual' })} />

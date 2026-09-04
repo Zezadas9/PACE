@@ -217,10 +217,9 @@ export function RecordsSection({ records }: { records: PersonalRecord[] }): Reac
 }
 
 export function InsightsSection({
-  insights, onAsk,
+  insights,
 }: {
   insights: ActivityInsight[];
-  onAsk?: (question: string) => void;
 }): ReactElement | null {
   if (insights.length === 0) return null;
   return (
@@ -235,34 +234,7 @@ export function InsightsSection({
             </div>
           </Card>
         ))}
-        {onAsk ? (
-          <div className="chips-scroll">
-            {ASK_ABOUT_ACTIVITY.map((question) => (
-              <button
-                key={question}
-                type="button"
-                className="chip"
-                onClick={() => onAsk(question)}
-              >
-                <span className="dot" />
-                <span>{question}</span>
-              </button>
-            ))}
-          </div>
-        ) : null}
       </div>
     </section>
   );
 }
-
-/**
- * O que se pergunta a seguir a ler os dados.
- *
- * Perguntas inteiras e não etiquetas: chegam ao campo da IA já escritas, e
- * quem lá chega pode mudá-las antes de as fazer.
- */
-const ASK_ABOUT_ACTIVITY = [
-  'Como está a minha evolução na atividade?',
-  'Devo aumentar o volume de corrida?',
-  'Como organizo a próxima semana de treino?',
-];

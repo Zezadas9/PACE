@@ -25,6 +25,7 @@ import { Fab } from '../../ui/Fab';
 import { PageHeader } from '../../ui/page';
 import { WorkoutBuilder } from './WorkoutBuilder';
 import { HistorySection } from './HistorySection';
+import { AskPace } from '../assistant/AskPace';
 
 /** "seg, qua, sex" — or nothing at all when the plan is not on a schedule. */
 function describeWeekdays(weekdays: number[]): string | null {
@@ -120,6 +121,11 @@ export function WorkoutScreen(): ReactElement {
 
         <FrequencySection stats={data.stats} weeks={data.weeks} />
         <HistorySection />
+        <AskPace questions={[
+          'Cria-me um treino de 45 minutos',
+          'Como está a minha evolução no treino?',
+          'Que treino devo fazer hoje?',
+        ]} />
       </Screen>
 
       <Fab label="Novo treino" onClick={() => setBuilder({})} />
