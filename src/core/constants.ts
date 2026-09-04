@@ -15,7 +15,7 @@ export const APP = {
   name: 'PACE',
   version: '0.3.0',
   /** Bump when a stored shape changes; migrations live in data/snapshot.ts */
-  schemaVersion: 8,
+  schemaVersion: 9,
   storageNamespace: 'pace',
   locale: 'pt-PT',
 } as const;
@@ -113,11 +113,15 @@ export const ACTIVITY_GOAL_METRIC_OPTIONS: ReadonlyArray<Option<ActivityGoalMetr
   { id: 'distance', label: 'Distância' },
   { id: 'duration', label: 'Tempo' },
   { id: 'sessions', label: 'Vezes' },
+  { id: 'pace', label: 'Ritmo' },
+  { id: 'speed', label: 'Velocidade' },
 ];
 
 export const ACTIVITY_GOAL_PERIOD_OPTIONS: ReadonlyArray<Option<ActivityGoalPeriod>> = [
-  { id: 'day', label: 'Por dia' },
-  { id: 'week', label: 'Por semana' },
+  { id: 'day', label: 'Dia' },
+  { id: 'week', label: 'Semana' },
+  { id: 'month', label: 'Mês' },
+  { id: 'total', label: 'Total' },
 ];
 
 /**
@@ -163,6 +167,12 @@ export interface NutritionMetricEntry extends Option<NutritionGoalMetric> {
   /** The unit the target is stored and shown in. */
   unit: string;
 }
+
+/** Períodos dos objetivos de alimentação: dia ou semana, e mais nada. */
+export const NUTRITION_PERIOD_OPTIONS: ReadonlyArray<Option<'day' | 'week'>> = [
+  { id: 'day', label: 'Por dia' },
+  { id: 'week', label: 'Por semana' },
+];
 
 export const NUTRITION_GOAL_OPTIONS: ReadonlyArray<NutritionMetricEntry> = [
   { id: 'calories', label: 'Calorias', unit: 'kcal' },

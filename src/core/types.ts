@@ -95,8 +95,21 @@ export interface ActivityTrackPoint {
   altitudeM: number | null;
 }
 
-export type ActivityGoalMetric = 'distance' | 'duration' | 'sessions';
-export type ActivityGoalPeriod = 'day' | 'week';
+export type ActivityGoalMetric =
+  | 'distance' | 'duration' | 'sessions'
+  /** Ritmo alvo (s/km) e velocidade alvo (km/h): cumpre-se por sessão. */
+  | 'pace' | 'speed';
+export type ActivityGoalPeriod = 'day' | 'week' | 'month' | 'total';
+
+/**
+ * De onde veio um número.
+ *
+ * A distinção mais importante desta secção. Um valor medido por GPS, um escrito
+ * à mão e um estimado por uma fórmula não valem o mesmo — e a aplicação nunca
+ * deve mostrá-los como se valessem. A IA, mais à frente, precisa ainda mais
+ * disto do que o ecrã.
+ */
+export type ValueSource = 'measured' | 'manual' | 'estimated';
 
 /**
  * A measurable target — "correr 20 km esta semana", "caminhar 30 minutos por
@@ -348,8 +361,25 @@ export interface ActivitySession extends Entity {
   distanceM: number | null;
   elevationGainM: number | null;
   avgHeartRate: number | null;
+  /** Só com dados reais de um dispositivo. Nunca calculado. */
+  maxHeartRate: number | null;
+  minHeartRate: number | null;
+  /** Passos, quando vierem de uma integração de saúde. Nunca inventados. */
+  steps: number | null;
   calories: number | null;
+  /** De onde vieram as calorias: medidas, escritas ou estimadas. */
+  caloriesSource: ValueSource | null;
   avgPaceSecPerKm: number | null;
+  /** Borg CR10, 1 a 10, perguntado no fim. */
+  perceivedEffort: number | null;
+  /** Como correu, em três palavras — alimenta a adaptação dos planos. */
+  difficulty: SessionDifficulty | null;
+  /** Desconforto que o utilizador quis registar. Nunca é um diagnóstico. */
+  discomfort: string | null;
+  /** A sessão do plano de corrida que esta atividade cumpriu, se houver. */
+  planSessionId: string | null;
+  /** Conta para o dia perfeito, como um treino essencial. */
+  essential: boolean;
   source: DataSource;
   /** Set when the record came from HealthKit / Health Connect, for dedup. */
   externalId: string | null;

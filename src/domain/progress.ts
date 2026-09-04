@@ -122,7 +122,7 @@ export function completionScore(input: ScoreInput): number {
 
 export interface EssentialItem {
   id: string;
-  kind: 'habit' | 'task' | 'workout';
+  kind: 'habit' | 'task' | 'workout' | 'activity';
   title: string;
   done: boolean;
 }
@@ -162,8 +162,29 @@ export function essentialsForDay(data: ProgressDataset, date: DayKey): Essential
     });
   }
 
+  // Uma atividade marcada como essencial conta como qualquer outro essencial:
+  // fica feita quando a sessão termina, sem ninguém ter de a assinalar à mão.
+  for (const session of data.activitySessions) {
+    if (session.date !== date || !session.essential) continue;
+    items.push({
+      id: session.id,
+      kind: 'activity',
+      title: ACTIVITY_ESSENTIAL_TITLE[session.type] ?? 'Atividade',
+      done: session.endedAt !== null,
+    });
+  }
+
   return items;
 }
+
+const ACTIVITY_ESSENTIAL_TITLE: Record<string, string> = {
+  run: 'Corrida',
+  brisk_walk: 'Caminhada rápida',
+  walk: 'Caminhada',
+  ride: 'Bicicleta',
+  hike: 'Caminhada na natureza',
+  other: 'Atividade',
+};
 
 export function dailyProgress(data: ProgressDataset, date: DayKey): DailyProgress {
   const habits = habitsForDay(data.habits, date);

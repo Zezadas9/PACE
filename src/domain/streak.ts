@@ -75,6 +75,16 @@ export function createDayEvaluator(data: ProgressDataset): (date: DayKey) => Day
     sessionsByDate.set(session.date, bucket);
   }
 
+  // Atividades essenciais contam-se do mesmo modo, e dão-se por feitas quando
+  // a sessão termina — o utilizador já a fez, não tem de a marcar outra vez.
+  const activityByDate = new Map<DayKey, Array<{ done: boolean }>>();
+  for (const session of data.activitySessions) {
+    if (!session.essential) continue;
+    const bucket = activityByDate.get(session.date) ?? [];
+    bucket.push({ done: session.endedAt !== null });
+    activityByDate.set(session.date, bucket);
+  }
+
   // Same rule as isHabitDone, inlined against the index rather than a record.
   const habitDone = (habit: Habit, date: DayKey): boolean => {
     const entry = entriesByKey.get(`${habit.id}|${date}`);
@@ -102,6 +112,11 @@ export function createDayEvaluator(data: ProgressDataset): (date: DayKey) => Day
     for (const session of sessionsByDate.get(date) ?? []) {
       total += 1;
       if (session.completed) done += 1;
+    }
+
+    for (const session of activityByDate.get(date) ?? []) {
+      total += 1;
+      if (session.done) done += 1;
     }
 
     if (total === 0) return { neutral: true, perfect: false, total, done };

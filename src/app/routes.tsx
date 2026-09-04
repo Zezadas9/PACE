@@ -18,6 +18,9 @@ import { WorkoutScreen } from '../features/workout/WorkoutScreen';
 import { SessionScreen } from '../features/workout/SessionScreen';
 import { ActivitySessionScreen } from '../features/activity/ActivitySessionScreen';
 import { ActivityScreen } from '../features/activity/ActivityScreen';
+import { ActivityPrepareScreen } from '../features/activity/ActivityPrepareScreen';
+import { ActivityDetailScreen } from '../features/activity/ActivityDetailScreen';
+import { ActivityHistoryScreen } from '../features/activity/ActivityHistoryScreen';
 import { NutritionScreen } from '../features/nutrition/NutritionScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
 import { AssistantScreen } from '../features/assistant/AssistantScreen';
@@ -66,6 +69,9 @@ export function AppRoutes(): ReactElement {
             <Route path="/atividade" element={<ActivityScreen />} />
             {/* Full-screen: a live activity should not lose a tap to the tab bar. */}
             <Route path="/atividade/sessao" element={<ActivitySessionScreen />} />
+            <Route path="/atividade/preparar/:type" element={<ActivityPrepareScreen />} />
+            <Route path="/atividade/detalhe/:id" element={<ActivityDetailScreen />} />
+            <Route path="/atividade/historico" element={<ActivityHistoryScreen />} />
             <Route path="/alimentacao" element={<NutritionScreen />} />
             <Route path="/ia" element={<AssistantScreen />} />
             <Route path="/ia/dados" element={<ConsentScreen />} />

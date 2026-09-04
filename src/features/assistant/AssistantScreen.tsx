@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { CoachAction, CoachTurn , ScheduleDraft } from '../../domain/coach/types';
 import {
   aiSettings, applyAction, ask, clearHistory, history, runPlanView,
@@ -47,7 +47,8 @@ export function AssistantScreen(): ReactElement {
   const navigate = useNavigate();
   const version = useStoreVersion();
 
-  const [draft, setDraft] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [draft, setDraft] = useState(() => searchParams.get('pergunta') ?? '');
   const [busy, setBusy] = useState(false);
   /**
    * O que correu mal da última vez, e o que se tinha escrito.
@@ -72,6 +73,16 @@ export function AssistantScreen(): ReactElement {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages.length, busy]);
+
+  /**
+   * Uma pergunta trazida de outro ecrã ("Perguntar à PACE") entra no campo,
+   * escrita mas por enviar: quem chega aqui ainda a pode mudar antes de a
+   * fazer. O parâmetro é consumido de imediato para não voltar num refresh.
+   */
+  useEffect(() => {
+    if (!searchParams.has('pergunta')) return;
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const send = useCallback(async (text: string) => {
     const message = text.trim();

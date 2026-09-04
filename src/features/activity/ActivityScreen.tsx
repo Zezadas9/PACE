@@ -13,8 +13,7 @@ import { mediumDate, todayKey } from '../../core/utils/date';
 import * as format from '../../core/utils/format';
 import * as activity from '../../domain/activity';
 import {
-  deleteGoal, deleteSession, entryFromSession, overview, saveGoal, saveManual,
-  startSession, type ManualEntry,
+  deleteGoal, deleteSession, overview, saveGoal, saveManual, type ManualEntry,
 } from '../../services/activity';
 import {
   useApp, useFeedback, usePreferences, useStoreVersion,
@@ -29,13 +28,14 @@ import { Icon, type IconName } from '../../ui/Icon';
 import { BrandIcon, type BrandIconName } from '../../ui/BrandIcon';
 import { ActivityForm } from './ActivityForm';
 import { ActivityGoalForm } from './ActivityGoalForm';
-import { ChartsSection, GoalsSection, SummarySection } from './sections';
-import { DetailSheet } from './DetailSheet';
+import { GoalsSection, SummarySection } from './sections';
+import {
+  EvolutionSection, FrequencySection, InsightsSection, RecordsSection,
+} from './EvolutionSection';
 
 type SheetState =
   | { kind: 'manual'; entry?: ManualEntry; id?: string }
   | { kind: 'goal'; goal?: ActivityGoal }
-  | { kind: 'detail'; session: ActivitySession }
   | null;
 
 /**
@@ -68,16 +68,27 @@ export function ActivityScreen(): ReactElement {
   const version = useStoreVersion();
 
   const [sheet, setSheet] = useState<SheetState>(null);
-  const model = useMemo(() => overview(repos), [repos, version]);
   const unit = preferences.distanceUnit;
 
+  // Os recordes saem já escritos, e quem os escreve tem de ser quem conhece as
+  // unidades do utilizador — km ou milhas, vírgula ou ponto.
+  const model = useMemo(
+    () => overview(repos, todayKey(), {
+      distance: (m) => format.distance(m, unit),
+      duration: (secs) => format.duration(secs),
+      pace: (secs) => format.pace(secs, unit),
+    }),
+    [repos, unit, version],
+  );
+
+  // Tocar num tipo não arranca nada: leva ao ecrã de preparação, onde se vê o
+  // estado do GPS e o que está em aberto antes de o cronómetro começar.
   const begin = useCallback(
     (type: ActivityType) => {
-      startSession(repos, type);
-      feedback.touch('medium');
-      navigate('/atividade/sessao');
+      feedback.touch('light');
+      navigate(`/atividade/preparar/${type}`);
     },
-    [repos, feedback, navigate],
+    [feedback, navigate],
   );
 
   return (
@@ -107,7 +118,7 @@ export function ActivityScreen(): ReactElement {
           </Card>
         ) : (
           <div className="start-grid">
-            {ACTIVITY_TYPE_OPTIONS.slice(0, 4).map((option) => (
+            {ACTIVITY_TYPE_OPTIONS.map((option) => (
               <button
                 key={option.id}
                 type="button"
@@ -136,13 +147,21 @@ export function ActivityScreen(): ReactElement {
         />
 
         <SummarySection totals={model.totals} unit={unit} />
-        <ChartsSection weeks={model.weeks} unit={unit} />
 
         <HistorySection
           sessions={model.recent}
           total={model.totals.sessions}
           unit={unit}
-          onOpen={(session) => setSheet({ kind: 'detail', session })}
+          onOpen={(session) => navigate(`/atividade/detalhe/${session.id}`)}
+          onSeeAll={() => navigate('/atividade/historico')}
+        />
+
+        <FrequencySection frequency={model.frequency} unit={unit} />
+        <EvolutionSection unit={unit} />
+        <RecordsSection records={model.records} />
+        <InsightsSection
+          insights={model.insights}
+          onAsk={(question) => navigate(`/ia?pergunta=${encodeURIComponent(question)}`)}
         />
       </Screen>
 
@@ -151,9 +170,6 @@ export function ActivityScreen(): ReactElement {
       <ActivitySheets
         sheet={sheet}
         onClose={() => setSheet(null)}
-        onEditSession={(session) => setSheet({
-          kind: 'manual', entry: entryFromSession(session), id: session.id,
-        })}
         onSaveManual={(entry, id) => {
           saveManual(repos, entry, id);
           feedback.play('complete');
@@ -191,16 +207,21 @@ export function ActivityScreen(): ReactElement {
 }
 
 function HistorySection({
-  sessions, total, unit, onOpen,
+  sessions, total, unit, onOpen, onSeeAll,
 }: {
   sessions: ActivitySession[];
   total: number;
   unit: 'km' | 'mi';
   onOpen: (session: ActivitySession) => void;
+  onSeeAll: () => void;
 }): ReactElement {
   return (
     <section>
-      <SectionHeader title="Histórico" actionLabel={total > 0 ? String(total) : undefined} />
+      <SectionHeader
+        title="Histórico"
+        actionLabel={total > sessions.length ? `Ver ${total}` : undefined}
+        onAction={total > sessions.length ? onSeeAll : undefined}
+      />
       {sessions.length === 0 ? (
         <EmptyState
           brand="corrida"
@@ -243,11 +264,10 @@ function HistorySection({
 
 /** The sheets, split out so the screen above stays about layout. */
 function ActivitySheets({
-  sheet, onClose, onEditSession, onSaveManual, onDeleteManual, onSaveGoal, onDeleteGoal,
+  sheet, onClose, onSaveManual, onDeleteManual, onSaveGoal, onDeleteGoal,
 }: {
   sheet: SheetState;
   onClose: () => void;
-  onEditSession: (session: ActivitySession) => void;
   onSaveManual: (entry: ManualEntry, id?: string) => void;
   onDeleteManual: (id: string) => void;
   onSaveGoal: (goal: ActivityGoal, id?: string) => void;
@@ -282,11 +302,5 @@ function ActivitySheets({
     );
   }
 
-  return (
-    <DetailSheet
-      session={sheet.session}
-      onClose={onClose}
-      onEdit={() => onEditSession(sheet.session)}
-    />
-  );
+  return null;
 }

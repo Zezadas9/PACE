@@ -52,9 +52,18 @@ export function eventsOn(events: CalendarEvent[], date: DayKey): EventOccurrence
     .sort((a, b) => (a.startMinutes ?? -1) - (b.startMinutes ?? -1));
 }
 
+const ACTIVITY_TITLES: Record<string, string> = {
+  run: 'Corrida',
+  brisk_walk: 'Caminhada rápida',
+  walk: 'Caminhada',
+  ride: 'Bicicleta',
+  hike: 'Caminhada na natureza',
+  other: 'Atividade',
+};
+
 /* --- Day ------------------------------------------------------------------- */
 
-export type AgendaItemKind = 'event' | 'task' | 'habit' | 'workout';
+export type AgendaItemKind = 'event' | 'task' | 'habit' | 'workout' | 'activity';
 
 export interface AgendaItem {
   /** Unique within the day, so React keys stay stable across a re-render. */
@@ -162,6 +171,31 @@ export function dayAgenda(repos: Repositories, date: DayKey): DayAgenda {
       value: session.completed ? 1 : 0,
       target: 1,
       hue: 'workout',
+    });
+  }
+
+  // Atividades entram na agenda pela hora a que começaram, quando houve uma.
+  // Uma entrada manual sem hora fica na lista sem horário, como um hábito.
+  for (const session of data.activitySessions.filter((s) => s.date === date)) {
+    const started = session.startedAt ? new Date(session.startedAt) : null;
+    const done = session.endedAt !== null;
+    items.push({
+      key: `activity-${session.id}`,
+      kind: 'activity',
+      sourceId: session.id,
+      title: ACTIVITY_TITLES[session.type] ?? 'Atividade',
+      subtitle: session.durationSec
+        ? `${Math.round(session.durationSec / 60)} min`
+        : null,
+      startMinutes: started && session.source !== 'manual'
+        ? started.getHours() * 60 + started.getMinutes()
+        : null,
+      done,
+      essential: session.essential,
+      ratio: done ? 1 : 0,
+      value: done ? 1 : 0,
+      target: 1,
+      hue: 'activity',
     });
   }
 

@@ -8,7 +8,7 @@
  */
 
 import { useState, type ReactElement } from 'react';
-import { ACTIVITY_GOAL_PERIOD_OPTIONS, NUTRITION_GOAL_OPTIONS } from '../../core/constants';
+import { NUTRITION_GOAL_OPTIONS, NUTRITION_PERIOD_OPTIONS } from '../../core/constants';
 import { createNutritionGoal } from '../../core/factories';
 import type { NutritionGoal, NutritionGoalMetric } from '../../core/types';
 import { Sheet } from '../../ui/Sheet';
@@ -108,7 +108,7 @@ export function NutritionGoalForm({
           <Segmented
             ariaLabel="Período"
             value={goal.period}
-            options={ACTIVITY_GOAL_PERIOD_OPTIONS}
+            options={NUTRITION_PERIOD_OPTIONS}
             onChange={(period) => patch({ period })}
           />
         </Field>

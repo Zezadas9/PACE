@@ -157,9 +157,19 @@ export interface GoalWindow {
   to: DayKey;
 }
 
-/** The window a goal is measured over, containing `date`. */
+/**
+ * The window a goal is measured over, containing `date`.
+ *
+ * "Total" não tem janela: é um objetivo acumulado desde sempre, por isso abre
+ * numa data anterior a qualquer registo possível.
+ */
 export function goalWindow(goal: ActivityGoal, date: DayKey = todayKey()): GoalWindow {
   if (goal.period === 'day') return { from: date, to: date };
+  if (goal.period === 'total') return { from: '0000-01-01' as DayKey, to: date };
+  if (goal.period === 'month') {
+    const month = date.slice(0, 7);
+    return { from: `${month}-01` as DayKey, to: `${month}-31` as DayKey };
+  }
   const start = startOfWeekKey(date);
   return { from: start, to: addDaysToKey(start, 6) };
 }
@@ -167,14 +177,22 @@ export function goalWindow(goal: ActivityGoal, date: DayKey = todayKey()): GoalW
 export interface GoalProgress {
   goal: ActivityGoal;
   window: GoalWindow;
-  /** Metres, seconds or a count, matching the goal's metric. */
-  current: number;
+  /**
+   * Metros, segundos, uma contagem, um ritmo (s/km) ou uma velocidade (km/h ×
+   * 10), conforme a métrica. Null quando ainda não há nada medido — um ritmo
+   * médio sem sessões não é zero, é inexistente.
+   */
+  current: number | null;
   target: number;
   /** 0..1, clamped. */
   ratio: number;
   complete: boolean;
   /** How much is still missing, never negative. */
   remaining: number;
+  /** No ritmo, menor é melhor; em tudo o resto, maior. */
+  lowerIsBetter: boolean;
+  /** Quantas sessões entraram na conta, para a UI poder explicar o número. */
+  sessions: number;
 }
 
 /** Only finished sessions count; a run in progress is not yet a run done. */
@@ -192,24 +210,46 @@ export function goalProgress(
 ): GoalProgress {
   const window = goalWindow(goal, date);
   const matching = sessions.filter((session) => countsToward(goal, session, window));
+  const target = Math.max(1, goal.target);
+  const lowerIsBetter = goal.metric === 'pace';
 
-  let current = 0;
+  const distance = matching.reduce((sum, session) => sum + (session.distanceM ?? 0), 0);
+  const duration = matching.reduce((sum, session) => sum + (session.durationSec ?? 0), 0);
+
+  let current: number | null;
   if (goal.metric === 'sessions') current = matching.length;
-  else if (goal.metric === 'distance') {
-    current = matching.reduce((sum, session) => sum + (session.distanceM ?? 0), 0);
-  } else {
-    current = matching.reduce((sum, session) => sum + (session.durationSec ?? 0), 0);
+  else if (goal.metric === 'distance') current = Math.round(distance);
+  else if (goal.metric === 'duration') current = duration;
+  else if (goal.metric === 'pace') current = paceSecPerKm(distance, duration);
+  // A velocidade guarda-se em décimas de km/h para o objetivo continuar a ser
+  // um inteiro, como todas as outras métricas.
+  else current = speedKmh(distance, duration) == null
+    ? null
+    : Math.round((speedKmh(distance, duration) ?? 0) * 10);
+
+  if (current == null) {
+    return {
+      goal, window, current: null, target, ratio: 0, complete: false,
+      remaining: target, lowerIsBetter, sessions: matching.length,
+    };
   }
 
-  const target = Math.max(1, goal.target);
+  const ratio = lowerIsBetter
+    ? Math.min(1, Math.max(0, target / Math.max(1, current)))
+    : Math.min(1, Math.max(0, current / target));
+
   return {
     goal,
     window,
-    current: Math.round(current),
+    current,
     target,
-    ratio: Math.min(1, Math.max(0, current / target)),
-    complete: current >= target,
-    remaining: Math.max(0, Math.round(target - current)),
+    ratio,
+    complete: lowerIsBetter ? current <= target : current >= target,
+    remaining: lowerIsBetter
+      ? Math.max(0, Math.round(current - target))
+      : Math.max(0, Math.round(target - current)),
+    lowerIsBetter,
+    sessions: matching.length,
   };
 }
 
@@ -286,8 +326,11 @@ const MIN_PACE_DISTANCE_M = 1000;
 export function totals(sessions: ActivitySession[]): ActivityTotals {
   const done = sessions.filter((session) => session.endedAt !== null);
 
+  // Uma bicicleta a 24 km/h faz 2:30 "por km" e arrasaria qualquer recorde de
+  // corrida. Ritmo só se compara entre atividades que se medem por ritmo.
   const paces = done
     .filter((session) => (session.distanceM ?? 0) >= MIN_PACE_DISTANCE_M)
+    .filter((session) => paceModeFor(session.type) === 'pace')
     .map((session) => metricsOf(session).paceSecPerKm)
     .filter((pace): pace is number => pace != null);
 

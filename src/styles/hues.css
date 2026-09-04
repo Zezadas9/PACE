@@ -77,11 +77,12 @@
 [data-hue='sport']        { --hue: var(--h-rose);   --hue-soft: var(--h-rose-soft); }
 [data-hue='other']        { --hue: var(--h-slate);  --hue-soft: var(--h-slate-soft); }
 
-/* The three kinds on the agenda. Habits are the quiet backbone of the day, so
+/* The four kinds on the agenda. Habits are the quiet backbone of the day, so
    they take the ink rather than a colour of their own. */
 [data-hue='habit']   { --hue: var(--c-ink-2); --hue-soft: var(--c-surface-2); }
 [data-hue='task']    { --hue: var(--h-amber); --hue-soft: var(--h-amber-soft); }
 [data-hue='workout'] { --hue: var(--h-rose);  --hue-soft: var(--h-rose-soft); }
+[data-hue='activity'] { --hue: var(--h-cyan); --hue-soft: var(--h-cyan-soft); }
 
 /* --- Use ------------------------------------------------------------------------- */
 

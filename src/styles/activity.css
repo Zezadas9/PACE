@@ -217,3 +217,79 @@
   stroke: var(--c-ink); fill: none;
   stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
 }
+
+/* --- A tira das oito semanas ---------------------------------------------------- */
+
+/* Oito barras, altura proporcional ao número de atividades. Responde de
+   relance à pergunta "tenho sido regular?", que nenhum número isolado responde. */
+.week-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-2);
+  height: 5rem;
+}
+.week-strip-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 0.25rem;
+}
+/* A paleta é monocromatica, por isso a barra distingue-se pelo tom e nao pela
+   cor: o cinzento medio le-se sobre o cartao, o que "accent-soft" nao fazia. */
+.week-strip-bar {
+  width: 100%;
+  border-radius: var(--r-sm);
+  background: var(--c-ink-4);
+  transition: height var(--t-slow) var(--e-out);
+}
+/* Uma semana sem nada continua a ocupar espaco: o vazio faz parte da leitura. */
+.week-strip-bar[data-empty='true'] { background: var(--c-surface-3); }
+.week-strip-bar[data-current='true'] { background: var(--c-accent); }
+.week-strip-label {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-3);
+  min-height: 1em;
+}
+
+/* --- Observações ----------------------------------------------------------------- */
+
+.insight-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--r-full);
+  flex: none;
+  margin-top: 0.35rem;
+  background: var(--c-ink-3);
+}
+.insight-good { background: var(--c-accent); }
+.insight-caution { background: var(--c-ember); }
+
+/* --- Escala de esforço (Borg CR10) ----------------------------------------------- */
+
+/* Dez alvos numa linha. Cada um tem de ser tocável com o polegar logo a seguir
+   a uma corrida, por isso a altura vem antes da elegância. */
+.effort-scale {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0.25rem;
+}
+.effort-step {
+  min-height: 2.75rem;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-ink-2);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--e-out), color var(--t-fast) var(--e-out);
+}
+.effort-step[aria-pressed='true'] {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-on-accent);
+  font-weight: var(--fw-semi);
+}

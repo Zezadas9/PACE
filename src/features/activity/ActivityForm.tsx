@@ -1,10 +1,14 @@
 /**
- * Manual entry.
+ * Registo manual.
  *
- * Everything the brief asks for, with the two derived numbers shown live rather
- * than asked for: someone who knows their distance and time should not also
- * have to do the division, and seeing pace appear as they type is the fastest
- * way to catch a typo.
+ * Os dois números derivados aparecem em vez de serem pedidos: quem sabe a
+ * distância e o tempo não tem de fazer a divisão, e ver o ritmo a aparecer
+ * enquanto escreve é a maneira mais rápida de apanhar uma gralha.
+ *
+ * O formulário adapta-se à atividade. Perguntar subida a quem correu numa
+ * passadeira, ou distância a quem fez uma aula de outra coisa, é pedir para
+ * ficar vazio — e um campo vazio de propósito é indistinguível de um campo
+ * esquecido.
  */
 
 import { useState, type ReactElement } from 'react';
@@ -18,6 +22,19 @@ import { Sheet } from '../../ui/Sheet';
 import { Button, Chip } from '../../ui/primitives';
 import { DateField } from '../../ui/DateField';
 import { Field, Input } from '../../ui/form';
+import { Switch } from '../../ui/Switch';
+
+/** O que faz sentido perguntar em cada atividade. */
+function fieldsFor(type: ManualEntry['type']): {
+  distance: boolean; elevation: boolean; steps: boolean;
+} {
+  // "Outro" pode ser uma aula, uma sessão de natação ou o que a pessoa quiser:
+  // sem distância nem terreno conhecidos, só o tempo é de confiança.
+  if (type === 'other') return { distance: false, elevation: false, steps: false };
+  // Passos só onde se anda a pé; numa bicicleta o número não quer dizer nada.
+  if (type === 'ride') return { distance: true, elevation: true, steps: false };
+  return { distance: true, elevation: true, steps: true };
+}
 
 function toNumber(raw: string): number | null {
   if (raw.trim() === '') return null;
@@ -46,12 +63,15 @@ export function ActivityForm({
 
   const unit = preferences.distanceUnit;
   const mode = paceModeFor(entry.type);
+  const fields = fieldsFor(entry.type);
   const pace = paceSecPerKm(entry.distanceM, entry.durationSec);
   const speed = speedKmh(entry.distanceM, entry.durationSec);
 
   const save = (): void => {
-    if (!entry.durationSec && !entry.distanceM) {
-      setError('Indica pelo menos a duração ou a distância.');
+    if (!entry.durationSec && !(fields.distance && entry.distanceM)) {
+      setError(fields.distance
+        ? 'Indica pelo menos a duração ou a distância.'
+        : 'Indica a duração.');
       return;
     }
     onSave(entry);
@@ -111,24 +131,26 @@ export function ActivityForm({
               }}
             />
           </Field>
-          <Field label="Distância">
-            <Input
-              type="number"
-              inputMode="decimal"
-              unit={unit}
-              value={
-                entry.distanceM == null
-                  ? ''
-                  : distanceUnits.fromMeters(entry.distanceM, unit) ?? ''
-              }
-              min={0}
-              step={0.01}
-              onChange={(value) => {
-                const typed = toNumber(value);
-                patch({ distanceM: typed == null ? null : distanceUnits.toMeters(typed, unit) });
-              }}
-            />
-          </Field>
+          {fields.distance ? (
+            <Field label="Distância">
+              <Input
+                type="number"
+                inputMode="decimal"
+                unit={unit}
+                value={
+                  entry.distanceM == null
+                    ? ''
+                    : distanceUnits.fromMeters(entry.distanceM, unit) ?? ''
+                }
+                min={0}
+                step={0.01}
+                onChange={(value) => {
+                  const typed = toNumber(value);
+                  patch({ distanceM: typed == null ? null : distanceUnits.toMeters(typed, unit) });
+                }}
+              />
+            </Field>
+          ) : null}
         </div>
 
         {mode !== 'none' && (pace != null || speed != null) ? (
@@ -174,16 +196,59 @@ export function ActivityForm({
           </Field>
         </div>
 
-        <Field label="Elevação">
-          <Input
-            type="number"
-            inputMode="numeric"
-            unit="m"
-            value={entry.elevationGainM ?? ''}
-            min={0}
-            onChange={(value) => patch({ elevationGainM: toNumber(value) })}
-          />
+        {fields.elevation || fields.steps ? (
+          <div className="grid-2">
+            {fields.elevation ? (
+              <Field label="Elevação" hint="Se souberes">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  unit="m"
+                  value={entry.elevationGainM ?? ''}
+                  min={0}
+                  onChange={(value) => patch({ elevationGainM: toNumber(value) })}
+                />
+              </Field>
+            ) : null}
+            {fields.steps ? (
+              <Field label="Passos" hint="Se o aparelho der">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={entry.steps ?? ''}
+                  min={0}
+                  onChange={(value) => patch({ steps: toNumber(value) })}
+                />
+              </Field>
+            ) : null}
+          </div>
+        ) : null}
+
+        <Field label="Esforço percebido" hint="Opcional, de 1 a 10.">
+          <div className="effort-scale">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((step) => (
+              <button
+                key={step}
+                type="button"
+                className="effort-step"
+                aria-pressed={entry.perceivedEffort === step}
+                aria-label={`${step} de 10`}
+                onClick={() => patch({
+                  perceivedEffort: entry.perceivedEffort === step ? null : step,
+                })}
+              >
+                {step}
+              </button>
+            ))}
+          </div>
         </Field>
+
+        <Switch
+          title="Conta para o dia perfeito"
+          subtitle="Marca esta atividade como essencial do dia."
+          checked={entry.essential}
+          onChange={(essential) => patch({ essential })}
+        />
 
         <Field label="Notas">
           <Input

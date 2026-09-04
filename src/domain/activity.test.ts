@@ -281,3 +281,67 @@ describe('totals and history', () => {
     expect(history(sessions, 2)).toHaveLength(2);
   });
 });
+
+describe('goalWindow — períodos novos', () => {
+  it('abre um mês inteiro', () => {
+    const goal = createActivityGoal({ period: 'month' });
+    expect(goalWindow(goal, '2026-08-14')).toEqual({ from: '2026-08-01', to: '2026-08-31' });
+  });
+
+  it('não fecha um objetivo total', () => {
+    const goal = createActivityGoal({ period: 'total' });
+    const window = goalWindow(goal, TODAY);
+    expect(window.to).toBe(TODAY);
+    expect(window.from < '2000-01-01').toBe(true);
+  });
+});
+
+describe('goalProgress — ritmo e velocidade', () => {
+  it('devolve null enquanto não houver nada medido', () => {
+    const goal = createActivityGoal({ metric: 'pace', period: 'week', target: 300 });
+    const progress = goalProgress(goal, [], TODAY);
+    expect(progress.current).toBeNull();
+    expect(progress.complete).toBe(false);
+    expect(progress.sessions).toBe(0);
+  });
+
+  it('cumpre um objetivo de ritmo quando fica abaixo do alvo', () => {
+    const goal = createActivityGoal({ metric: 'pace', period: 'week', target: 300 });
+    const progress = goalProgress(goal, [done({ distanceM: 5000, durationSec: 1400 })], TODAY);
+    expect(progress.lowerIsBetter).toBe(true);
+    expect(progress.current).toBe(280);
+    expect(progress.complete).toBe(true);
+    expect(progress.remaining).toBe(0);
+  });
+
+  it('mede o que falta ao ritmo quando ainda está acima', () => {
+    const goal = createActivityGoal({ metric: 'pace', period: 'week', target: 300 });
+    const progress = goalProgress(goal, [done({ distanceM: 5000, durationSec: 1650 })], TODAY);
+    expect(progress.current).toBe(330);
+    expect(progress.complete).toBe(false);
+    expect(progress.remaining).toBe(30);
+  });
+
+  it('guarda a velocidade em décimas de km/h', () => {
+    const goal = createActivityGoal({ metric: 'speed', period: 'week', target: 100 });
+    const progress = goalProgress(goal, [done({ distanceM: 12000, durationSec: 3600 })], TODAY);
+    expect(progress.current).toBe(120); // 12 km/h
+    expect(progress.lowerIsBetter).toBe(false);
+    expect(progress.complete).toBe(true);
+  });
+});
+
+describe('totals — melhor ritmo', () => {
+  it('ignora atividades que se medem por velocidade', () => {
+    const result = totals([
+      done({ type: 'ride', distanceM: 24000, durationSec: 3600 }),
+      done({ type: 'run', distanceM: 5000, durationSec: 1500 }),
+    ]);
+    expect(result.bestPaceSecPerKm).toBe(300);
+  });
+
+  it('devolve null quando só houve bicicleta', () => {
+    const result = totals([done({ type: 'ride', distanceM: 24000, durationSec: 3600 })]);
+    expect(result.bestPaceSecPerKm).toBeNull();
+  });
+});

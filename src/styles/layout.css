@@ -244,3 +244,10 @@
   transform: translateY(110%);
   pointer-events: none;
 }
+
+/* Três colunas, para os trios de números que não cabem a dois sem apertar. */
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+}

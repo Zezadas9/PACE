@@ -28,7 +28,7 @@ function toNumber(raw: string): number | null {
 export function describeGoal(goal: ActivityGoal, unit: 'km' | 'mi'): string {
   const type = ACTIVITY_TYPE_OPTIONS.find((option) => option.id === goal.activityType);
   const what = type ? type.label : 'Atividade';
-  const when = goal.period === 'day' ? 'por dia' : 'esta semana';
+  const when = PERIOD_WORDS[goal.period] ?? 'esta semana';
 
   if (goal.metric === 'distance') {
     const value = distanceUnits.fromMeters(goal.target, unit) ?? 0;
@@ -37,9 +37,26 @@ export function describeGoal(goal: ActivityGoal, unit: 'km' | 'mi'): string {
   if (goal.metric === 'duration') {
     return `${what}: ${Math.round(goal.target / 60)} min ${when}`;
   }
+  // Ritmo e velocidade são médias do período, não somas: lê-se "manter", não
+  // "acumular", e a frase tem de dizer isso.
+  if (goal.metric === 'pace') {
+    const minutes = Math.floor(goal.target / 60);
+    const seconds = String(Math.round(goal.target % 60)).padStart(2, '0');
+    return `${what}: manter ${minutes}:${seconds} por ${unit} ${when}`;
+  }
+  if (goal.metric === 'speed') {
+    return `${what}: manter ${(goal.target / 10).toFixed(1)} ${unit}/h ${when}`;
+  }
   const times = goal.target === 1 ? 'vez' : 'vezes';
   return `${what}: ${goal.target} ${times} ${when}`;
 }
+
+const PERIOD_WORDS: Record<string, string> = {
+  day: 'por dia',
+  week: 'esta semana',
+  month: 'este mês',
+  total: 'no total',
+};
 
 export function ActivityGoalForm({
   existing, preferences, onSave, onDelete, onClose,
@@ -116,14 +133,23 @@ export function ActivityGoalForm({
           />
         </Field>
 
-        <Field label="Meta">
+        <Field
+          label="Meta"
+          hint={
+            goal.metric === 'pace'
+              ? 'Em minutos por ' + unit + '. Cumpre-se ficando abaixo deste ritmo.'
+              : goal.metric === 'speed'
+                ? 'Velocidade média a manter no período.'
+                : undefined
+          }
+        >
           <Input
             type="number"
             inputMode="decimal"
-            unit={goal.metric === 'distance' ? unit : goal.metric === 'duration' ? 'min' : 'vezes'}
+            unit={targetUnit(goal.metric, unit)}
             value={displayTarget(goal, unit)}
-            min={1}
-            step={goal.metric === 'distance' ? 0.5 : 1}
+            min={goal.metric === 'pace' ? 0 : 1}
+            step={goal.metric === 'sessions' ? 1 : 0.5}
             onChange={(value) => {
               const typed = toNumber(value);
               if (typed == null) return;
@@ -148,13 +174,25 @@ export function ActivityGoalForm({
 function defaultTarget(metric: ActivityGoal['metric']): number {
   if (metric === 'distance') return 20000;
   if (metric === 'duration') return 1800;
+  if (metric === 'pace') return 330; // 5:30 por km
+  if (metric === 'speed') return 200; // 20,0 km/h, em décimas
   return 3;
+}
+
+function targetUnit(metric: ActivityGoal['metric'], unit: 'km' | 'mi'): string {
+  if (metric === 'distance') return unit;
+  if (metric === 'duration') return 'min';
+  if (metric === 'pace') return `min/${unit}`;
+  if (metric === 'speed') return `${unit}/h`;
+  return 'vezes';
 }
 
 /** Targets are stored canonically (metres, seconds) and shown in user units. */
 function displayTarget(goal: ActivityGoal, unit: 'km' | 'mi'): number {
   if (goal.metric === 'distance') return distanceUnits.fromMeters(goal.target, unit) ?? 0;
   if (goal.metric === 'duration') return Math.round(goal.target / 60);
+  if (goal.metric === 'pace') return Math.round((goal.target / 60) * 100) / 100;
+  if (goal.metric === 'speed') return goal.target / 10;
   return goal.target;
 }
 
@@ -165,5 +203,7 @@ function storeTarget(
 ): number {
   if (metric === 'distance') return distanceUnits.toMeters(value, unit) ?? 0;
   if (metric === 'duration') return Math.round(value * 60);
+  if (metric === 'pace') return Math.max(60, Math.round(value * 60));
+  if (metric === 'speed') return Math.max(1, Math.round(value * 10));
   return Math.max(1, Math.round(value));
 }

@@ -101,6 +101,31 @@ const LEGACY_WORKOUT_TYPES: Record<string, Workout['type']> = {
 
 const MIGRATIONS: Record<number, Migration> = {
   /**
+   * v8 -> v9 — a atividade como sistema.
+   *
+   * As sessões antigas ficam com os campos novos a null e `essential` a false.
+   * Nenhuma delas tinha RPE, frequência cardíaca máxima ou passos, e preencher
+   * qualquer um deles seria inventar história.
+   */
+  8: (snapshot) => ({
+    ...snapshot,
+    schemaVersion: 9,
+    activitySessions: (snapshot.activitySessions ?? []).map((session) => ({
+      ...session,
+      maxHeartRate: session.maxHeartRate ?? null,
+      minHeartRate: session.minHeartRate ?? null,
+      steps: session.steps ?? null,
+      // Uma caloria antiga não sabe de onde veio; foi escrita à mão ou
+      // importada, e "manual" é a leitura honesta.
+      caloriesSource: session.caloriesSource ?? (session.calories == null ? null : 'manual'),
+      perceivedEffort: session.perceivedEffort ?? null,
+      difficulty: session.difficulty ?? null,
+      discomfort: session.discomfort ?? null,
+      planSessionId: session.planSessionId ?? null,
+      essential: session.essential ?? false,
+    })),
+  }),
+  /**
    * v7 -> v8 — a hora do treino.
    *
    * Os planos existentes ficam com `null`: nenhum deles tinha hora, e inventar
