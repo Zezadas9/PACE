@@ -39,19 +39,18 @@ type SheetState =
   | null;
 
 /**
- * The illustrated equivalent, where the sheet actually has one.
+ * O equivalente ilustrado de cada atividade.
  *
- * There is no walking or hiking artwork, and reusing the running shoe for all
- * three made the grid look broken rather than illustrated. Those fall back to
- * the line icon, on the same dark tile so the row still reads as one set.
+ * Só "Outro" fica sem desenho — é a atividade que pode ser qualquer coisa, e
+ * qualquer imagem que lhe déssemos estaria a dizer mais do que sabemos. Essa
+ * cai no ícone de linha, que segue o tema.
  */
 export function brandIconFor(type: ActivityType): BrandIconName | null {
   if (type === 'run') return 'corrida';
   if (type === 'ride') return 'bicicleta';
   if (type === 'walk') return 'caminhada';
   if (type === 'brisk_walk') return 'caminhada-rapida';
-  // A caminhada na montanha ainda não tem desenho próprio; fica o ícone de
-  // linha, que segue o tema e não destoa ao lado dos outros.
+  if (type === 'hike') return 'hiking';
   return null;
 }
 

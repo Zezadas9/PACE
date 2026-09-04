@@ -22,6 +22,8 @@ export type BrandIconName =
   | 'sequencia' | 'melhor-sequencia' | 'dias-perfeitos' | 'consistencia'
   | 'planos' | 'refeicoes' | 'caminhada' | 'caminhada-rapida'
   | 'relogio' | 'vibracao' | 'frequencia' | 'som' | 'cadeado' | 'caixote'
+  // Desenhado por codigo: nenhuma folha trazia hiking
+  | 'hiking'
   | 'imc-baixo' | 'imc-normal' | 'imc-alto'
   // A chama cresce com a sequência
   | 'streak-1' | 'streak-3' | 'streak-7' | 'streak-14'
@@ -44,6 +46,32 @@ export function streakIcon(days: number): BrandIconName {
   let icon: BrandIconName = 'streak-1';
   for (const step of STREAK_STEPS) if (days >= step.days) icon = step.icon;
   return icon;
+}
+
+/**
+ * Ícones que desaparecem contra um dos temas.
+ *
+ * A arte é a mesma nos dois temas, mas nem toda ela se vê nos dois: a figura
+ * da caminhada é uma silhueta preta, e sobre o fundo preto do tema escuro não
+ * sobra nada dela. O contrário também acontece — o calendário branco e o
+ * cronómetro sobre o branco do tema claro.
+ *
+ * As listas saem de uma medição da luminância de cada asset (a fração de
+ * píxeis opacos abaixo de 0,22 ou acima de 0,86), não de olhómetro. Quem lá
+ * está recebe um contorno da cor oposta, e só no tema onde precisa dele.
+ */
+const DARK_ARTWORK: ReadonlySet<BrandIconName> = new Set([
+  'caminhada', 'caminhada-rapida', 'perfil', 'treinos', 'som', 'vibracao', 'cadeado',
+]);
+
+const LIGHT_ARTWORK: ReadonlySet<BrandIconName> = new Set([
+  'agenda', 'planos', 'relogio', 'corrida', 'dias-perfeitos',
+]);
+
+function contrastOf(name: BrandIconName): 'dark' | 'light' | undefined {
+  if (DARK_ARTWORK.has(name)) return 'dark';
+  if (LIGHT_ARTWORK.has(name)) return 'light';
+  return undefined;
 }
 
 /** Relativo de propósito: a app é servida de um subcaminho no GitHub Pages. */
@@ -71,6 +99,7 @@ export function BrandIcon({
         `brand-${name}`,
         className ?? '',
       ].filter(Boolean).join(' ')}
+      data-contrast={contrastOf(name)}
       src={assetFor(name)}
       width={size}
       height={size}

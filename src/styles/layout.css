@@ -174,14 +174,15 @@
    para so um estar a cores de cada vez. */
 .nav-item .brand-icon {
   opacity: 0.5;
-  filter: saturate(0.15);
+  /* O contorno entra junto com o esbatimento; ver brand.css. */
+  filter: saturate(0.15) var(--ring-filter);
   transition: opacity var(--d-base) var(--ease),
               filter var(--d-base) var(--ease),
               transform var(--d-base) var(--ease-out);
 }
 .nav-item[aria-current="page"] .brand-icon {
   opacity: 1;
-  filter: none;
+  filter: var(--ring-filter);
   transform: translateY(-1px) scale(1.06);
 }
 .nav-item:active .brand-icon { transform: scale(0.9); }

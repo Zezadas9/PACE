@@ -79,12 +79,59 @@
   -webkit-user-drag: none;
 }
 
-/* O perfil é um disco preto: no tema escuro precisa de um contorno para se
-   ver, senão desaparece contra o fundo. */
-:root[data-theme="dark"] .brand-perfil {
-  border-radius: var(--r-full);
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--c-ink) 22%, transparent);
+/* --- Contorno para a arte que desaparece contra o tema -------------------------
+
+   Um icone de silhueta preta nao se ve sobre preto, e um calendario branco nao
+   se ve sobre branco. A solucao e um contorno tirado do proprio alfa do PNG:
+   duas sombras a distancia zero e raio pequeno desenham um anel que segue o
+   recorte, em vez da caixa retangular que um box-shadow daria.
+
+   O anel vive numa variavel e nao numa regra de `filter`, porque filtros nao
+   se somam: quem escrever `filter` a seguir apaga o que estava. A barra de
+   navegacao esbate os separadores inativos, e sem esta variavel o contorno
+   apagava esse esbatimento — ficavam dois icones a cores e cinco a cinzento.
+   Assim cada sitio que aplica um filtro inclui `var(--ring-filter)`, e as duas
+   coisas convivem.
+
+   Por omissao a variavel esta vazia, o que torna `filter: var(--ring-filter)`
+   invalido e deixa o filtro em `none` — que e o que se quer para a maioria dos
+   icones, que tem cor que chegue. */
+
+.brand-icon { --ring-filter: ; }
+.brand-icon { filter: var(--ring-filter); }
+
+/* Arte escura sobre tema escuro: um anel de luz. */
+:root[data-theme="dark"] .brand-icon[data-contrast="dark"] {
+  --ring-filter:
+    drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.75))
+    drop-shadow(0 0 1px rgba(255, 255, 255, 0.75));
 }
+
+/* Arte clara sobre tema claro: um anel de sombra. */
+:root[data-theme="light"] .brand-icon[data-contrast="light"] {
+  --ring-filter:
+    drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 0 1px rgba(0, 0, 0, 0.28));
+}
+
+/* O mesmo para quem nao escolheu tema e segue o sistema. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-icon[data-contrast="dark"] {
+    --ring-filter:
+      drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.75))
+      drop-shadow(0 0 1px rgba(255, 255, 255, 0.75));
+  }
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .brand-icon[data-contrast="light"] {
+    --ring-filter:
+      drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.28))
+      drop-shadow(0 0 1px rgba(0, 0, 0, 0.28));
+  }
+}
+
+/* Dentro de um disco proprio o fundo ja separa o icone do ecra. */
+.brand-tile .brand-icon { --ring-filter: ; }
 
 /* Um disco discreto, so onde o icone precisa de presenca sozinho numa linha.
    Segue o tema — nao e o preto da folha original. */
