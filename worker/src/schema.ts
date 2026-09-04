@@ -17,7 +17,32 @@ import { z } from 'zod';
 export const MAX_MESSAGE_CHARS = 2000;
 export const MAX_HISTORY_MESSAGES = 10;
 export const MAX_HISTORY_CHARS = 1200;
-export const MAX_BODY_BYTES = 128 * 1024;
+/**
+ * O corpo do pedido.
+ *
+ * Generoso porque uma fotografia cabe aqui dentro, e apertado porque o cliente
+ * reduz a imagem antes de a enviar: 1024 px de lado e JPEG raramente passam
+ * dos 300 KB. Quem enviar mais do que isto está a tentar outra coisa.
+ */
+export const MAX_BODY_BYTES = 3 * 1024 * 1024;
+export const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
+
+/** O que o modelo consegue mesmo ler. Nada de vídeo, nada de zips. */
+export const ATTACHMENT_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf',
+] as const;
+
+export const attachmentSchema = z.object({
+  kind: z.enum(['image', 'document']),
+  mediaType: z.enum(ATTACHMENT_TYPES),
+  // O tamanho em base64 é cerca de 4/3 do original; o limite é sobre o que
+  // atravessa a rede, que é o que interessa medir.
+  data: z.string().min(1).max(Math.ceil((MAX_ATTACHMENT_BYTES * 4) / 3)),
+  name: z.string().max(120).nullable().optional(),
+}).refine(
+  (value) => (value.kind === 'document') === (value.mediaType === 'application/pdf'),
+  { message: 'o tipo do anexo tem de bater certo com o media type' },
+);
 
 /**
  * O contexto chega já filtrado pelas autorizações do utilizador — é o
@@ -68,6 +93,7 @@ export const requestSchema = z.object({
     )
     .max(MAX_HISTORY_MESSAGES)
     .default([]),
+  attachment: attachmentSchema.nullable().default(null),
 });
 
 export type CoachRequest = z.infer<typeof requestSchema>;

@@ -132,6 +132,9 @@ const SHEETS = [
   },
 ];
 
+/** Celulas onde o preenchimento suave foi desfeito por comer o desenho. */
+const reverted = [];
+
 /** Recorta uma folha inteira e devolve os icones ja com opacidade. */
 function extract(sheet) {
   const src = jpeg.decode(fs.readFileSync(sheet.file), { useTArray: true });
@@ -145,15 +148,66 @@ function extract(sheet) {
   /** Quanto um pixel se afasta da cor do fundo. */
   const distance = (x, y) => (dark ? lumAt(x, y) : 255 - lumAt(x, y));
 
-  // O preenchimento e apertado de proposito: um limiar generoso atravessa a
-  // orla de um disco escuro e come-lhe o interior. O halo a volta dos desenhos
-  // e tratado a seguir, icone a icone, por `stripHalo`.
   const T_FILL = dark ? 4 : 10;
   const T_EDGE = dark ? 40 : 46;
+  // Ate onde o fundo pode subir a caminho do desenho. Fica abaixo de T_EDGE de
+  // proposito: assim o preenchimento nunca chega a tocar no que e claramente
+  // desenho, com ou sem as regras a seguir.
+  const T_SOFT = dark ? 34 : 42;
+  // Folga para o ruido do JPEG, que faz uma rampa lisa parecer serrilhada.
+  const SLACK = 4;
+  // Quanto o fundo pode escurecer de um pixel para o vizinho. Uma sombra sobe
+  // devagar, ao longo de dezenas de pixeis; uma aresta sobe de uma vez.
+  const STEP = 3;
 
   /* --- 1. Fundo --------------------------------------------------------- */
-  const bg = new Uint8Array(W * H);
-  {
+
+  /*
+   * A sombra e o papel tem a mesma luminancia. So a forma os distingue.
+   *
+   * Nesta folha os desenhos assentam sobre uma sombra suave, e o corpo de
+   * alguns deles — a folha do "planos", o calendario — e quase tao branco como
+   * o fundo. Medir so a cor nao os separa: os dois estao a 10 do branco.
+   *
+   * O que os separa e o percurso. De fora para dentro, a sombra **sobe** ate ao
+   * objeto; ao entrar no corpo do objeto, o valor **desce** outra vez. Por isso
+   * o preenchimento so anda enquanto nao descer: sobe a sombra toda e para na
+   * aresta onde o objeto comeca, sem lhe entrar.
+   *
+   * Era isto que faltava. Antes, um pixel de sombra longe de qualquer pixel de
+   * fundo ficava com opacidade total — e o que se via a volta dos icones era
+   * uma caixa leitosa, que sobre o tema escuro parecia um mau recorte.
+   */
+  /*
+   * A comparacao e feita sobre a media 3x3, nao sobre o pixel cru.
+   *
+   * O JPEG deixa ringing a volta das arestas com contraste: uma orla de pixeis
+   * que saltam para cima e para baixo. Ao pixel, esses saltos parecem degraus e
+   * travam o preenchimento — foi o que deixou a lua com uma franja preta
+   * serrilhada. Na media, o ruido desaparece e a rampa da sombra continua a
+   * ser uma rampa.
+   */
+  const smooth = new Float32Array(W * H);
+  for (let y = 0; y < H; y += 1) {
+    for (let x = 0; x < W; x += 1) {
+      let sum = 0;
+      let n = 0;
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          sum += distance(nx, ny);
+          n += 1;
+        }
+      }
+      smooth[y * W + x] = sum / n;
+    }
+  }
+
+  /** O preenchimento apertado: so o que e quase exatamente a cor do fundo. */
+  function fillTight() {
+    const mask = new Uint8Array(W * H);
     const stack = [];
     for (let x = 0; x < W; x += 1) stack.push(x, 0, x, H - 1);
     for (let y = 0; y < H; y += 1) stack.push(0, y, W - 1, y);
@@ -162,83 +216,189 @@ function extract(sheet) {
       const x = stack.pop();
       if (x < 0 || y < 0 || x >= W || y >= H) continue;
       const k = y * W + x;
-      if (bg[k] || distance(x, y) > T_FILL) continue;
-      bg[k] = 1;
+      if (mask[k] || distance(x, y) > T_FILL) continue;
+      mask[k] = 1;
       stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
     }
+    return mask;
   }
 
-  /* --- 2. Componentes: arte ou ruido ------------------------------------ */
-  const label = new Int32Array(W * H).fill(-1);
-  const areas = [];
-  for (let y = 0; y < H; y += 1) {
-    for (let x = 0; x < W; x += 1) {
+  /** O preenchimento que sobe a sombra, mas nao entra pelos objetos dentro. */
+  function fillSoft() {
+    const mask = new Uint8Array(W * H);
+    const queue = [];
+    const push = (x, y) => {
+      if (x < 0 || y < 0 || x >= W || y >= H) return;
       const k = y * W + x;
-      if (bg[k] || label[k] !== -1) continue;
-      const id = areas.length;
-      let area = 0;
-      const queue = [x, y];
-      label[k] = id;
-      while (queue.length) {
-        const cy = queue.pop();
-        const cx = queue.pop();
-        area += 1;
-        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
-          const nx = cx + dx;
-          const ny = cy + dy;
-          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-          const nk = ny * W + nx;
-          if (bg[nk] || label[nk] !== -1) continue;
-          label[nk] = id;
-          queue.push(nx, ny);
-        }
+      if (mask[k] || distance(x, y) > T_FILL) return;
+      mask[k] = 1;
+      queue.push(x, y);
+    };
+    for (let x = 0; x < W; x += 1) { push(x, 0); push(x, H - 1); }
+    for (let y = 0; y < H; y += 1) { push(0, y); push(W - 1, y); }
+
+    while (queue.length) {
+      const y = queue.pop();
+      const x = queue.pop();
+      const here = smooth[y * W + x];
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const nk = ny * W + nx;
+        if (mask[nk]) continue;
+        const there = smooth[nk];
+        if (there > T_SOFT || distance(nx, ny) > T_EDGE) continue;
+        // Subir devagar e continuar a sombra. Descer, ou subir de repente, e
+        // entrar num objeto.
+        if (there < here - SLACK) continue;
+        if (there > here + STEP) continue;
+        mask[nk] = 1;
+        queue.push(nx, ny);
       }
-      areas.push(area);
     }
+    return mask;
   }
 
-  /* --- 3. Opacidade ----------------------------------------------------- */
-  const inArt = (y) => sheet.bands.some(([a, b]) => y >= a && y <= b);
-  const alpha = new Uint8Array(W * H);
+  /* --- 2 e 3. De um fundo para a opacidade ------------------------------ */
 
-  for (let y = 0; y < H; y += 1) {
-    for (let x = 0; x < W; x += 1) {
-      const k = y * W + x;
-      if (bg[k] || !inArt(y)) continue;
-      const id = label[k];
-      if (id === -1 || areas[id] < MIN_AREA) continue;
-
-      // Distancia ao fundo, ate tres pixeis: e ai que vive o antialiasing e,
-      // na folha branca, a sombra suave que sairia como halo.
-      let near = 0;
-      const reach = dark ? 2 : 3;
-      for (let r = 1; r <= reach && !near; r += 1) {
-        for (let dy = -r; dy <= r && !near; dy += 1) {
-          for (let dx = -r; dx <= r; dx += 1) {
-            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-            const nx = x + dx;
-            const ny = y + dy;
+  /** Componentes e opacidade, para um dado fundo. */
+  function alphaFrom(bg) {
+    const label = new Int32Array(W * H).fill(-1);
+    const areas = [];
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        const k = y * W + x;
+        if (bg[k] || label[k] !== -1) continue;
+        const id = areas.length;
+        let area = 0;
+        const queue = [x, y];
+        label[k] = id;
+        while (queue.length) {
+          const cy = queue.pop();
+          const cx = queue.pop();
+          area += 1;
+          for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+            const nx = cx + dx;
+            const ny = cy + dy;
             if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-            if (bg[ny * W + nx]) { near = r; break; }
+            const nk = ny * W + nx;
+            if (bg[nk] || label[nk] !== -1) continue;
+            label[nk] = id;
+            queue.push(nx, ny);
           }
         }
+        areas.push(area);
       }
-
-      if (near === 0) { alpha[k] = 255; continue; }
-      // A opacidade sobe com a distancia a cor do fundo: a aresta do desenho
-      // fica nitida e o que era quase-fundo desaparece.
-      const d = distance(x, y);
-      const soft = Math.max(0, Math.min(255, Math.round(((d - T_FILL) / T_EDGE) * 255)));
-      alpha[k] = near === 1 ? soft : Math.max(soft, d > T_EDGE ? 255 : 0);
     }
+
+    /* --- 3. Opacidade ----------------------------------------------------- */
+    const inArt = (y) => sheet.bands.some(([a, b]) => y >= a && y <= b);
+    const alpha = new Uint8Array(W * H);
+
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        const k = y * W + x;
+        if (bg[k] || !inArt(y)) continue;
+        const id = label[k];
+        if (id === -1 || areas[id] < MIN_AREA) continue;
+
+        // Distancia ao fundo, ate tres pixeis: e ai que vive o antialiasing e,
+        // na folha branca, a sombra suave que sairia como halo.
+        let near = 0;
+        const reach = dark ? 2 : 3;
+        for (let r = 1; r <= reach && !near; r += 1) {
+          for (let dy = -r; dy <= r && !near; dy += 1) {
+            for (let dx = -r; dx <= r; dx += 1) {
+              if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+              if (bg[ny * W + nx]) { near = r; break; }
+            }
+          }
+        }
+
+        if (near === 0) { alpha[k] = 255; continue; }
+        // A opacidade sobe com a distancia a cor do fundo: a aresta do desenho
+        // fica nitida e o que era quase-fundo desaparece.
+        const d = distance(x, y);
+        const soft = Math.max(0, Math.min(255, Math.round(((d - T_FILL) / T_EDGE) * 255)));
+        alpha[k] = near === 1 ? soft : Math.max(soft, d > T_EDGE ? 255 : 0);
+      }
+    }
+
+    // Pixeis fracos e sozinhos: pontos soltos, nao arte.
+    for (let y = 1; y < H - 1; y += 1) {
+      for (let x = 1; x < W - 1; x += 1) {
+        const k = y * W + x;
+        if (!alpha[k] || alpha[k] > 90) continue;
+        if (alpha[k - 1] + alpha[k + 1] + alpha[k - W] + alpha[k + W] < 60) alpha[k] = 0;
+      }
+    }
+
+    return alpha;
   }
 
-  // Pixeis fracos e sozinhos: pontos soltos, nao arte.
-  for (let y = 1; y < H - 1; y += 1) {
-    for (let x = 1; x < W - 1; x += 1) {
-      const k = y * W + x;
-      if (!alpha[k] || alpha[k] > 90) continue;
-      if (alpha[k - 1] + alpha[k + 1] + alpha[k - W] + alpha[k + W] < 60) alpha[k] = 0;
+  /* --- 4. Qual dos dois, celula a celula --------------------------------- */
+
+  const alphaTight = alphaFrom(fillTight());
+  const alphaSoft = alphaFrom(fillSoft());
+
+  /*
+   * O preenchimento suave resolve a sombra e o ringing, mas ha um caso em que
+   * se engana: um objeto escuro sobre a folha escura. O disco do "perfil" tem
+   * a mesma luminancia que o ruido a volta da lua — nenhum limiar os separa.
+   *
+   * O que os separa e a forma. O que o preenchimento come a mais e, nos casos
+   * bons, uma orla fina; no caso mau, um corpo inteiro. Uma erosao de seis
+   * pixeis apaga a orla e deixa o corpo — e e por isso que a decisao se toma
+   * assim, e nao por uma lista de nomes escrita a mao.
+   */
+  const alpha = new Uint8Array(alphaSoft);
+  const ERODE = 6;
+  const BODY = 2500;
+
+  for (const [top, bottom] of sheet.bands) {
+    const count = (sheet.names[sheet.bands.findIndex(([a]) => a === top)] ?? []).length || 1;
+    const cellW = W / count;
+    for (let cell = 0; cell < count; cell += 1) {
+      const x0 = Math.floor(cell * cellW);
+      const x1 = Math.min(W - 1, Math.floor((cell + 1) * cellW) - 1);
+
+      const removed = new Uint8Array((x1 - x0 + 1) * (bottom - top + 1));
+      const cw = x1 - x0 + 1;
+      for (let y = top; y <= bottom; y += 1) {
+        for (let x = x0; x <= x1; x += 1) {
+          const k = y * W + x;
+          if (alphaTight[k] > 128 && alphaSoft[k] <= 128) removed[(y - top) * cw + (x - x0)] = 1;
+        }
+      }
+
+      let body = 0;
+      for (let y = ERODE; y <= bottom - top - ERODE; y += 1) {
+        for (let x = ERODE; x <= cw - 1 - ERODE; x += 1) {
+          if (!removed[y * cw + x]) continue;
+          let solid = true;
+          for (let dy = -ERODE; dy <= ERODE && solid; dy += 1) {
+            for (let dx = -ERODE; dx <= ERODE; dx += 1) {
+              if (!removed[(y + dy) * cw + (x + dx)]) { solid = false; break; }
+            }
+          }
+          if (solid) body += 1;
+        }
+      }
+
+      if (body <= BODY) continue;
+      // Comeu um corpo: nesta celula fica o preenchimento apertado, e o veu
+      // que ele deixa e o preco de nao destruir o desenho.
+      reverted.push(`${sheet.file}:${top}:${cell}`);
+      for (let y = top; y <= bottom; y += 1) {
+        for (let x = x0; x <= x1; x += 1) {
+          const k = y * W + x;
+          alpha[k] = alphaTight[k];
+        }
+      }
     }
   }
 
@@ -537,6 +697,9 @@ for (const sheet of SHEETS) {
 }
 
 console.log(`${written} icones em ${OUT_DIR}, ${(bytes / 1024).toFixed(0)} KB`);
+if (reverted.length > 0) {
+  console.log(`preenchimento suave desfeito em: ${reverted.join(", ")}`);
+}
 if (recusados.length > 0) {
   console.log(`limpeza de halo desfeita (estragava o desenho): ${recusados.join(', ')}`);
 }

@@ -56,16 +56,17 @@ export function streakIcon(days: number): BrandIconName {
  * sobra nada dela. O contrário também acontece — o calendário branco e o
  * cronómetro sobre o branco do tema claro.
  *
- * As listas saem de uma medição da luminância de cada asset (a fração de
- * píxeis opacos abaixo de 0,22 ou acima de 0,86), não de olhómetro. Quem lá
- * está recebe um contorno da cor oposta, e só no tema onde precisa dele.
+ * As listas saem de uma medição, não de olhómetro. Para cada asset conta-se a
+ * fração de píxeis opacos com luminância abaixo de 0,22 e acima de 0,80; quem
+ * passar de 40% num dos lados entra na lista desse lado. `tools/_lum.cjs`
+ * refaz a conta quando os assets mudarem.
  */
 const DARK_ARTWORK: ReadonlySet<BrandIconName> = new Set([
-  'caminhada', 'caminhada-rapida', 'perfil', 'treinos', 'som', 'vibracao', 'cadeado',
+  'caminhada', 'caminhada-rapida', 'treinos', 'perfil', 'som', 'vibracao', 'cadeado',
 ]);
 
 const LIGHT_ARTWORK: ReadonlySet<BrandIconName> = new Set([
-  'agenda', 'planos', 'relogio', 'corrida', 'dias-perfeitos',
+  'agenda', 'corrida', 'relogio',
 ]);
 
 function contrastOf(name: BrandIconName): 'dark' | 'light' | undefined {

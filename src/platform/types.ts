@@ -255,6 +255,27 @@ export interface AssistantRequest {
    * aplicação nem nada fora do contexto autorizado.
    */
   history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+  /**
+   * Uma fotografia ou um documento que acompanha a mensagem.
+   *
+   * Uma de cada vez, de propósito: duas imagens numa pergunta é quase sempre
+   * duas perguntas. Os dados vão em base64 já reduzidos pelo cliente — o
+   * original de 4 MB da câmara não atravessa a rede.
+   *
+   * O motor local não os lê. Uma pergunta com imagem que caia no fallback é
+   * respondida a dizer isso, e não a fingir que viu.
+   */
+  attachment?: AssistantAttachment | null;
+}
+
+export interface AssistantAttachment {
+  kind: 'image' | 'document';
+  /** "image/jpeg", "image/png", "image/webp" ou "application/pdf". */
+  mediaType: string;
+  /** O conteúdo em base64, sem o prefixo "data:". */
+  data: string;
+  /** O nome do ficheiro, quando veio de um. Só para o ecrã o poder mostrar. */
+  name?: string | null;
 }
 
 export interface AssistantReply {
