@@ -74,14 +74,52 @@ describe('RemoteAssistantPort', () => {
     expect(JSON.stringify(headers).toLowerCase()).not.toContain('api-key');
   });
 
-  it('recusa uma resposta que traga ações', async () => {
+  it('recusa uma ação sem carga útil', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(
-      JSON.stringify({ turn: { ...turn, actions: [{ kind: 'create_workout' }] } }),
+      JSON.stringify({ turn: { ...turn, actions: [{ kind: 'create_workout', label: 'X' }] } }),
       { status: 200 },
     )));
 
     await expect(new RemoteAssistantPort('https://worker.dev').respond(request()))
       .rejects.toThrow();
+  });
+
+  it('recusa uma ação de tipo desconhecido', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({ turn: { ...turn, actions: [{ kind: 'apagar_tudo', label: 'X' }] } }),
+      { status: 200 },
+    )));
+
+    await expect(new RemoteAssistantPort('https://worker.dev').respond(request()))
+      .rejects.toThrow();
+  });
+
+  it('recusa levar o utilizador para fora da aplicação', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({
+        turn: { ...turn, actions: [{ kind: 'open', label: 'Ir', path: 'https://exemplo.pt' }] },
+      }),
+      { status: 200 },
+    )));
+
+    await expect(new RemoteAssistantPort('https://worker.dev').respond(request()))
+      .rejects.toThrow();
+  });
+
+  it('aceita uma proposta de treino bem formada', async () => {
+    const action = {
+      kind: 'create_workout',
+      label: 'Criar treino de pernas',
+      draft: { title: 'Pernas', type: 'strength', estimatedMin: 45, weekdays: [1], blocks: [{}] },
+    };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({ turn: { ...turn, actions: [action] } }),
+      { status: 200 },
+    )));
+
+    const reply = await new RemoteAssistantPort('https://worker.dev').respond(request());
+    expect(reply.turn.actions).toHaveLength(1);
+    expect(reply.turn.actions[0]?.kind).toBe('create_workout');
   });
 
   it('recusa uma resposta fora do formato', async () => {

@@ -78,12 +78,91 @@ describe('resposta do modelo', () => {
     expect(turnSchema.safeParse(turn).success).toBe(true);
   });
 
-  it('recusa ações — o modelo não escreve na aplicação', () => {
-    const withAction = {
+  it('recusa uma ação sem carga útil', () => {
+    const vazia = {
       ...turn,
       actions: [{ kind: 'create_workout', label: 'Adicionar', draft: {} }],
     };
-    expect(turnSchema.safeParse(withAction).success).toBe(false);
+    expect(turnSchema.safeParse(vazia).success).toBe(false);
+  });
+
+  it('aceita um treino completo', () => {
+    const ok = {
+      ...turn,
+      actions: [{
+        kind: 'create_workout',
+        label: 'Criar treino de pernas',
+        draft: {
+          title: 'Pernas',
+          type: 'strength',
+          estimatedMin: 45,
+          weekdays: [1, 4],
+          blocks: [{
+            section: 'main',
+            exerciseName: 'Agachamento',
+            muscleGroups: ['legs'],
+            isBodyweight: false,
+            sets: 4,
+            reps: 8,
+            durationSec: null,
+            restSec: 90,
+            note: null,
+          }],
+        },
+      }],
+    };
+    expect(turnSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it('recusa um grupo muscular inventado', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'create_workout',
+        label: 'Criar treino',
+        draft: {
+          title: 'X', type: 'strength', estimatedMin: 30, weekdays: [],
+          blocks: [{
+            section: 'main', exerciseName: 'Y', muscleGroups: ['pescoco'],
+            isBodyweight: false, sets: 3, reps: 10, durationSec: null,
+            restSec: 60, note: null,
+          }],
+        },
+      }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('recusa uma hora que não é uma hora', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'apply_schedule',
+        label: 'Organizar a semana',
+        draft: { items: [{ weekday: 1, time: '25:99', durationMin: 45, kind: 'run', label: 'Corrida' }] },
+      }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('só deixa abrir ecrãs da lista', () => {
+    const bom = turnSchema.safeParse({
+      ...turn,
+      actions: [{ kind: 'open', label: 'Ver treinos', path: '/treino' }],
+    });
+    expect(bom.success).toBe(true);
+
+    const mau = turnSchema.safeParse({
+      ...turn,
+      actions: [{ kind: 'open', label: 'Ir', path: 'https://exemplo.pt' }],
+    });
+    expect(mau.success).toBe(false);
+  });
+
+  it('recusa mais ações do que o limite', () => {
+    const uma = { kind: 'open', label: 'Ver', path: '/treino' };
+    const parsed = turnSchema.safeParse({ ...turn, actions: [uma, uma, uma, uma] });
+    expect(parsed.success).toBe(false);
   });
 
   it('recusa um tipo de bloco inventado', () => {

@@ -23,14 +23,55 @@ const TIMEOUT_MS = 12_000;
 
 const BLOCK_KINDS = ['text', 'list', 'metrics', 'notice', 'references', 'caveat'];
 
+const ACTION_KINDS = [
+  'create_workout', 'create_habits', 'create_run_plan', 'apply_schedule', 'open',
+];
+
+/**
+ * Para onde uma ação "open" pode levar.
+ *
+ * A mesma lista que o backend impõe, repetida aqui de propósito. O destino vem
+ * de texto gerado, e este é o último sítio antes de o utilizador ser levado
+ * para lá — se as duas listas divergirem, ganha a mais restritiva.
+ */
+const OPEN_PATHS = new Set([
+  '/hoje', '/agenda', '/treino', '/atividade', '/atividade/historico',
+  '/alimentacao', '/ia', '/ia/corrida', '/ia/dados', '/perfil',
+]);
+
+const MAX_ACTIONS = 3;
+
+/**
+ * Uma ação bem formada.
+ *
+ * Não é uma revalidação campo a campo — isso é do backend, com o Zod. É a
+ * verificação de que a forma é reconhecível antes de virar um botão que
+ * escreve na aplicação do utilizador.
+ */
+function isAction(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const action = value as { kind?: string; label?: unknown; path?: unknown; draft?: unknown; drafts?: unknown };
+  if (!action.kind || !ACTION_KINDS.includes(action.kind)) return false;
+  if (typeof action.label !== 'string' || action.label.trim() === '') return false;
+
+  if (action.kind === 'open') return typeof action.path === 'string' && OPEN_PATHS.has(action.path);
+  if (action.kind === 'create_habits') {
+    return Array.isArray(action.drafts) && action.drafts.length > 0;
+  }
+  return !!action.draft && typeof action.draft === 'object';
+}
+
 /** Uma validação curta do que chegou. Não substitui a do backend — repete-a. */
 function isTurn(value: unknown): value is CoachTurn {
   if (!value || typeof value !== 'object') return false;
   const turn = value as Partial<CoachTurn>;
   if (!Array.isArray(turn.blocks) || turn.blocks.length === 0) return false;
   if (!turn.blocks.every((block: CoachBlock) => BLOCK_KINDS.includes(block?.kind))) return false;
-  // Nesta versão o remoto nunca propõe ações; se vierem, a resposta é suspeita.
-  if (Array.isArray(turn.actions) && turn.actions.length > 0) return false;
+  if (turn.actions != null && !Array.isArray(turn.actions)) return false;
+  if (Array.isArray(turn.actions)) {
+    if (turn.actions.length > MAX_ACTIONS) return false;
+    if (!turn.actions.every(isAction)) return false;
+  }
   return true;
 }
 

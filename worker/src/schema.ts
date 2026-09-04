@@ -125,16 +125,169 @@ export const blockSchema = z.discriminatedUnion('kind', [
   textBlock, listBlock, metricsBlock, noticeBlock, referencesBlock, caveatBlock,
 ]);
 
+/* --- Ações --------------------------------------------------------------------- */
+
+/**
+ * O que o modelo pode propor.
+ *
+ * Propor, e não fazer: uma ação é uma carga útil completa que fica à espera de
+ * um toque do utilizador. Nada aqui escreve na aplicação — quem escreve é o
+ * `applyAction` do frontend, depois da confirmação.
+ *
+ * Cada campo é limitado. Não por desconfiança do modelo, mas porque isto
+ * atravessa a rede: o que chega ao `applyAction` tem de ser uma estrutura
+ * conhecida, não um objeto com a forma aproximada de uma.
+ */
+const MAX_LABEL = 80;
+const weekday = z.number().int().min(0).max(6);
+const clock = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const dayKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const workoutDraft = z.object({
+  title: z.string().min(1).max(60),
+  type: z.enum([
+    'strength', 'functional', 'calisthenics', 'hiit', 'mobility', 'pilates', 'sport', 'other',
+  ]),
+  estimatedMin: z.number().int().min(5).max(240),
+  weekdays: z.array(weekday).max(7).default([]),
+  blocks: z
+    .array(
+      z.object({
+        section: z.enum(['warmup', 'main', 'cardio']),
+        exerciseName: z.string().min(1).max(60),
+        muscleGroups: z
+          .array(z.enum(['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full_body']))
+          .max(7)
+          .default([]),
+        isBodyweight: z.boolean().default(false),
+        sets: z.number().int().min(1).max(12),
+        reps: z.number().int().min(1).max(200).nullable().default(null),
+        durationSec: z.number().int().min(5).max(7200).nullable().default(null),
+        restSec: z.number().int().min(0).max(600).nullable().default(null),
+        note: z.string().max(160).nullable().default(null),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+
+const habitDraft = z.object({
+  title: z.string().min(1).max(60),
+  kind: z.enum(['check', 'count', 'duration']),
+  frequency: z.enum(['daily', 'weekly', 'weekdays', 'custom']),
+  weekdays: z.array(weekday).max(7).default([]),
+  target: z.number().int().min(1).max(1000),
+  unit: z.string().max(20).nullable().default(null),
+  timeOfDay: clock.nullable().default(null),
+  durationMin: z.number().int().min(1).max(600).nullable().default(null),
+  essential: z.boolean().default(false),
+  rationale: z.string().max(300).default(''),
+  referenceIds: z.array(z.string().max(60)).max(4).default([]),
+});
+
+const runPlanDraft = z.object({
+  title: z.string().min(1).max(60),
+  goalDistanceM: z.number().int().min(1000).max(100000),
+  weeks: z.number().int().min(1).max(52),
+  weekdays: z.array(weekday).max(7).default([]),
+  startDate: dayKey,
+  sessions: z
+    .array(
+      z.object({
+        weekIndex: z.number().int().min(0).max(51),
+        date: dayKey,
+        kind: z.enum(['easy', 'intervals', 'long', 'tempo', 'rest', 'walk_run']),
+        segments: z
+          .array(
+            z.object({
+              runSec: z.number().int().min(0).max(7200),
+              walkSec: z.number().int().min(0).max(7200),
+              repeats: z.number().int().min(1).max(40),
+            }),
+          )
+          .max(20)
+          .default([]),
+        targetDistanceM: z.number().int().min(0).max(100000).nullable().default(null),
+        targetDurationSec: z.number().int().min(0).max(36000).nullable().default(null),
+        note: z.string().max(160).nullable().default(null),
+      }),
+    )
+    .min(1)
+    .max(200),
+});
+
+const scheduleDraft = z.object({
+  items: z
+    .array(
+      z.object({
+        weekday,
+        time: clock.nullable().default(null),
+        durationMin: z.number().int().min(5).max(600).nullable().default(null),
+        kind: z.enum(['workout', 'run', 'walk', 'water']),
+        label: z.string().min(1).max(60),
+      }),
+    )
+    .max(30)
+    .default([]),
+  untouched: z.array(z.string().max(120)).max(30).default([]),
+  unplaced: z.array(z.string().max(120)).max(30).default([]),
+  summary: z.array(z.string().max(120)).max(10).default([]),
+});
+
+/**
+ * Para onde uma ação "open" pode levar.
+ *
+ * Uma lista fechada, e não um caminho livre: o destino vem de texto gerado, e
+ * um caminho gerado é um sítio onde ninguém devia poder mandar o utilizador.
+ */
+export const OPEN_PATHS = [
+  '/hoje', '/agenda', '/treino', '/atividade', '/atividade/historico',
+  '/alimentacao', '/ia', '/ia/corrida', '/ia/dados', '/perfil',
+] as const;
+
+export const actionSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('create_workout'),
+    label: z.string().min(1).max(MAX_LABEL),
+    draft: workoutDraft,
+  }),
+  z.object({
+    kind: z.literal('create_habits'),
+    label: z.string().min(1).max(MAX_LABEL),
+    drafts: z.array(habitDraft).min(1).max(8),
+  }),
+  z.object({
+    kind: z.literal('create_run_plan'),
+    label: z.string().min(1).max(MAX_LABEL),
+    draft: runPlanDraft,
+  }),
+  z.object({
+    kind: z.literal('apply_schedule'),
+    label: z.string().min(1).max(MAX_LABEL),
+    draft: scheduleDraft,
+  }),
+  z.object({
+    kind: z.literal('open'),
+    label: z.string().min(1).max(MAX_LABEL),
+    path: z.enum(OPEN_PATHS),
+  }),
+]);
+
+export const MAX_ACTIONS = 3;
+
 /**
  * A resposta do modelo.
  *
- * `actions` tem de vir vazia. Esta versão não deixa o modelo criar treinos,
- * hábitos, planos nem mexer na agenda: as ações que escrevem na aplicação
- * continuam a nascer do motor local, onde são código e não texto gerado.
+ * As ações já podem vir preenchidas — é o que separa um assistente que fala de
+ * um que ajuda. O que não muda é que nenhuma corre sozinha: cada uma aparece
+ * como um botão, com o que vai acontecer escrito, e só o toque a executa.
+ *
+ * `move_workout` fica de fora de propósito: mexer no que já está marcado exige
+ * conhecer ids reais da aplicação, e um id vindo de texto gerado não é um id.
  */
 export const turnSchema = z.object({
   blocks: z.array(blockSchema).min(1).max(MAX_BLOCKS),
-  actions: z.array(z.unknown()).max(0).default([]),
+  actions: z.array(actionSchema).max(MAX_ACTIONS).default([]),
   followUps: z.array(z.string().min(1).max(120)).max(MAX_FOLLOW_UPS).default([]),
 });
 
@@ -145,7 +298,8 @@ export type CoachTurnOutput = z.infer<typeof turnSchema>;
  *
  * Uma citação inventada é pior do que citação nenhuma: os blocos de fontes só
  * sobrevivem com identificadores que existem mesmo no catálogo da aplicação, e
- * um bloco que fique sem nenhum é removido em vez de aparecer vazio.
+ * um bloco que fique sem nenhum é removido em vez de aparecer vazio. O mesmo
+ * vale para as referências que vêm agarradas a um hábito proposto.
  */
 export function sanitizeTurn(
   turn: CoachTurnOutput,
@@ -160,5 +314,17 @@ export function sanitizeTurn(
     .filter((block): block is z.infer<typeof blockSchema> => block != null);
 
   if (blocks.length === 0) return null;
-  return { blocks, actions: [], followUps: turn.followUps.slice(0, MAX_FOLLOW_UPS) };
+
+  const actions = turn.actions.slice(0, MAX_ACTIONS).map((action) => {
+    if (action.kind !== 'create_habits') return action;
+    return {
+      ...action,
+      drafts: action.drafts.map((draft) => ({
+        ...draft,
+        referenceIds: draft.referenceIds.filter((id) => knownReferenceIds.has(id)),
+      })),
+    };
+  });
+
+  return { blocks, actions, followUps: turn.followUps.slice(0, MAX_FOLLOW_UPS) };
 }

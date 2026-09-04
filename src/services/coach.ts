@@ -256,7 +256,40 @@ export interface ApplyResult {
   path: string | null;
 }
 
+/**
+ * Uma proposta que se pode mesmo aplicar.
+ *
+ * O backend já valida cada campo com Zod, e o cliente já verifica a forma. Isto
+ * é a terceira barreira, e existe porque é a última antes de escrever nos dados
+ * do utilizador: um treino sem exercícios ou um plano sem sessões não é um erro
+ * que se corrige depois — é lixo guardado com o nome de uma coisa boa.
+ */
+function usable(action: CoachAction): boolean {
+  switch (action.kind) {
+    case 'create_workout':
+      return (action.draft?.blocks?.length ?? 0) > 0
+        && action.draft.blocks.every((block) => !!block?.exerciseName && block.sets > 0);
+    case 'create_habits':
+      return (action.drafts?.length ?? 0) > 0
+        && action.drafts.every((draft) => !!draft?.title);
+    case 'create_run_plan':
+      return (action.draft?.sessions?.length ?? 0) > 0 && !!action.draft.startDate;
+    case 'apply_schedule':
+      return (action.draft?.items?.length ?? 0) > 0;
+    case 'move_workout':
+      return !!action.workoutId;
+    case 'open':
+      return action.path.startsWith('/');
+    default:
+      return false;
+  }
+}
+
 export function applyAction(repos: Repositories, action: CoachAction): ApplyResult {
+  if (!usable(action)) {
+    return { ok: false, message: 'Essa proposta veio incompleta. Pede outra vez.', path: null };
+  }
+
   switch (action.kind) {
     case 'create_workout': return createWorkout(repos, action.draft);
     case 'create_habits': return createHabits(repos, action.drafts);

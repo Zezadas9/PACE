@@ -12,8 +12,8 @@ import { summarizeContext } from './context';
 import { SYSTEM_PROMPT } from './prompt';
 import { REFERENCE_IDS } from './references';
 import {
-  MAX_BLOCKS, MAX_BLOCK_CHARS, MAX_FOLLOW_UPS, sanitizeTurn, turnSchema,
-  type CoachRequest, type CoachTurnOutput,
+  MAX_ACTIONS, MAX_BLOCKS, MAX_BLOCK_CHARS, MAX_FOLLOW_UPS, OPEN_PATHS,
+  sanitizeTurn, turnSchema, type CoachRequest, type CoachTurnOutput,
 } from './schema';
 
 /** Curto de propósito: a resposta é uma conversa, não um relatório. */
@@ -22,11 +22,44 @@ export const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
 const TOOL_NAME = 'submit_coach_turn';
 
+/**
+ * A descrição da ferramenta é onde as formas das ações vivem.
+ *
+ * O `input_schema` fica propositadamente solto nos objetos das ações: cada tipo
+ * tem uma forma diferente, e um schema com `oneOf` faria a ferramenta ser
+ * recusada. As formas exatas vão aqui em texto, e quem as impõe é o Zod — uma
+ * ação que não caiba nele não chega ao utilizador.
+ */
+const TOOL_DESCRIPTION = [
+  'Envia a resposta ao utilizador da PACE. É a única forma de responder: todo o',
+  'conteúdo vai nos blocos.',
+  '',
+  'Formas de cada ação:',
+  '',
+  'create_workout — draft: { title, type (strength|functional|calisthenics|hiit|',
+  'mobility|pilates|sport|other), estimatedMin, weekdays: [0-6], blocks: [{ section',
+  '(warmup|main|cardio), exerciseName, muscleGroups: [chest|back|legs|shoulders|arms|',
+  'core|full_body], isBodyweight, sets, reps|null, durationSec|null, restSec|null,',
+  'note|null }] }',
+  '',
+  'create_habits — drafts: [{ title, kind (check|count|duration), frequency (daily|',
+  'weekly|weekdays|custom), weekdays: [0-6], target, unit|null, timeOfDay "HH:MM"|null,',
+  'durationMin|null, essential, rationale, referenceIds: [] }]',
+  '',
+  'create_run_plan — draft: { title, goalDistanceM, weeks, weekdays: [0-6], startDate',
+  '"AAAA-MM-DD", sessions: [{ weekIndex, date, kind (easy|intervals|long|tempo|rest|',
+  'walk_run), segments: [{ runSec, walkSec, repeats }], targetDistanceM|null,',
+  'targetDurationSec|null, note|null }] }',
+  '',
+  'apply_schedule — draft: { items: [{ weekday 0-6, time "HH:MM"|null, durationMin|null,',
+  'kind (workout|run|walk|water), label }], untouched: [], unplaced: [], summary: [] }',
+  '',
+  'open — path: um dos ecrãs autorizados.',
+].join('\n');
+
 const TOOL: Anthropic.Tool = {
   name: TOOL_NAME,
-  description:
-    'Envia a resposta ao utilizador da PACE. É a única forma de responder: todo o '
-    + 'conteúdo vai nos blocos.',
+  description: TOOL_DESCRIPTION,
   /*
    * Sem `strict`, de propósito.
    *
@@ -85,9 +118,45 @@ const TOOL: Anthropic.Tool = {
       },
       actions: {
         type: 'array',
-        maxItems: 0,
-        items: {},
-        description: 'Tem de ser sempre uma lista vazia nesta versão.',
+        maxItems: MAX_ACTIONS,
+        description:
+          'Propostas para o utilizador confirmar. Nenhuma corre sozinha: cada uma '
+          + 'aparece como um botão. Só as inclui quando o pedido é para criar ou '
+          + 'organizar alguma coisa — uma pergunta respondida por texto não leva '
+          + 'ações. Nunca digas que já fizeste: diz que propões.',
+        items: {
+          type: 'object',
+          required: ['kind', 'label'],
+          properties: {
+            kind: {
+              type: 'string',
+              enum: [
+                'create_workout', 'create_habits', 'create_run_plan', 'apply_schedule', 'open',
+              ],
+            },
+            label: {
+              type: 'string',
+              maxLength: 80,
+              description: 'O que o botão diz. Um verbo e o objeto: "Criar treino de pernas".',
+            },
+            draft: {
+              type: 'object',
+              description:
+                'A carga útil de create_workout, create_run_plan ou apply_schedule. '
+                + 'Ver as formas na descrição da ferramenta.',
+            },
+            drafts: {
+              type: 'array',
+              description: 'Só para create_habits: a lista de hábitos propostos.',
+              items: { type: 'object' },
+            },
+            path: {
+              type: 'string',
+              enum: [...OPEN_PATHS],
+              description: 'Só para open: o ecrã a abrir.',
+            },
+          },
+        },
       },
       followUps: {
         type: 'array',
