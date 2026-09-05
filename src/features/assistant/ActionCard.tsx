@@ -29,7 +29,7 @@ function summary(action: CoachAction): string[] {
       const main = action.draft.blocks.filter((block) => block.section === 'main');
       return [
         `${action.draft.estimatedMin} minutos · ${main.length} exercícios`,
-        ...main.slice(0, 6).map((block) => `${block.exerciseName} — ${block.sets}×${block.reps ?? '—'}`),
+        ...main.slice(0, 6).map((block) => `${block.exerciseName} — ${amount(block)}`),
         main.length > 6 ? `… e mais ${main.length - 6}` : '',
       ].filter(Boolean);
     }
@@ -65,6 +65,22 @@ function summary(action: CoachAction): string[] {
     default:
       return [];
   }
+}
+
+/**
+ * Quantas séries, e de quê.
+ *
+ * Nem todos os exercícios se contam por repetições: um exercício de condução
+ * de bola ou uma prancha contam-se por tempo, e mostrar "4×—" a esses era
+ * mostrar um traço onde havia um número.
+ */
+function amount(block: { sets: number; reps: number | null; durationSec: number | null }): string {
+  if (block.reps != null) return `${block.sets}×${block.reps}`;
+  if (block.durationSec != null) {
+    const minutos = Math.round(block.durationSec / 60);
+    return minutos >= 1 ? `${block.sets}× ${minutos} min` : `${block.sets}× ${block.durationSec} s`;
+  }
+  return `${block.sets} séries`;
 }
 
 export function ActionCard({
