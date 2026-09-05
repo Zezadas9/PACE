@@ -77,12 +77,37 @@ export const CARDIO_LIBRARY: ReadonlyArray<CoachExercise> = [
   { name: 'Remo (ergómetro)', muscleGroups: ['full_body', 'back'], isBodyweight: false, tier: 1, workSec: 480 },
 ];
 
+/**
+ * Mobilidade e alongamentos.
+ *
+ * Cinco posições davam para uma sessão de dez minutos e mais nada — quem
+ * pedisse vinte recebia onze. A lista está ordenada de cima para baixo do
+ * corpo, que é a ordem por que uma sessão se faz, e cada posição tem o tempo
+ * que precisa para valer a pena: trinta segundos é o mínimo de um alongamento
+ * estático, e é por isso que nenhum aqui está abaixo disso.
+ */
 export const MOBILITY_LIBRARY: ReadonlyArray<CoachExercise> = [
+  // Coluna e tronco
   { name: 'Gato-camelo', muscleGroups: ['back', 'core'], isBodyweight: true, tier: 2, workSec: 45 },
-  { name: 'Abertura de anca', muscleGroups: ['legs'], isBodyweight: true, tier: 2, workSec: 45 },
-  { name: 'Rotação torácica', muscleGroups: ['back'], isBodyweight: true, tier: 2, workSec: 45 },
-  { name: 'Alongamento de isquiotibiais', muscleGroups: ['legs'], isBodyweight: true, tier: 3, workSec: 45 },
-  { name: 'Alongamento de peito à porta', muscleGroups: ['chest', 'shoulders'], isBodyweight: true, tier: 3, workSec: 45 },
+  { name: 'Rotação torácica deitado', muscleGroups: ['back'], isBodyweight: true, tier: 2, workSec: 60 },
+  { name: 'Postura da criança', muscleGroups: ['back'], isBodyweight: true, tier: 2, workSec: 45 },
+  { name: 'Torção sentada', muscleGroups: ['back', 'core'], isBodyweight: true, tier: 3, workSec: 60 },
+  { name: 'Cobra', muscleGroups: ['back', 'core'], isBodyweight: true, tier: 3, workSec: 45 },
+
+  // Ancas e pernas
+  { name: 'Abertura de anca', muscleGroups: ['legs'], isBodyweight: true, tier: 2, workSec: 60 },
+  { name: 'Alongamento de isquiotibiais', muscleGroups: ['legs'], isBodyweight: true, tier: 2, workSec: 60 },
+  { name: 'Alongamento de quadricípite em pé', muscleGroups: ['legs'], isBodyweight: true, tier: 2, workSec: 60 },
+  { name: 'Afundo com alongamento do psoas', muscleGroups: ['legs'], isBodyweight: true, tier: 2, workSec: 60 },
+  { name: 'Figura de quatro deitado', muscleGroups: ['legs'], isBodyweight: true, tier: 3, workSec: 60 },
+  { name: 'Alongamento de adutores sentado', muscleGroups: ['legs'], isBodyweight: true, tier: 3, workSec: 60 },
+  { name: 'Alongamento de gémeos na parede', muscleGroups: ['legs'], isBodyweight: true, tier: 3, workSec: 60 },
+
+  // Peito, ombros e pescoço
+  { name: 'Alongamento de peito à porta', muscleGroups: ['chest', 'shoulders'], isBodyweight: true, tier: 2, workSec: 60 },
+  { name: 'Alongamento de ombro cruzado', muscleGroups: ['shoulders'], isBodyweight: true, tier: 3, workSec: 60 },
+  { name: 'Alongamento de tricípite acima da cabeça', muscleGroups: ['arms'], isBodyweight: true, tier: 3, workSec: 60 },
+  { name: 'Alongamento de pescoço', muscleGroups: ['shoulders'], isBodyweight: true, tier: 3, workSec: 45 },
 ];
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {

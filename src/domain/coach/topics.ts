@@ -23,64 +23,127 @@ export interface TopicAnswer {
 
 /* --- Sono ------------------------------------------------------------------------ */
 
-export function sleepAnswer(hasSleepData: boolean): TopicAnswer {
+/**
+ * A hora a que se deita, lida da mensagem ou assumida.
+ *
+ * "Rotina de sono para me deitar às 23h" tem lá a hora, e a rotina inteira
+ * pendura-se nela: sem isso, os passos seriam conselhos soltos em vez de horas
+ * a que fazer alguma coisa.
+ */
+export function bedtimeFrom(message: string): string {
+  const match = /(?:deitar|dormir)[^0-9]{0,20}(\d{1,2})(?:[:h](\d{2}))?/.exec(message.toLowerCase());
+  if (!match?.[1]) return '23:00';
+  const hour = Math.min(23, Math.max(18, Number(match[1])));
+  const minute = Math.min(59, Number(match[2] ?? 0));
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+/** Uma hora antes de outra, sem passar para o dia seguinte por engano. */
+function before(clock: string, hours: number): string {
+  const [h = 23, m = 0] = clock.split(':').map(Number);
+  const total = (h * 60 + m - hours * 60 + 24 * 60) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/**
+ * A rotina de sono.
+ *
+ * Não é uma lista de conselhos: é uma sequência de passos com hora, do fim da
+ * tarde até apagar a luz, porque é assim que uma rotina se cumpre. Cada passo
+ * é um hábito que entra na agenda — ou não entra, se o utilizador não quiser.
+ *
+ * As horas saem todas da hora de deitar. A da cafeína são oito horas antes, que
+ * é o que a meia-vida da cafeína justifica; as outras são o que a higiene do
+ * sono costuma recomendar, e isso vai dito como o que é: prática comum, com
+ * efeito que varia de pessoa para pessoa.
+ */
+export function sleepAnswer(hasSleepData: boolean, bedtime = '23:00'): TopicAnswer {
+  const wake = before(bedtime, -8);
+
+  const passos: Array<{ title: string; time: string; essential: boolean; why: string }> = [
+    {
+      title: 'Última cafeína',
+      time: before(bedtime, 8),
+      essential: false,
+      why: 'A cafeína demora horas a sair do corpo, e a última do dia é a que mais custa.',
+    },
+    {
+      title: 'Última refeição pesada',
+      time: before(bedtime, 3),
+      essential: false,
+      why: 'Digerir e adormecer ao mesmo tempo corre mal às duas coisas.',
+    },
+    {
+      title: 'Baixar as luzes e largar os ecrãs',
+      time: before(bedtime, 1),
+      essential: false,
+      why: 'Luz forte à noite atrasa o sinal de que está na hora.',
+    },
+    {
+      title: 'Alongamentos ou leitura',
+      time: before(bedtime, 0.5),
+      essential: false,
+      why: 'Trinta minutos a descer o ritmo, sem nada que exija decisões.',
+    },
+    {
+      title: 'Deitar',
+      time: bedtime,
+      essential: true,
+      why: 'A regularidade é a parte que mais conta, e a primeira a cair.',
+    },
+    {
+      title: 'Acordar',
+      time: wake,
+      essential: true,
+      why: 'Oito horas depois. A hora de acordar é a que ancora a de deitar.',
+    },
+  ];
+
   const blocks: CoachBlock[] = [
-    text('Sobre sono posso dar-te o que a evidência diz e ajudar-te a criar o hábito — '
-      + 'medir é que ainda não consigo.'),
-    { kind: 'list', items: [
-      '**Sete horas ou mais** por noite, para adultos, é o consenso da Academia Americana '
-      + 'de Medicina do Sono.',
-      '**Horas regulares** contam tanto como o total: deitar e levantar à mesma hora, '
-      + 'incluindo ao fim de semana.',
-      '**A recuperação do treino acontece aqui.** Se andas a dormir mal, isso explica mais '
-      + 'sobre o teu cansaço do que qualquer detalhe do programa.',
-    ] },
+    text(`**Rotina de sono** — seis passos, a acabar às ${bedtime} e a começar o dia às ${wake}.`),
+    {
+      kind: 'list',
+      ordered: true,
+      items: passos.map((passo) => `**${passo.time}** — ${passo.title}. ${passo.why}`),
+    },
+    text('Sete horas ou mais por noite, para adultos, é o consenso da Academia Americana '
+      + 'de Medicina do Sono. E a recuperação do treino acontece aqui: dormir mal explica '
+      + 'mais sobre o cansaço do que qualquer detalhe do programa.'),
     sources('watson-2015'),
   ];
 
   if (!hasSleepData) {
     blocks.push(notice('info',
-      'A PACE ainda não regista sono, por isso não sei quanto dormes. Quando houver '
-      + 'ligação ao Health ou ao Health Connect, passo a ler — e a categoria já está no '
-      + 'ecrã de autorizações à espera disso.'));
+      'A PACE ainda não regista sono, por isso não sei quanto dormes — estes passos são '
+      + 'para cumprir, não para medir. Quando houver ligação ao Health ou ao Health '
+      + 'Connect, passo a ler.'));
   }
   blocks.push(caveat(
-    'Rotinas de higiene do sono — luz, ecrãs, cafeína à tarde — ajudam muita gente, mas o '
-    + 'tamanho do efeito varia bastante de pessoa para pessoa. Trato-as como hábitos a '
-    + 'testar, não como receita.',
+    'A higiene do sono — luz, ecrãs, cafeína à tarde — ajuda muita gente, mas o tamanho '
+    + 'do efeito varia bastante de pessoa para pessoa. Trato isto como hábitos a testar, '
+    + 'não como receita.',
   ));
 
   return {
     blocks,
-    habitDrafts: [
-      {
-        title: 'Dormir sete horas',
-        kind: 'check',
-        frequency: 'daily',
-        weekdays: [],
-        target: 1,
-        unit: null,
-        timeOfDay: '23:00',
-        durationMin: null,
-        essential: true,
-        rationale: 'Sete ou mais horas por noite, segundo o consenso da AASM e da SRS.',
-        referenceIds: ['watson-2015'],
-      },
-      {
-        title: 'Hora de deitar fixa',
-        kind: 'check',
-        frequency: 'daily',
-        weekdays: [],
-        target: 1,
-        unit: null,
-        timeOfDay: '22:45',
-        durationMin: null,
-        essential: false,
-        rationale: 'A regularidade é a parte mais fácil de controlar e a primeira a cair.',
-        referenceIds: ['watson-2015'],
-      },
+    habitDrafts: passos.map((passo) => ({
+      title: passo.title,
+      kind: 'check' as const,
+      frequency: 'daily' as const,
+      weekdays: [],
+      target: 1,
+      unit: null,
+      timeOfDay: passo.time,
+      durationMin: null,
+      essential: passo.essential,
+      rationale: passo.why,
+      referenceIds: passo.title === 'Deitar' ? ['watson-2015'] : [],
+    })),
+    followUps: [
+      'Quero deitar-me às 22:30',
+      'Sinto-me cansado, o que faço?',
+      'Cria-me uma rotina de alongamentos',
     ],
-    followUps: ['Sinto-me cansado, o que faço?', 'Sugere hábitos para o meu objetivo'],
   };
 }
 

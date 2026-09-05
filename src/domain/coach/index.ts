@@ -24,18 +24,22 @@ import { buildWorkout, setsByGroup } from './build-workout';
 import { evaluateWeek, findingsFor as workoutFindings, type Finding } from './evaluate-workout';
 import { MUSCLE_LABELS } from './exercises';
 import { suggestHabits } from './habits';
+import { ballPreference, buildSportSession } from './sports';
 import { parseIntent, refine, type CoachIntent } from './intent';
 import { readNutrition } from './nutrition-advice';
 import { readPerformance } from './performance';
 import { baselineFrom, buildRunPlan } from './running';
 import { screen } from './safety';
-import { caveat, notice, sources, text, type CoachBlock, type CoachContext, type CoachTurn } from './types';
+import {
+  caveat, notice, sources, text,
+  type CoachBlock, type CoachContext, type CoachTurn, type WorkoutDraft,
+} from './types';
 import {
   formatMinutes, planWeek, readCommitments, readExisting, requestFromIntent,
   subtractExisting, summarize, WEEKDAY_NAMES, type SchedulePlan,
 } from './agenda-plan';
 import {
-  activityAnswer, mealIdeasAnswer, recoveryAnswer, sleepAnswer, todayAnswer,
+  activityAnswer, bedtimeFrom, mealIdeasAnswer, recoveryAnswer, sleepAnswer, todayAnswer,
   weeklyActivityMinutes, type TopicAnswer,
 } from './topics';
 
@@ -90,6 +94,78 @@ function dominantGoal(context: CoachContext): 'gain_muscle' | 'lose_weight' | 'i
 }
 
 /* --- As respostas ---------------------------------------------------------------- */
+
+/**
+ * Uma sessão de desporto.
+ *
+ * Não passa pelo construtor de ginásio de propósito: um treino de futebol não
+ * é um treino de força com outro nome. Tem uma parte com bola e uma parte sem
+ * bola, e as duas contam — a técnica é o que faz falta a quem treina sozinho, e
+ * a parte física é o que a sustenta quando o jogo já vai longo.
+ */
+function sportTurn(intent: CoachIntent): CoachTurn {
+  // A mensagem original, ja normalizada: e dela que sai a modalidade e o que
+  // o utilizador quer da bola.
+  const pedido = intent.raw.toLowerCase();
+  const quer = ballPreference(pedido);
+  const session = buildSportSession(pedido, intent.minutes ?? 75, quer);
+
+  const draft: WorkoutDraft = {
+    title: `${session.sport.label} — ${session.minutes} min`,
+    type: 'sport',
+    estimatedMin: session.minutes,
+    weekdays: [],
+    blocks: session.blocks.map((drill) => ({
+      section: drill.section,
+      exerciseName: drill.name,
+      muscleGroups: drill.muscleGroups,
+      isBodyweight: true,
+      sets: drill.sets,
+      reps: null,
+      durationSec: drill.workSec,
+      restSec: drill.restSec,
+      note: `${drill.withBall ? 'Com bola. ' : ''}${drill.note}`,
+    })),
+  };
+
+  const partes: string[] = [];
+  if (session.withBallMin > 0) partes.push(`${session.withBallMin} min com bola`);
+  if (session.withoutBallMin > 0) partes.push(`${session.withoutBallMin} min sem bola`);
+
+  const blocks: CoachBlock[] = [
+    text(`${intent.isRefinement ? 'Ajustei. ' : ''}**${draft.title}** — `
+      + `${partes.join(', ')}, mais aquecimento e retorno à calma.`),
+    {
+      kind: 'list',
+      items: session.blocks
+        .filter((drill) => drill.section === 'main')
+        .map((drill) => `${drill.withBall ? '⚽ ' : '💪 '}${drill.name} — `
+          + `${drill.sets}× ${Math.round(drill.workSec / 60) || 1} min`),
+    },
+    text('Faz a técnica antes do trabalho físico: gestos finos com as pernas '
+      + 'cansadas treinam o erro em vez do gesto.'),
+  ];
+
+  if (intent.minutes != null && Math.abs(session.minutes - intent.minutes) > 8) {
+    blocks.push(notice(
+      'info',
+      `Pediste ${intent.minutes} minutos e isto dá para ${session.minutes}. `
+      + 'Diz-me se queres mais repetições de algum exercício.',
+    ));
+  }
+
+  blocks.push(sources('garber-2011'));
+
+  return {
+    blocks,
+    actions: [{ kind: 'create_workout', label: `Adicionar ${session.sport.label.toLowerCase()}`, draft }],
+    followUps: [
+      'Só a parte com bola',
+      'Só a parte física',
+      'Marca isto duas vezes por semana',
+    ],
+  };
+}
 
 function createWorkoutTurn(context: CoachContext, intent: CoachIntent): CoachTurn {
   // Cada tipo tem uma duração natural: ninguém alonga 45 minutos, e um HIIT
@@ -673,7 +749,10 @@ export function respond(
 
 function route(context: CoachContext, intent: CoachIntent): CoachTurn {
   switch (intent.kind) {
-    case 'create_workout': return createWorkoutTurn(context, intent);
+    case 'create_workout':
+      return intent.workoutType === 'sport'
+        ? sportTurn(intent)
+        : createWorkoutTurn(context, intent);
     case 'stretching': return createWorkoutTurn(context, { ...intent, workoutType: 'mobility' });
     case 'evaluate_workout': return evaluateTurn(context);
     case 'run_plan': return runPlanTurn(context, intent);
@@ -686,7 +765,10 @@ function route(context: CoachContext, intent: CoachIntent): CoachTurn {
     case 'capabilities': return capabilitiesTurn(context);
 
     case 'sleep':
-      return fromTopic(sleepAnswer(context.sleep != null), 'Criar hábitos de sono');
+      return fromTopic(
+        sleepAnswer(context.sleep != null, bedtimeFrom(intent.raw)),
+        'Adicionar a rotina à agenda',
+      );
 
     case 'recovery': {
       const reading = readPerformance(

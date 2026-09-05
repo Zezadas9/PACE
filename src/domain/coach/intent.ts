@@ -15,6 +15,7 @@
  */
 
 import type { MuscleGroup, WorkoutType } from '../../core/types';
+import { SPORTS } from './sports';
 
 export type CoachIntentKind =
   | 'create_workout'
@@ -329,6 +330,11 @@ export function looksLikeRefinement(message: string): boolean {
   return REFINEMENT_STARTERS.some((starter) => text.startsWith(starter));
 }
 
+/** A mensagem nomeia uma modalidade que a PACE sabe montar? */
+function namesSport(text: string): boolean {
+  return SPORTS.some((sport) => sport.terms.some((term) => text.includes(term)));
+}
+
 function classify(text: string, parsed: Omit<CoachIntent, 'kind' | 'isRefinement'>): CoachIntentKind {
   if (has(text, 'o que sabes', 'o que podes', 'como funcionas', 'que dados', 'quem és',
     'quem es', 'para que serves')) {
@@ -343,6 +349,24 @@ function classify(text: string, parsed: Omit<CoachIntent, 'kind' | 'isRefinement
   if (parsed.excludedWeekdays.length > 0
     && has(text, 'trein', 'corr', 'caminh', 'consigo', 'posso', 'da', 'dá')) {
     return 'block_day';
+  }
+
+  /*
+   * Um substantivo explicito ganha a qualquer heuristica de contagem.
+   *
+   * "Cria-me uma rotina de alongamentos de 20 minutos" tem a palavra "rotina" e
+   * um numero, e so por isso ia parar a organizacao da semana — vinte
+   * alongamentos por semana. O que a frase diz e alongamentos, e e isso que
+   * decide.
+   */
+  if (has(text, 'alongar', 'alongamento', 'flexibilidade', 'mobilidade', 'esticar')) {
+    return 'stretching';
+  }
+  if (has(text, 'dorm', 'durm', 'sono', 'insonia', 'insónia', 'deitar', 'acordar')) {
+    return 'sleep';
+  }
+  if (namesSport(text) && has(text, 'trein', 'rotina', 'sessao', 'sessão', 'plano')) {
+    return 'create_workout';
   }
 
   // A semana inteira vem primeiro: fala de treinos e de corridas ao mesmo

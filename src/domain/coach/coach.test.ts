@@ -575,20 +575,28 @@ describe('um pedido novo não é uma correção', () => {
 });
 
 describe('desporto com bola', () => {
-  it('diz que entrega a parte física, e não o trabalho com bola', () => {
+  /*
+   * Este teste garantia o contrario: que a PACE avisava nao saber montar uma
+   * sessao com bola. Passou a saber — ha uma biblioteca por modalidade — e o
+   * teste passou a garantir que a usa.
+   */
+  it('monta uma sessão de futebol, e não um treino de ginásio', () => {
     const turn = respond(context(), 'Podes criar-me um treino de futebol de duas horas?');
-    const aviso = turn.blocks.find(
-      (block) => block.kind === 'notice' && block.text.includes('O trabalho com bola não entra aqui'),
-    );
-    expect(aviso).toBeDefined();
+    const accao = turn.actions.find((action) => action.kind === 'create_workout');
+    const nomes = accao && 'draft' in accao
+      ? accao.draft.blocks.map((block) => block.exerciseName)
+      : [];
+    expect(nomes).toContain('Passe contra a parede');
+    expect(nomes).toContain('Sprints curtos');
   });
 
-  it('num treino de força não aparece esse aviso', () => {
+  it('num treino de força não entra nada com bola', () => {
     const turn = respond(context(), 'Cria-me um treino de pernas de 45 minutos');
-    const aviso = turn.blocks.find(
-      (block) => block.kind === 'notice' && block.text.includes('trabalho com bola'),
-    );
-    expect(aviso).toBeUndefined();
+    const accao = turn.actions.find((action) => action.kind === 'create_workout');
+    const notas = accao && 'draft' in accao
+      ? accao.draft.blocks.map((block) => block.note ?? '')
+      : [];
+    expect(notas.some((nota) => nota.includes('Com bola'))).toBe(false);
   });
 });
 
