@@ -12,6 +12,7 @@ import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Exercise, Food,
   Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task, User,
   CoachMessage, RunPlan, WaterEntry, Workout, WorkoutSession,
+  SleepEntry,
 } from '../core/types';
 
 export interface Snapshot {
@@ -36,6 +37,7 @@ export interface Snapshot {
   mealPlans: MealPlan[];
   nutritionGoals: NutritionGoal[];
   waterEntries: WaterEntry[];
+  sleepEntries: SleepEntry[];
   runPlans: RunPlan[];
   coachMessages: CoachMessage[];
   streaks: Streak[];
@@ -49,7 +51,7 @@ export type CollectionKey = Exclude<
 export const COLLECTION_KEYS: CollectionKey[] = [
   'goals', 'habits', 'habitEntries', 'tasks', 'events', 'exercises', 'workouts',
   'workoutSessions', 'activitySessions', 'activityGoals', 'foods', 'meals',
-  'mealPlans', 'nutritionGoals', 'waterEntries', 'runPlans', 'coachMessages', 'streaks',
+  'mealPlans', 'nutritionGoals', 'waterEntries', 'sleepEntries', 'runPlans', 'coachMessages', 'streaks',
 ];
 
 export const STORAGE_KEY = `${APP.storageNamespace}.snapshot`;
@@ -76,6 +78,7 @@ export function emptySnapshot(): Snapshot {
     mealPlans: [],
     nutritionGoals: [],
     waterEntries: [],
+    sleepEntries: [],
     runPlans: [],
     coachMessages: [],
     streaks: [],
@@ -100,6 +103,15 @@ const LEGACY_WORKOUT_TYPES: Record<string, Workout['type']> = {
 };
 
 const MIGRATIONS: Record<number, Migration> = {
+  /**
+   * v9 -> v10 — o sono deixa de ser uma promessa.
+   *
+   * A coleção nasce vazia porque não há nada que a possa preencher: ninguém
+   * registou sono antes de existir onde o registar, e deduzir noites a partir
+   * de outra coisa qualquer seria inventar história.
+   */
+  9: (snapshot) => ({ ...snapshot, sleepEntries: [] }),
+
   /**
    * v8 -> v9 — a atividade como sistema.
    *

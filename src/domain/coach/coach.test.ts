@@ -38,7 +38,7 @@ function context(overrides: Partial<CoachContext> = {}): CoachContext {
     profile: { name: 'Teste', ageYears: 30, gender: 'undisclosed', heightCm: 178, weightKg: 72 },
     goals: [], workouts: [], exercises: [], sessions: [], activities: [],
     habits: [], habitEntries: [], meals: [], foods: [], water: [],
-    runPlan: null, sleep: null,
+    runPlan: null, sleep: [],
     ...overrides,
   };
 }
@@ -456,9 +456,14 @@ describe('os outros temas da PACE', () => {
     expect(said).not.toMatch(/\d+\s?kcal/);
   });
 
-  it('diz que ainda não mede sono', () => {
+  /*
+   * A PACE passou a registar sono. O que este teste garante mudou com isso: ja
+   * nao e "ainda nao mede", e sim "so leio o que estiver autorizado e nao
+   * invento medias sem noites".
+   */
+  it('não lê o sono sem autorização', () => {
     expect(JSON.stringify(respond(context(), 'Durmo mal, ajuda').blocks))
-      .toContain('ainda não regista sono');
+      .toContain('categoria está desligada');
   });
 
   it('mesmo sem perceber, oferece caminhos', () => {

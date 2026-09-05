@@ -21,6 +21,7 @@ import { ActivityScreen } from '../features/activity/ActivityScreen';
 import { ActivityPrepareScreen } from '../features/activity/ActivityPrepareScreen';
 import { ActivityDetailScreen } from '../features/activity/ActivityDetailScreen';
 import { ActivityHistoryScreen } from '../features/activity/ActivityHistoryScreen';
+import { SleepScreen } from '../features/sleep/SleepScreen';
 import { NutritionScreen } from '../features/nutrition/NutritionScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
 import { AssistantScreen } from '../features/assistant/AssistantScreen';
@@ -73,6 +74,8 @@ export function AppRoutes(): ReactElement {
             <Route path="/atividade/detalhe/:id" element={<ActivityDetailScreen />} />
             <Route path="/atividade/historico" element={<ActivityHistoryScreen />} />
             <Route path="/alimentacao" element={<NutritionScreen />} />
+            {/* O sono nao tem separador proprio: chega-se la pelo cartao do Hoje. */}
+            <Route path="/sono" element={<SleepScreen />} />
             <Route path="/ia" element={<AssistantScreen />} />
             <Route path="/ia/dados" element={<ConsentScreen />} />
             <Route path="/ia/corrida" element={<RunPlanScreen />} />

@@ -29,7 +29,7 @@ import type { Repositories } from '../data/repositories';
 
 const EMPTY_CONTEXT_SLICES = {
   goals: [], workouts: [], exercises: [], sessions: [], activities: [],
-  habits: [], habitEntries: [], meals: [], foods: [], water: [],
+  habits: [], habitEntries: [], meals: [], foods: [], water: [], sleep: [],
 };
 
 export function aiSettings(repos: Repositories): AiSettings {
@@ -141,7 +141,7 @@ export function buildContext(
     foods: can('nutrition') ? repos.foods.all() : [],
     water: can('nutrition') ? recent(repos.waterEntries.all(), today, 30) : [],
     runPlan: can('activity') ? activePlan(repos) : null,
-    sleep: null,
+    sleep: can('sleep') ? recent(repos.sleepEntries.all(), today, 60) : [],
   };
 }
 

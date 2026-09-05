@@ -12,6 +12,7 @@ import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Entity, Exercise,
   Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task,
   User, WaterEntry, Workout, WorkoutSession, CoachMessage, RunPlan,
+  SleepEntry,
 } from '../core/types';
 import type { CollectionKey } from './snapshot';
 import type { Store } from './store';
@@ -181,6 +182,7 @@ export interface Repositories {
   mealPlans: Collection<MealPlan>;
   nutritionGoals: Collection<NutritionGoal>;
   waterEntries: Collection<WaterEntry>;
+  sleepEntries: Collection<SleepEntry>;
   runPlans: Collection<RunPlan>;
   coachMessages: Collection<CoachMessage>;
   streaks: Collection<Streak>;
@@ -205,6 +207,7 @@ export function createRepositories(store: Store): Repositories {
     mealPlans: new Collection(store, 'mealPlans', factories.createMealPlan),
     nutritionGoals: new Collection(store, 'nutritionGoals', factories.createNutritionGoal),
     waterEntries: new Collection(store, 'waterEntries', factories.createWaterEntry),
+    sleepEntries: new Collection(store, 'sleepEntries', factories.createSleepEntry),
     runPlans: new Collection(store, 'runPlans', factories.createRunPlan),
     coachMessages: new Collection(store, 'coachMessages', factories.createCoachMessage),
     streaks: new Collection(store, 'streaks', factories.createStreak),

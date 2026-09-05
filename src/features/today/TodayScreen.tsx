@@ -25,6 +25,7 @@ import { PerfectDayCard } from './PerfectDayCard';
 import { useCelebrations } from './useCelebrations';
 import { StreakCard } from './StreakCard';
 import { AskPace } from '../assistant/AskPace';
+import { SleepCard } from '../sleep/SleepCard';
 
 export function TodayScreen(): ReactElement {
   const { repos } = useApp();
@@ -87,6 +88,7 @@ export function TodayScreen(): ReactElement {
       <WorkoutSection model={model} />
       <MovementSection model={model} />
       <NutritionSection model={model} />
+      <SleepCard />
       <UpcomingSection model={model} />
       <RecapSection model={model} />
       <AskPace questions={[

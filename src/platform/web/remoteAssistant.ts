@@ -79,7 +79,7 @@ const ACTION_KINDS = [
  */
 const OPEN_PATHS = new Set([
   '/hoje', '/agenda', '/treino', '/atividade', '/atividade/historico',
-  '/alimentacao', '/ia', '/ia/corrida', '/ia/dados', '/perfil',
+  '/alimentacao', '/sono', '/ia', '/ia/corrida', '/ia/dados', '/perfil',
 ]);
 
 const MAX_ACTIONS = 3;

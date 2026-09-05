@@ -437,6 +437,43 @@ export interface Meal extends Entity {
   planEntryId: string | null;
 }
 
+/* --- Sono -------------------------------------------------------------------- */
+
+/**
+ * Uma noite.
+ *
+ * A data é a da **manhã em que se acordou**, e não a da noite em que se deitou.
+ * É a convenção que faz "como dormi esta noite" cair no dia certo, e a que
+ * permite comparar o sono com o que aconteceu no dia a seguir — que é a
+ * comparação que interessa.
+ *
+ * Tudo é opcional menos a data. Quem só quer dizer que dormiu mal escreve a
+ * qualidade e mais nada; quem quer contas escreve as horas. Um campo vazio
+ * continua a ser um campo vazio, e nenhuma conta o preenche por dedução.
+ */
+export interface SleepEntry extends Entity {
+  date: DayKey;
+  /** A que horas se deitou, na noite anterior. */
+  bedtime: ClockTime | null;
+  /** A que horas acordou, nesta manhã. */
+  wakeTime: ClockTime | null;
+  /**
+   * Minutos dormidos.
+   *
+   * Sai das horas quando elas existem, mas pode ser escrito sozinho: nem toda
+   * a gente sabe a que horas adormeceu, e quase toda a gente sabe se dormiu
+   * seis ou oito horas.
+   */
+  durationMin: number | null;
+  /** De 1 a 5, como a noite foi sentida. Não é uma medição, é uma opinião. */
+  quality: number | null;
+  /** Quantas vezes acordou durante a noite. */
+  awakenings: number | null;
+  notes: string | null;
+  /** Manual por agora. Fica preparado para o dia em que o Health entrar. */
+  source: DataSource;
+}
+
 /* --- Meal plans ------------------------------------------------------------- */
 
 /** One meal of one weekday inside a plan. */

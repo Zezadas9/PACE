@@ -41,10 +41,27 @@ function normalize(message: string): string {
   return message.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Um termo encontrado como palavra, e nao como pedaco de outra.
+ *
+ * A procura era por pedaco, e "dor" esta dentro de "dormido". Quem
+ * perguntasse "como tenho dormido?" recebia o encaminhamento clinico — a
+ * resposta certa para uma dor, e absurda para uma pergunta sobre sono. O
+ * mesmo valia para "dorso" e para "adormecer".
+ *
+ * As letras acentuadas contam como letras: sem isso, "doi" partia-se em duas
+ * palavras e voltava a ser encontrada dentro de qualquer coisa.
+ */
+function mentions(text: string, term: string): boolean {
+  const split = (value: string): string =>
+    ` ${value.replace(/[^0-9a-zà-ÿ]+/g, ' ').trim()} `;
+  return split(text).includes(split(term));
+}
+
 export function screen(message: string): SafetyVerdict {
   const text = normalize(message);
 
-  const urgent = EMERGENCY.find((term) => text.includes(term));
+  const urgent = EMERGENCY.find((term) => mentions(text, term));
   if (urgent) {
     return {
       level: 'emergency',
@@ -56,7 +73,7 @@ export function screen(message: string): SafetyVerdict {
     };
   }
 
-  const clinical = CLINICAL.find((term) => text.includes(term));
+  const clinical = CLINICAL.find((term) => mentions(text, term));
   if (clinical) {
     return {
       level: 'clinical',

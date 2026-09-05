@@ -23,6 +23,7 @@ import { addDaysToKey } from '../../core/utils/date';
 import { buildWorkout, setsByGroup } from './build-workout';
 import { evaluateWeek, findingsFor as workoutFindings, type Finding } from './evaluate-workout';
 import { MUSCLE_LABELS } from './exercises';
+import { stats as sleepStats } from '../sleep';
 import { suggestHabits } from './habits';
 import { ballPreference, buildSportSession } from './sports';
 import { parseIntent, refine, type CoachIntent } from './intent';
@@ -766,7 +767,10 @@ function route(context: CoachContext, intent: CoachIntent): CoachTurn {
 
     case 'sleep':
       return fromTopic(
-        sleepAnswer(context.sleep != null, bedtimeFrom(intent.raw)),
+        sleepAnswer(
+          context.settings.categories.sleep ? sleepStats(context.sleep) : null,
+          bedtimeFrom(intent.raw),
+        ),
         'Adicionar a rotina à agenda',
       );
 

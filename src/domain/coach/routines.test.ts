@@ -18,7 +18,7 @@ function context(): CoachContext {
     profile: null,
     goals: [], workouts: [], exercises: [], sessions: [], activities: [],
     habits: [], habitEntries: [], meals: [], foods: [], water: [],
-    runPlan: null, sleep: null,
+    runPlan: null, sleep: [],
   };
 }
 
@@ -130,5 +130,83 @@ describe('a IA monta o desporto pedido', () => {
   it('uma modalidade sem biblioteca própria continua a ter sessão', () => {
     const turn = respond(context(), 'Cria-me um treino de andebol de 60 minutos');
     expect(turn.actions.some((action) => action.kind === 'create_workout')).toBe(true);
+  });
+});
+
+describe('a IA lê o sono registado', () => {
+  const noites = (n: number, minutos = 450) => Array.from({ length: n }, (_, i) => ({
+    id: `s${i}`,
+    createdAt: '2026-09-01T00:00:00.000Z',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+    date: `2026-09-0${i + 1}`,
+    bedtime: '23:00',
+    wakeTime: null,
+    durationMin: minutos,
+    quality: 4,
+    awakenings: null,
+    notes: null,
+    source: 'manual' as const,
+  }));
+
+  it('diz que não está a ler quando a categoria está desligada', () => {
+    const turn = respond(context(), 'Como tenho dormido?');
+    const aviso = turn.blocks.find(
+      (block) => block.kind === 'notice' && block.text.includes('categoria está desligada'),
+    );
+    expect(aviso).toBeDefined();
+  });
+
+  it('diz que ainda não há noites, quando não há', () => {
+    const ctx = context();
+    ctx.settings.categories.sleep = true;
+    const turn = respond(ctx, 'Como tenho dormido?');
+    const aviso = turn.blocks.find(
+      (block) => block.kind === 'notice' && block.text.includes('Ainda não registaste'),
+    );
+    expect(aviso).toBeDefined();
+  });
+
+  it('não faz médias com duas noites', () => {
+    const ctx = context();
+    ctx.settings.categories.sleep = true;
+    ctx.sleep = noites(2);
+    const turn = respond(ctx, 'Como tenho dormido?');
+    expect(turn.blocks.some((block) => block.kind === 'metrics')).toBe(false);
+  });
+
+  it('dá os números quando há noites que cheguem', () => {
+    const ctx = context();
+    ctx.settings.categories.sleep = true;
+    ctx.sleep = noites(5);
+    const turn = respond(ctx, 'Como tenho dormido?');
+
+    const metrics = turn.blocks.find((block) => block.kind === 'metrics');
+    expect(metrics).toBeDefined();
+    const items = metrics && 'items' in metrics ? metrics.items : [];
+    expect(items.some((item) => item.value.includes('7h 30m'))).toBe(true);
+  });
+});
+
+describe('a guarda clínica encontra palavras, não pedaços', () => {
+  /**
+   * "dor" está dentro de "dormido". Quem perguntasse "como tenho dormido?"
+   * recebia o encaminhamento clínico — a resposta certa para uma dor e absurda
+   * para uma pergunta sobre sono.
+   */
+  it('não confunde dormir com dor', () => {
+    for (const pergunta of ['Como tenho dormido?', 'Durmo mal', 'Custa-me adormecer']) {
+      const turn = respond(context(), pergunta);
+      expect(JSON.stringify(turn.blocks)).not.toContain('terreno clínico');
+    }
+  });
+
+  it('continua a apanhar uma dor a sério', () => {
+    const turn = respond(context(), 'Tenho dor no joelho quando corro');
+    expect(JSON.stringify(turn.blocks)).toContain('terreno clínico');
+  });
+
+  it('continua a apanhar uma emergência', () => {
+    const turn = respond(context(), 'Tenho dor no peito');
+    expect(JSON.stringify(turn.blocks)).toContain('112');
   });
 });

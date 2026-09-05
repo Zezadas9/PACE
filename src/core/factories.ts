@@ -10,6 +10,7 @@ import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, CoachMessage, Entity,
   Exercise, Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, RunPlan,
   Streak, Task, User, WaterEntry, Workout, WorkoutSession,
+  SleepEntry,
 } from './types';
 import { noRecurrence } from './scheduling';
 import { createId } from './utils/id';
@@ -278,6 +279,21 @@ export function createNutritionGoal(partial: Partial<NutritionGoal> = {}): Nutri
     unit: null,
     period: 'day',
     active: true,
+    ...partial,
+  };
+}
+
+export function createSleepEntry(partial: Partial<SleepEntry> = {}): SleepEntry {
+  return {
+    ...base(),
+    date: todayKey(),
+    bedtime: null,
+    wakeTime: null,
+    durationMin: null,
+    quality: null,
+    awakenings: null,
+    notes: null,
+    source: 'manual',
     ...partial,
   };
 }

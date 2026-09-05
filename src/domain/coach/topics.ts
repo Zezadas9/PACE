@@ -12,6 +12,7 @@
 
 import type { DayKey, Habit, Task, Workout } from '../../core/types';
 import { addDaysToKey } from '../../core/utils/date';
+import type { SleepStats } from '../sleep';
 import type { CoachBlock, HabitDraft } from './types';
 import { caveat, notice, sources, text } from './types';
 
@@ -57,7 +58,10 @@ function before(clock: string, hours: number): string {
  * sono costuma recomendar, e isso vai dito como o que é: prática comum, com
  * efeito que varia de pessoa para pessoa.
  */
-export function sleepAnswer(hasSleepData: boolean, bedtime = '23:00'): TopicAnswer {
+export function sleepAnswer(
+  nights: SleepStats | null,
+  bedtime = '23:00',
+): TopicAnswer {
   const wake = before(bedtime, -8);
 
   const passos: Array<{ title: string; time: string; essential: boolean; why: string }> = [
@@ -112,11 +116,46 @@ export function sleepAnswer(hasSleepData: boolean, bedtime = '23:00'): TopicAnsw
     sources('watson-2015'),
   ];
 
-  if (!hasSleepData) {
+  /*
+   * O que eu sei sobre o sono desta pessoa, quando ela o registou.
+   *
+   * A conta só aparece com noites que cheguem: duas noites não são um padrão,
+   * e uma média de duas é um número com ar de conclusão.
+   */
+  if (nights == null) {
     blocks.push(notice('info',
-      'A PACE ainda não regista sono, por isso não sei quanto dormes — estes passos são '
-      + 'para cumprir, não para medir. Quando houver ligação ao Health ou ao Health '
-      + 'Connect, passo a ler.'));
+      'Não estou a ler o teu sono — a categoria está desligada nas autorizações. '
+      + 'Estes passos são para cumprir, não para medir.'));
+  } else if (nights.nights === 0) {
+    blocks.push(notice('info',
+      'Ainda não registaste nenhuma noite, por isso não sei quanto dormes. Podes '
+      + 'começar hoje, no cartão do sono em Hoje.'));
+  } else if (nights.measured >= 3 && nights.averageMin != null) {
+    blocks.push({
+      kind: 'metrics',
+      items: [
+        {
+          label: 'Média por noite',
+          value: `${Math.floor(nights.averageMin / 60)}h ${nights.averageMin % 60}m`,
+          note: `${nights.measured} noites`,
+        },
+        {
+          label: 'Noites de 7h ou mais',
+          value: `${nights.goodNights} de ${nights.measured}`,
+        },
+        ...(nights.bedtimeSpreadMin != null
+          ? [{
+            label: 'Variação da hora de deitar',
+            value: `${Math.round(nights.bedtimeSpreadMin / 60 * 10) / 10} h`,
+            note: nights.bedtimeSpreadMin <= 60 ? 'regular' : 'irregular',
+          }]
+          : []),
+      ],
+    });
+  } else {
+    blocks.push(notice('info',
+      `Tenho ${nights.nights} ${nights.nights === 1 ? 'noite registada' : 'noites registadas'}, `
+      + 'o que ainda não chega para falar de médias. Ao fim de uma semana já dá.'));
   }
   blocks.push(caveat(
     'A higiene do sono — luz, ecrãs, cafeína à tarde — ajuda muita gente, mas o tamanho '

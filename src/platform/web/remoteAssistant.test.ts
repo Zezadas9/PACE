@@ -20,7 +20,7 @@ function context(): CoachContext {
     profile: null,
     goals: [], workouts: [], exercises: [], sessions: [], activities: [],
     habits: [], habitEntries: [], meals: [], foods: [], water: [],
-    runPlan: null, sleep: null,
+    runPlan: null, sleep: [],
   };
 }
 

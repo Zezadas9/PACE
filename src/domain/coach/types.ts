@@ -13,7 +13,8 @@
 
 import type {
   ActivitySession, AiSettings, DayKey, Exercise, Food, Goal, Habit, HabitEntry, Meal,
-  MealItem, RunPlan, SessionDifficulty, UserPreferences, WaterEntry, Workout, WorkoutSession,
+  MealItem, RunPlan, SessionDifficulty, SleepEntry, UserPreferences, WaterEntry, Workout,
+  WorkoutSession,
 } from '../../core/types';
 import type { Reference } from './references';
 
@@ -42,8 +43,8 @@ export interface CoachContext {
   foods: Food[];
   water: WaterEntry[];
   runPlan: RunPlan | null;
-  /** Reservado: ainda não há dados de sono na aplicação. */
-  sleep: null;
+  /** As noites registadas, quando a categoria estiver autorizada. */
+  sleep: SleepEntry[];
 }
 
 /* --- O que uma resposta contém ------------------------------------------------- */
