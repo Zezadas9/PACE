@@ -26,8 +26,10 @@
 
   --c-ink:         #0A0A0B;
   --c-ink-2:       #46464A;
-  --c-ink-3:       #78787E;
-  --c-ink-4:       #AEAEB4;
+  /* Medido: #78787E dava 3,92:1 sobre o cartao, abaixo do minimo de 4,5. */
+  --c-ink-3:       #67676F;
+  /* Nao e uma tinta de texto: e para tracos, pontos e limites. Ver tokens.css. */
+  --c-ink-4:       #9A9AA2;
 
   /* The accent is the ink. */
   --c-accent:      #0A0A0B;
@@ -55,8 +57,9 @@
 
     --c-ink:         #FFFFFF;
     --c-ink-2:       #A8A8AE;
-    --c-ink-3:       #78787E;
-    --c-ink-4:       #525258;
+    /* Medido: #78787E dava 3,96:1 sobre o cartao, abaixo do minimo de 4,5. */
+    --c-ink-3:       #8A8A92;
+    --c-ink-4:       #5F5F67;
 
     --c-accent:      #FFFFFF;
     --c-accent-ink:  #FFFFFF;
@@ -81,8 +84,8 @@
   --c-line-strong: #3A3A3F;
   --c-ink:         #FFFFFF;
   --c-ink-2:       #A8A8AE;
-  --c-ink-3:       #78787E;
-  --c-ink-4:       #525258;
+  --c-ink-3:       #8A8A92;
+  --c-ink-4:       #5F5F67;
   --c-accent:      #FFFFFF;
   --c-accent-ink:  #FFFFFF;
   --c-accent-soft: #1F1F23;
@@ -325,7 +328,7 @@
 .week .day[data-state='future'] .pip {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--c-line-strong);
-  color: var(--c-ink-4);
+  color: var(--c-ink-3);
 }
 
 /* --- Row text ---------------------------------------------------------------------

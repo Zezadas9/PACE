@@ -174,7 +174,7 @@
   background: var(--c-surface-2);
   display: grid;
   place-items: center;
-  color: var(--c-ink-4);
+  color: var(--c-ink-3);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
   letter-spacing: 0;
@@ -182,7 +182,7 @@
 }
 .week .day[data-state="done"]   .pip { background: var(--c-accent); color: var(--c-on-accent); }
 .week .day[data-state="today"]  .pip { box-shadow: inset 0 0 0 1.5px var(--c-ink); color: var(--c-ink); }
-.week .day[data-state="missed"] .pip { background: var(--c-surface-2); color: var(--c-ink-4); }
+.week .day[data-state="missed"] .pip { background: var(--c-surface-2); color: var(--c-ink-3); }
 
 /* --- Profile ------------------------------------------------------------------ */
 

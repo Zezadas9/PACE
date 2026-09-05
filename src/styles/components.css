@@ -78,8 +78,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--r-full);
   color: var(--c-ink-2);
   background: var(--c-surface-2);
@@ -146,7 +146,8 @@
 }
 
 .segmented button {
-  min-height: 2.5rem;
+  /* 44 px: o minimo com que um polegar acerta a primeira. */
+  min-height: 2.75rem;
   border-radius: var(--r-full);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);

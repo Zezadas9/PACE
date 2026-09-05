@@ -19,6 +19,9 @@
   --c-ink:         #131418;
   --c-ink-2:       #4C4F57;
   --c-ink-3:       #8A8D95;
+  /* O ultimo degrau nao e para texto: nao chega aos 4,5:1 sobre um cartao em
+     nenhum dos temas, e por isso serve tracos, pontos e limites. Texto que
+     precise de ser discreto usa --c-ink-3. */
   --c-ink-4:       #B2B5BB;
 
   /* --- Accents ------------------------------------------------------------

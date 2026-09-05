@@ -116,10 +116,18 @@
   margin-bottom: var(--s-3);
 }
 
+/* O texto e pequeno, mas o alvo nao pode ser: 44 px e o minimo com que um
+   polegar acerta a primeira. A area cresce por dentro, com um recuo negativo a
+   compensar, para o cabecalho nao se afastar do que vem a seguir. */
 .section-head .action {
   font-size: var(--fs-sm);
   color: var(--c-ink-3);
   font-weight: var(--fw-medium);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--s-2);
+  margin-inline-end: calc(var(--s-2) * -1);
 }
 
 /* --- Page header ----------------------------------------------------------- */

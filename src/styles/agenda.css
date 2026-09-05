@@ -115,7 +115,8 @@
 }
 .date-nav-today {
   flex: none;
-  padding: 0.35rem var(--s-3);
+  min-height: 2.75rem;
+  padding: 0.35rem var(--s-4);
   border-radius: var(--r-full);
   background: var(--c-surface-2);
   color: var(--c-ink-2);
@@ -140,12 +141,12 @@
 .week .day[data-state='missed'] .pip,
 .week .day[data-state='empty'] .pip {
   background: var(--c-surface-2);
-  color: var(--c-ink-4);
+  color: var(--c-ink-3);
 }
 .week .day[data-state='future'] .pip {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--c-line);
-  color: var(--c-ink-4);
+  color: var(--c-ink-3);
 }
 .week .day[data-selected='true'] .pip {
   outline: 2px solid var(--c-ink);
@@ -606,7 +607,7 @@
   right: 0.35rem;
   bottom: 0.3rem;
   font-size: 0.625rem;
-  color: var(--c-ink-4);
+  color: var(--c-ink-3);
   pointer-events: none;
 }
 /* The spinner arrows steal room a phone does not have. */

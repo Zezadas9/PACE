@@ -62,7 +62,7 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-weight: var(--fw-semi);
-  color: var(--c-ink-4);
+  color: var(--c-ink-3);
 }
 .chart-labels span { flex: 1; text-align: center; }
 
