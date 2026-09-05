@@ -21,6 +21,8 @@ import { BrandIcon } from '../../ui/BrandIcon';
 import { SchedulePlanSheet } from './SchedulePlanSheet';
 import { Button, Card } from '../../ui/primitives';
 import { Icon } from '../../ui/Icon';
+import type { AssistantAttachment } from '../../platform/types';
+import { ACCEPTED_TYPES, AttachmentError, prepare } from './attachment';
 import { Blocks } from './blocks';
 import { ActionCard } from './ActionCard';
 
@@ -59,6 +61,15 @@ export function AssistantScreen(): ReactElement {
   const [notice, setNotice] = useState<{ text: string; retry: string | null } | null>(null);
   /** A proposta de semana aberta para rever — aceitar, editar ou rejeitar. */
   const [schedule, setSchedule] = useState<ScheduleDraft | null>(null);
+  /**
+   * A fotografia ou o ficheiro que segue com a próxima mensagem.
+   *
+   * Um de cada vez: duas imagens numa pergunta são quase sempre duas perguntas.
+   * Fica visível antes de ser enviado, e sai com um toque — ninguém deve
+   * descobrir depois que enviou uma fotografia sem querer.
+   */
+  const [attachment, setAttachment] = useState<AssistantAttachment | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   const settings = useMemo(() => aiSettings(repos), [repos, version]);
@@ -86,12 +97,14 @@ export function AssistantScreen(): ReactElement {
 
   const send = useCallback(async (text: string) => {
     const message = text.trim();
-    if (!message || busy) return;
+    if ((!message && !attachment) || busy) return;
+    const sending = attachment;
     setDraft('');
+    setAttachment(null);
     setBusy(true);
     setNotice(null);
     try {
-      const result = await ask(repos, platform, preferences, message);
+      const result = await ask(repos, platform, preferences, message, sending);
       feedback.touch();
       // Quando o backend falha, a resposta local sai à mesma — mas convém
       // dizê-lo, sem alarme e sem esconder.
@@ -110,7 +123,7 @@ export function AssistantScreen(): ReactElement {
     } finally {
       setBusy(false);
     }
-  }, [repos, platform, preferences, feedback, busy]);
+  }, [repos, platform, preferences, feedback, busy, attachment]);
 
   const run = useCallback((action: CoachAction) => {
     void (async () => {
@@ -245,14 +258,61 @@ export function AssistantScreen(): ReactElement {
         ))}
       </div>
 
+      {attachment ? (
+        <div className="coach-attachment">
+          {attachment.kind === 'image' ? (
+            <img
+              src={`data:${attachment.mediaType};base64,${attachment.data}`}
+              alt=""
+              aria-hidden="true"
+            />
+          ) : (
+            <span className="coach-attachment-doc" aria-hidden="true">PDF</span>
+          )}
+          <span className="grow t-sm">{attachment.name ?? 'Anexo'}</span>
+          <button
+            type="button"
+            className="btn-icon"
+            aria-label="Tirar o anexo"
+            onClick={() => setAttachment(null)}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+      ) : null}
+
       <form
         className="coach-composer"
         onSubmit={(event) => { event.preventDefault(); void send(draft); }}
       >
         <input
+          ref={fileRef}
+          type="file"
+          accept={ACCEPTED_TYPES.join(',')}
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (!file) return;
+            void prepare(file)
+              .then(setAttachment)
+              .catch((error: unknown) => {
+                toast(error instanceof AttachmentError ? error.message : 'Não consegui ler isso.');
+              });
+          }}
+        />
+        <button
+          type="button"
+          className="btn-icon"
+          aria-label="Juntar foto ou ficheiro"
+          onClick={() => fileRef.current?.click()}
+        >
+          <Icon name="camera" />
+        </button>
+        <input
           className="input"
           value={draft}
-          placeholder="Escreve aqui…"
+          placeholder={attachment ? 'O que queres saber sobre isto?' : 'Escreve aqui…'}
           onChange={(event) => setDraft(event.target.value)}
           aria-label="Mensagem"
         />

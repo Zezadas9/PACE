@@ -254,3 +254,44 @@
   gap: var(--s-3);
 }
 .plan-time .input { max-width: 7rem; }
+
+/* --- O anexo que segue com a proxima mensagem ------------------------------------ */
+
+/* Fica a vista antes de ser enviado, e sai com um toque. Ninguem deve descobrir
+   depois que enviou uma fotografia sem querer. */
+.coach-attachment {
+  position: sticky;
+  bottom: 3.25rem;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-2);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.coach-attachment img {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  flex: none;
+}
+.coach-attachment-doc {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-3);
+  color: var(--c-ink-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semi);
+  flex: none;
+}
+.coach-attachment .t-sm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

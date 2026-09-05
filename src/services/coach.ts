@@ -23,7 +23,7 @@ import type {
 import type { CoachIntent } from '../domain/coach/intent';
 import type { CoachAction } from '../domain/coach/types';
 import { adapt, applyAdaptation } from '../domain/coach/running';
-import type { Platform } from '../platform/types';
+import type { AssistantAttachment, Platform } from '../platform/types';
 import type { Repositories } from '../data/repositories';
 
 const EMPTY_CONTEXT_SLICES = {
@@ -237,6 +237,7 @@ export async function ask(
   platform: Platform,
   preferences: UserPreferences,
   message: string,
+  attachment: AssistantAttachment | null = null,
 ): Promise<AskResult> {
   const previousMessages = history(repos);
 
@@ -248,7 +249,15 @@ export async function ask(
     .filter((intent): intent is CoachIntent => intent != null)
     .pop() ?? null;
 
-  repos.coachMessages.create({ role: 'user', text: message.trim(), turn: null });
+  // A mensagem guardada diz que houve um anexo, mas nao guarda o anexo: uma
+  // fotografia por mensagem encheria o armazenamento local em dias.
+  repos.coachMessages.create({
+    role: 'user',
+    text: attachment && message.trim() === ''
+      ? '(imagem enviada)'
+      : attachment ? `${message.trim()} (com imagem)` : message.trim(),
+    turn: null,
+  });
 
   const context = buildContext(repos, preferences);
   const reply = await platform.assistant.respond({
@@ -256,6 +265,7 @@ export async function ask(
     context,
     previousIntent: previous,
     history: compactHistory(previousMessages),
+    attachment,
   });
 
   repos.coachMessages.create({ role: 'coach', text: '', turn: reply.turn });
