@@ -575,10 +575,10 @@ describe('um pedido novo não é uma correção', () => {
 });
 
 describe('desporto com bola', () => {
-  it('avisa que não sabe montar uma sessão técnica', () => {
+  it('diz que entrega a parte física, e não o trabalho com bola', () => {
     const turn = respond(context(), 'Podes criar-me um treino de futebol de duas horas?');
     const aviso = turn.blocks.find(
-      (block) => block.kind === 'notice' && block.text.includes('não uma sessão com bola'),
+      (block) => block.kind === 'notice' && block.text.includes('O trabalho com bola não entra aqui'),
     );
     expect(aviso).toBeDefined();
   });
@@ -586,8 +586,38 @@ describe('desporto com bola', () => {
   it('num treino de força não aparece esse aviso', () => {
     const turn = respond(context(), 'Cria-me um treino de pernas de 45 minutos');
     const aviso = turn.blocks.find(
-      (block) => block.kind === 'notice' && block.text.includes('sessão com bola'),
+      (block) => block.kind === 'notice' && block.text.includes('trabalho com bola'),
     );
     expect(aviso).toBeUndefined();
+  });
+});
+
+describe('a duração pedida é a duração entregue', () => {
+  it('lê "duas horas" escrito por extenso', () => {
+    expect(parseIntent('Cria-me um treino de duas horas').minutes).toBe(120);
+  });
+
+  it('lê "hora e meia"', () => {
+    expect(parseIntent('Cria-me um treino de uma hora e meia').minutes).toBe(90);
+  });
+
+  it('continua a ler os algarismos', () => {
+    expect(parseIntent('Cria-me um treino de 2 horas').minutes).toBe(120);
+    expect(parseIntent('Cria-me um treino de 45 minutos').minutes).toBe(45);
+  });
+
+  it('entrega perto do tempo pedido quando há exercícios que cheguem', () => {
+    const turn = respond(context(), 'Cria-me um treino de duas horas');
+    const first = turn.blocks[0];
+    expect(first?.kind).toBe('text');
+    expect('text' in first! ? first.text : '').toContain('119 minutos');
+  });
+
+  it('avisa quando não consegue encher o tempo pedido', () => {
+    const turn = respond(context(), 'Cria-me um treino de pernas de 75 minutos');
+    const aviso = turn.blocks.find(
+      (block) => block.kind === 'notice' && block.text.includes('Pediste 75 minutos'),
+    );
+    expect(aviso).toBeDefined();
   });
 });

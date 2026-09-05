@@ -120,6 +120,18 @@ function createWorkoutTurn(context: CoachContext, intent: CoachIntent): CoachTur
     text(`${intent.isRefinement ? 'Ajustei. ' : ''}**${draft.title}** — cerca de `
       + `${draft.estimatedMin} minutos, ${main.length} exercícios na parte principal.`),
   ];
+
+  // Nem sempre da para encher o tempo pedido: com um grupo muscular so, os
+  // exercicios acabam antes do relogio. Entregar menos sem dizer nada e que
+  // nao da — quem pediu duas horas conta com duas horas.
+  if (intent.minutes != null && draft.estimatedMin < intent.minutes - 8) {
+    blocks.push(notice(
+      'info',
+      `Pediste ${intent.minutes} minutos e isto dá para ${draft.estimatedMin}. Com os `
+      + 'grupos que escolheste, mais tempo obrigava a repetir exercícios. Alarga os '
+      + 'grupos ou diz-me para acrescentar séries.',
+    ));
+  }
   if (perGroup.length > 0) blocks.push({ kind: 'list', items: perGroup });
   if (intent.equipment === 'home' || intent.equipment === 'bodyweight') {
     blocks.push(text('Só com o peso do corpo, sem material.'));
@@ -128,15 +140,14 @@ function createWorkoutTurn(context: CoachContext, intent: CoachIntent): CoachTur
     blocks.push(text(`Deixei de fora: ${intent.excluded.map((group) => MUSCLE_LABELS[group]).join(', ')}.`));
   }
 
-  // O motor local monta trabalho de forca. Nao sabe montar uma sessao com bola,
-  // nem com raquete: dizer que sabe seria entregar um treino de ginasio com o
-  // nome de um treino de futebol.
+  // O motor local monta trabalho de forca. Nao sabe montar exercicios com bola
+  // nem com raquete, e por isso diz o que esta a entregar — chamar "treino de
+  // futebol" a uma sessao de ginasio era o mesmo que entregar outra coisa.
   if (draft.type === 'sport') {
     blocks.push(notice(
       'info',
-      'Isto é trabalho físico de apoio ao teu desporto, não uma sessão com bola. '
-      + 'Para exercícios técnicos e táticos, o assistente online consegue ajudar-te '
-      + 'melhor do que eu — ou fala com quem te treina.',
+      'Esta é a parte física da sessão: força, potência e resistência para o teu '
+      + 'desporto. O trabalho com bola não entra aqui.',
     ));
   }
 

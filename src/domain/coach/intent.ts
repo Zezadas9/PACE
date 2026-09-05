@@ -115,8 +115,34 @@ function has(text: string, ...terms: string[]): boolean {
 }
 
 /** "45 minutos", "45min", "1 hora", "1h30", "meia hora". */
+/**
+ * Números escritos por extenso.
+ *
+ * "duas horas" é como as pessoas escrevem, e sem isto a duração pedida
+ * desaparecia: o pedido caía no valor por omissão e a resposta trazia um treino
+ * de 45 minutos a quem tinha pedido duas horas.
+ */
+const NUMBER_WORDS: Record<string, number> = {
+  meia: 0.5, meio: 0.5, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, 'três': 3,
+  quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9, dez: 10,
+  quinze: 15, vinte: 20, trinta: 30, quarenta: 40, cinquenta: 50, sessenta: 60,
+  noventa: 90,
+};
+
+const WORD_PATTERN = Object.keys(NUMBER_WORDS).join('|');
+
 function readMinutes(text: string): number | null {
   if (has(text, 'meia hora')) return 30;
+
+  // Por extenso, antes dos algarismos: "duas horas e meia" tem de dar 150.
+  const wordHours = new RegExp(`(${WORD_PATTERN})\\s+horas?(\\s+e\\s+meia)?`).exec(text);
+  if (wordHours?.[1]) {
+    const base = (NUMBER_WORDS[wordHours[1]] ?? 0) * 60;
+    return Math.round(base + (wordHours[2] ? 30 : 0));
+  }
+  const wordMinutes = new RegExp(`(${WORD_PATTERN})\\s+minutos?`).exec(text);
+  if (wordMinutes?.[1]) return Math.round(NUMBER_WORDS[wordMinutes[1]] ?? 0);
+
   const hoursAndMinutes = text.match(/(\d+)\s*h\s*(\d{1,2})/);
   if (hoursAndMinutes) {
     return Number(hoursAndMinutes[1]) * 60 + Number(hoursAndMinutes[2]);
