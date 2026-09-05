@@ -352,6 +352,83 @@ function extract(sheet) {
       }
     }
 
+    /* --- Cobertura verdadeira da orla ------------------------------------
+     *
+     * Ate aqui a opacidade de um pixel de orla vinha da distancia a cor do
+     * fundo, a dividir por T_EDGE. Isso nao e cobertura: e contraste. Um pixel
+     * meio tapado por arte escura sobre a folha branca fica com contraste que
+     * chegue para passar dos 255 — sai opaco, mas com a cor cinzenta da
+     * mistura. E esse cinzento que se ve como halo claro sobre o tema escuro,
+     * e o preto correspondente que se ve nos icones da folha preta sobre o
+     * tema claro.
+     *
+     * A conta certa precisa de saber a cor da arte. Cada pixel de orla vai
+     * busca-la ao pixel opaco mais proximo e resolve a composicao ao contrario:
+     *
+     *   observado = a * arte + (1 - a) * fundo   =>   a = (observado - fundo)
+     *                                                     / (arte - fundo)
+     *
+     * Usa-se o canal onde a arte mais se afasta do fundo, que e onde a divisao
+     * e mais estavel. Onde a arte e quase da cor do fundo, nao ha nada a
+     * inferir e fica o que estava.
+     */
+    const refined = new Uint8Array(alpha);
+    const CORE = 250;
+    const MIN_CONTRAST = 45;
+
+    for (let y = 1; y < H - 1; y += 1) {
+      for (let x = 1; x < W - 1; x += 1) {
+        const k = y * W + x;
+        if (bg[k] || alpha[k] === 0) continue;
+
+        // So a orla: um pixel com fundo perto. O JPEG espalha a aresta por
+        // mais do que dois pixeis, por isso a banda tem de a acompanhar.
+        let naBorda = false;
+        for (let dy = -3; dy <= 3 && !naBorda; dy += 1) {
+          for (let dx = -3; dx <= 3; dx += 1) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+            if (bg[ny * W + nx]) { naBorda = true; break; }
+          }
+        }
+        if (!naBorda) continue;
+
+        // A cor da arte: o pixel opaco mais proximo, em aneis crescentes.
+        let arte = -1;
+        for (let r = 1; r <= 5 && arte < 0; r += 1) {
+          for (let dy = -r; dy <= r && arte < 0; dy += 1) {
+            for (let dx = -r; dx <= r; dx += 1) {
+              if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+              const nk = ny * W + nx;
+              if (bg[nk] || alpha[nk] < CORE) continue;
+              arte = nk * 4;
+              break;
+            }
+          }
+        }
+        if (arte < 0) continue;
+
+        const fundo = dark ? 0 : 255;
+        let canal = 0;
+        let contraste = 0;
+        for (let c = 0; c < 3; c += 1) {
+          const d = Math.abs(data[arte + c] - fundo);
+          if (d > contraste) { contraste = d; canal = c; }
+        }
+        if (contraste < MIN_CONTRAST) continue;
+
+        const observado = data[k * 4 + canal];
+        const cobertura = (observado - fundo) / (data[arte + canal] - fundo);
+        refined[k] = Math.max(0, Math.min(255, Math.round(cobertura * 255)));
+      }
+    }
+    alpha.set(refined);
+
+
     // Pixeis fracos e sozinhos: pontos soltos, nao arte.
     for (let y = 1; y < H - 1; y += 1) {
       for (let x = 1; x < W - 1; x += 1) {
