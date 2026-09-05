@@ -1,9 +1,13 @@
 /**
- * A food's nutrition, per 100 g.
+ * Os valores de um alimento, por 100 g.
  *
- * Every field is optional and empty means unknown. The app would rather show a
- * dash than a number nobody entered, so nothing here is defaulted to zero and
- * nothing is estimated from the name.
+ * Todos os campos sao opcionais e vazio quer dizer desconhecido: a aplicacao
+ * prefere um traco a um numero que ninguem escreveu, e nada aqui e posto a zero
+ * por omissao.
+ *
+ * A PACE pode preenche-los, e quando o faz eles ficam marcados como estimativa.
+ * Editar um valor estimado torna-o teu: a partir do momento em que alguem o
+ * escreve, deixa de ser um palpite.
  */
 
 import { useState, type ReactElement } from 'react';
@@ -24,17 +28,28 @@ function text(value: number | null): string {
 }
 
 export function FoodForm({
-  food, onSave, onClose,
+  food, onSave, onClose, onAskPace,
 }: {
   food: Food;
   onSave: (food: Food) => void;
   onClose: () => void;
+  /** Pede os valores à PACE. Só aparece quando o alimento não os tem. */
+  onAskPace?: (name: string) => void;
 }): ReactElement {
   const [draft, setDraft] = useState<Food>(food);
 
   const patch = (changes: Partial<Food>): void => {
-    setDraft((current) => ({ ...current, ...changes }));
+    setDraft((current) => ({
+      ...current,
+      ...changes,
+      // Um valor escrito à mão deixa de ser estimativa de ninguém.
+      source: current.source === 'ai_estimate' && 'kcalPer100g' in changes
+        ? 'manual'
+        : current.source,
+    }));
   };
+
+  const semValores = draft.kcalPer100g == null && draft.proteinPer100g == null;
 
   return (
     <Sheet
@@ -53,6 +68,22 @@ export function FoodForm({
       }
     >
       <div className="stack stack-5">
+        {draft.source === 'ai_estimate' ? (
+          <p className="t-sm muted-2">
+            Estes valores foram estimados pela PACE a partir do nome. São típicos para
+            este alimento, não vieram de um rótulo — corrige o que souberes.
+          </p>
+        ) : null}
+
+        {semValores && onAskPace ? (
+          <Button
+            variant="outline"
+            block
+            label="Pedir os valores à PACE"
+            onClick={() => onAskPace(draft.name.trim())}
+          />
+        ) : null}
+
         <Field label="Nome">
           <Input value={draft.name} maxLength={60} onChange={(name) => patch({ name })} />
         </Field>

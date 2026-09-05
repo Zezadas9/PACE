@@ -145,3 +145,74 @@ describe('applyAction — a última barreira antes de escrever', () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe('registar uma refeição a partir de uma proposta', () => {
+  const refeicao = {
+    kind: 'log_meal' as const,
+    label: 'Registar almoço',
+    draft: {
+      date: '2026-09-05',
+      type: 'lunch' as const,
+      time: '13:00',
+      notes: null,
+      items: [{
+        foodName: 'Arroz cozido',
+        quantity: 150,
+        unit: 'g' as const,
+        food: {
+          name: 'Arroz cozido', brand: null, kcalPer100g: 130, proteinPer100g: 2.7,
+          carbsPer100g: 28, fatPer100g: 0.3, fiberPer100g: 0.4,
+          gramsPerUnit: null, gramsPerMl: null,
+        },
+      }],
+    },
+  };
+
+  it('cria a refeição e o alimento', () => {
+    const result = applyAction(repos, refeicao);
+    expect(result.ok).toBe(true);
+    expect(repos.meals.all()).toHaveLength(1);
+    expect(repos.foods.all()).toHaveLength(1);
+  });
+
+  it('marca os valores como estimativa, e não como medição', () => {
+    applyAction(repos, refeicao);
+    expect(repos.foods.all()[0]?.source).toBe('ai_estimate');
+    expect(repos.foods.all()[0]?.kcalPer100g).toBe(130);
+  });
+
+  it('reutiliza um alimento que já existe em vez de o duplicar', () => {
+    applyAction(repos, refeicao);
+    applyAction(repos, refeicao);
+    expect(repos.foods.all()).toHaveLength(1);
+    expect(repos.meals.all()).toHaveLength(2);
+  });
+
+  it('não escreve por cima dos valores que o utilizador já tinha', () => {
+    const meu = repos.foods.create({
+      name: 'Arroz cozido', brand: null, kcalPer100g: 111, proteinPer100g: null,
+      carbsPer100g: null, fatPer100g: null, fiberPer100g: null, gramsPerMl: null,
+      gramsPerUnit: null, barcode: null, source: 'manual',
+    });
+    applyAction(repos, refeicao);
+    expect(repos.foods.byId(meu.id)?.kcalPer100g).toBe(111);
+    expect(repos.foods.byId(meu.id)?.source).toBe('manual');
+  });
+
+  it('preenche um alimento que estava sem valores', () => {
+    const vazio = repos.foods.create({
+      name: 'Arroz cozido', brand: null, kcalPer100g: null, proteinPer100g: null,
+      carbsPer100g: null, fatPer100g: null, fiberPer100g: null, gramsPerMl: null,
+      gramsPerUnit: null, barcode: null, source: 'manual',
+    });
+    applyAction(repos, refeicao);
+    expect(repos.foods.byId(vazio.id)?.kcalPer100g).toBe(130);
+    expect(repos.foods.byId(vazio.id)?.source).toBe('ai_estimate');
+  });
+
+  it('recusa uma refeição sem alimentos', () => {
+    const vazia = { ...refeicao, draft: { ...refeicao.draft, items: [] } };
+    expect(applyAction(repos, vazia).ok).toBe(false);
+    expect(repos.meals.all()).toHaveLength(0);
+  });
+});

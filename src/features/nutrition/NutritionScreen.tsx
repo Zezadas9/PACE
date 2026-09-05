@@ -34,6 +34,7 @@ import {
   GoalsSection, HistorySection, MealsSection, PlanSection, TotalsCard, WaterCard,
 } from './sections';
 import { AskPace } from '../assistant/AskPace';
+import { useNavigate } from 'react-router-dom';
 
 type View = 'diary' | 'plan' | 'history';
 
@@ -61,6 +62,7 @@ export function NutritionScreen(): ReactElement {
   const { repos } = useApp();
   const feedback = useFeedback();
   const { confirm, toast } = useUi();
+  const navigate = useNavigate();
   const version = useStoreVersion();
 
   const today = todayKey();
@@ -204,11 +206,17 @@ export function NutritionScreen(): ReactElement {
           <HistorySection day={model} recent={history} onOpen={openMeal} />
         ) : null}
 
-        <AskPace questions={[
-          'Dá-me ideias para o jantar',
-          'Como está a minha alimentação esta semana?',
-          'Quanta proteína devo comer por dia?',
-        ]} />
+        <AskPace
+          photo={{
+            label: 'Fotografar refeição',
+            question: 'O que tem esta refeição, e quantas calorias?',
+          }}
+          questions={[
+            'Dá-me ideias para o jantar',
+            'Como está a minha alimentação esta semana?',
+            'Quanta proteína devo comer por dia?',
+          ]}
+        />
       </Screen>
 
       {view !== 'history' ? (
@@ -279,6 +287,12 @@ export function NutritionScreen(): ReactElement {
             saveFood(repos, food);
             setSheet(sheet.back);
             toast('Alimento guardado.');
+          }}
+          onAskPace={(name) => {
+            setSheet(null);
+            navigate(`/ia?pergunta=${encodeURIComponent(
+              `Quantas calorias e macronutrientes tem ${name || 'este alimento'}?`,
+            )}`);
           }}
         />
       ) : null}

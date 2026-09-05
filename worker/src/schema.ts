@@ -261,6 +261,47 @@ const scheduleDraft = z.object({
 });
 
 /**
+ * Um alimento com os seus valores nutricionais.
+ *
+ * Os valores podem ser estimados pelo modelo — e por isso é que o alimento
+ * criado assim fica marcado como estimativa na aplicação. A regra antiga
+ * ("não inventar valores nutricionais") não muda de sentido: o que ela proíbe
+ * é apresentar um palpite como uma medição, e não é isso que acontece quando a
+ * origem viaja com o número e o ecrã a mostra.
+ */
+const foodDraft = z.object({
+  name: z.string().min(1).max(60),
+  brand: z.string().max(60).nullable().default(null),
+  kcalPer100g: z.number().min(0).max(1000).nullable().default(null),
+  proteinPer100g: z.number().min(0).max(100).nullable().default(null),
+  carbsPer100g: z.number().min(0).max(100).nullable().default(null),
+  fatPer100g: z.number().min(0).max(100).nullable().default(null),
+  fiberPer100g: z.number().min(0).max(100).nullable().default(null),
+  gramsPerUnit: z.number().min(0).max(5000).nullable().default(null),
+  gramsPerMl: z.number().min(0).max(5).nullable().default(null),
+});
+
+const mealDraft = z.object({
+  date: dayKey,
+  type: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'supper', 'other']),
+  time: clock.nullable().default(null),
+  notes: z.string().max(200).nullable().default(null),
+  items: z
+    .array(
+      z.object({
+        /** O nome do alimento; a aplicação liga-o ao que já existe ou cria-o. */
+        foodName: z.string().min(1).max(60),
+        quantity: z.number().min(0).max(10000),
+        unit: z.enum(['g', 'ml', 'unit', 'portion']),
+        /** Os valores do alimento, quando ele ainda não existe na aplicação. */
+        food: foodDraft.nullable().default(null),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+
+/**
  * Para onde uma ação "open" pode levar.
  *
  * Uma lista fechada, e não um caminho livre: o destino vem de texto gerado, e
@@ -291,6 +332,16 @@ export const actionSchema = z.discriminatedUnion('kind', [
     kind: z.literal('apply_schedule'),
     label: z.string().min(1).max(MAX_LABEL),
     draft: scheduleDraft,
+  }),
+  z.object({
+    kind: z.literal('log_meal'),
+    label: z.string().min(1).max(MAX_LABEL),
+    draft: mealDraft,
+  }),
+  z.object({
+    kind: z.literal('create_foods'),
+    label: z.string().min(1).max(MAX_LABEL),
+    drafts: z.array(foodDraft).min(1).max(10),
   }),
   z.object({
     kind: z.literal('open'),

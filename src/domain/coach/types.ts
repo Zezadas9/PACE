@@ -13,7 +13,7 @@
 
 import type {
   ActivitySession, AiSettings, DayKey, Exercise, Food, Goal, Habit, HabitEntry, Meal,
-  RunPlan, SessionDifficulty, UserPreferences, WaterEntry, Workout, WorkoutSession,
+  MealItem, RunPlan, SessionDifficulty, UserPreferences, WaterEntry, Workout, WorkoutSession,
 } from '../../core/types';
 import type { Reference } from './references';
 
@@ -131,12 +131,42 @@ export interface ScheduleDraft {
   summary: string[];
 }
 
+/** Um alimento com os seus valores. Nulos onde nao se sabe. */
+export interface FoodDraft {
+  name: string;
+  brand: string | null;
+  kcalPer100g: number | null;
+  proteinPer100g: number | null;
+  carbsPer100g: number | null;
+  fatPer100g: number | null;
+  fiberPer100g: number | null;
+  gramsPerUnit: number | null;
+  gramsPerMl: number | null;
+}
+
+/** Uma refeicao por registar, tal como sai de uma fotografia ou de uma descricao. */
+export interface MealDraft {
+  date: DayKey;
+  type: Meal['type'];
+  time: string | null;
+  notes: string | null;
+  items: Array<{
+    foodName: string;
+    quantity: number;
+    unit: MealItem['unit'];
+    /** Os valores, quando o alimento ainda nao existe na aplicacao. */
+    food: FoodDraft | null;
+  }>;
+}
+
 export type CoachAction =
   | { kind: 'create_workout'; label: string; draft: WorkoutDraft }
   | { kind: 'create_habits'; label: string; drafts: HabitDraft[] }
   | { kind: 'create_run_plan'; label: string; draft: RunPlanDraft }
   | { kind: 'apply_schedule'; label: string; draft: ScheduleDraft }
   | { kind: 'move_workout'; label: string; workoutId: string; from: number; to: number }
+  | { kind: 'log_meal'; label: string; draft: MealDraft }
+  | { kind: 'create_foods'; label: string; drafts: FoodDraft[] }
   | { kind: 'open'; label: string; path: string };
 
 export interface CoachTurn {

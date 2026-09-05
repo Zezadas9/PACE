@@ -66,7 +66,8 @@ function fit(body: Record<string, unknown>): string {
 const BLOCK_KINDS = ['text', 'list', 'metrics', 'notice', 'references', 'caveat'];
 
 const ACTION_KINDS = [
-  'create_workout', 'create_habits', 'create_run_plan', 'apply_schedule', 'open',
+  'create_workout', 'create_habits', 'create_run_plan', 'apply_schedule',
+  'log_meal', 'create_foods', 'open',
 ];
 
 /**
@@ -97,7 +98,7 @@ function isAction(value: unknown): boolean {
   if (typeof action.label !== 'string' || action.label.trim() === '') return false;
 
   if (action.kind === 'open') return typeof action.path === 'string' && OPEN_PATHS.has(action.path);
-  if (action.kind === 'create_habits') {
+  if (action.kind === 'create_habits' || action.kind === 'create_foods') {
     return Array.isArray(action.drafts) && action.drafts.length > 0;
   }
   return !!action.draft && typeof action.draft === 'object';

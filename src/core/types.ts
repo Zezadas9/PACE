@@ -409,8 +409,15 @@ export interface Food extends Entity {
   /** Weight of one unit or portion, where the food has a natural one. */
   gramsPerUnit: number | null;
   barcode: string | null;
-  /** Where the record came from; a future food database fills this in. */
-  source: 'manual' | 'database' | 'barcode';
+  /**
+   * De onde vieram os valores nutricionais.
+   *
+   * `ai_estimate` e o unico que nao e uma medicao: sao valores tipicos para um
+   * alimento com aquele nome, e a aplicacao mostra-os sempre marcados como
+   * estimativa. Um valor estimado apresentado como medido seria pior do que
+   * valor nenhum — e por isso que a origem viaja com o alimento.
+   */
+  source: 'manual' | 'database' | 'barcode' | 'ai_estimate';
 }
 
 export interface MealItem {

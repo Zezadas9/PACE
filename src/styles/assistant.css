@@ -295,3 +295,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* O atalho da fotografia distingue-se dos outros: e um gesto, nao uma pergunta. */
+.chip.chip-strong {
+  background: var(--c-ink);
+  color: var(--c-bg);
+  border-color: var(--c-ink);
+}
+.chip.chip-strong svg {
+  width: 14px; height: 14px;
+  stroke: currentColor; fill: none; stroke-width: 1.8;
+}

@@ -54,6 +54,17 @@ const TOOL_DESCRIPTION = [
   'apply_schedule — draft: { items: [{ weekday 0-6, time "HH:MM"|null, durationMin|null,',
   'kind (workout|run|walk|water), label }], untouched: [], unplaced: [], summary: [] }',
   '',
+  'log_meal — draft: { date "AAAA-MM-DD", type (breakfast|lunch|dinner|snack|supper|',
+  'other), time "HH:MM"|null, notes|null, items: [{ foodName, quantity, unit (g|ml|unit|',
+  'portion), food: { name, brand|null, kcalPer100g|null, proteinPer100g|null,',
+  'carbsPer100g|null, fatPer100g|null, fiberPer100g|null, gramsPerUnit|null,',
+  'gramsPerMl|null }|null }] } — preenche "food" quando o alimento pode ainda nao',
+  'existir na aplicacao; os valores por 100 g podem ser tipicos, e a aplicacao',
+  'marca-os como estimativa.',
+  '',
+  'create_foods — drafts: [ o mesmo objeto "food" acima ]. Para quando o utilizador',
+  'so quer os valores de um alimento, sem registar refeicao nenhuma.',
+  '',
   'open — path: um dos ecrãs autorizados.',
 ].join('\n');
 
@@ -131,7 +142,8 @@ const TOOL: Anthropic.Tool = {
             kind: {
               type: 'string',
               enum: [
-                'create_workout', 'create_habits', 'create_run_plan', 'apply_schedule', 'open',
+                'create_workout', 'create_habits', 'create_run_plan', 'apply_schedule',
+                'log_meal', 'create_foods', 'open',
               ],
             },
             label: {
@@ -147,7 +159,7 @@ const TOOL: Anthropic.Tool = {
             },
             drafts: {
               type: 'array',
-              description: 'Só para create_habits: a lista de hábitos propostos.',
+              description: 'Para create_habits e create_foods: a lista proposta.',
               items: { type: 'object' },
             },
             path: {

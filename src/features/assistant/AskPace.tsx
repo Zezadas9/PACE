@@ -15,13 +15,21 @@ import { useApp, useStoreVersion } from '../../app/providers/appContext';
 import { aiSettings } from '../../services/coach';
 import { Card } from '../../ui/primitives';
 import { BrandIcon } from '../../ui/BrandIcon';
+import { Icon } from '../../ui/Icon';
 
 export function AskPace({
-  questions, title = 'Perguntar à PACE',
+  questions, title = 'Perguntar à PACE', photo,
 }: {
   /** Perguntas inteiras, na voz do utilizador. Duas ou três, não mais. */
   questions: readonly string[];
   title?: string;
+  /**
+   * Um atalho que abre a IA já com a câmara.
+   *
+   * Existe onde uma fotografia responde melhor do que uma frase escrita — um
+   * prato é mais depressa fotografado do que descrito alimento a alimento.
+   */
+  photo?: { label: string; question: string };
 }): ReactElement | null {
   const { repos } = useApp();
   const navigate = useNavigate();
@@ -56,17 +64,31 @@ export function AskPace({
             <span>Ligar o assistente</span>
           </button>
         ) : (
-          questions.map((question) => (
-            <button
-              key={question}
-              type="button"
-              className="chip"
-              onClick={() => navigate(`/ia?pergunta=${encodeURIComponent(question)}`)}
-            >
-              <span className="dot" />
-              <span>{question}</span>
-            </button>
-          ))
+          <>
+            {photo ? (
+              <button
+                type="button"
+                className="chip chip-strong"
+                onClick={() => navigate(
+                  `/ia?pergunta=${encodeURIComponent(photo.question)}&foto=1`,
+                )}
+              >
+                <Icon name="camera" />
+                <span>{photo.label}</span>
+              </button>
+            ) : null}
+            {questions.map((question) => (
+              <button
+                key={question}
+                type="button"
+                className="chip"
+                onClick={() => navigate(`/ia?pergunta=${encodeURIComponent(question)}`)}
+              >
+                <span className="dot" />
+                <span>{question}</span>
+              </button>
+            ))}
+          </>
         )}
       </div>
     </Card>

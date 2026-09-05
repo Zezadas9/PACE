@@ -18,7 +18,8 @@ import type {
   UserPreferences,
 } from '../core/types';
 import type {
-  CoachContext, CoachTurn, HabitDraft, RunPlanDraft, ScheduleDraft, WorkoutDraft,
+  CoachContext, CoachTurn, FoodDraft, HabitDraft, MealDraft, RunPlanDraft, ScheduleDraft,
+  WorkoutDraft,
 } from '../domain/coach/types';
 import type { CoachIntent } from '../domain/coach/intent';
 import type { CoachAction } from '../domain/coach/types';
@@ -307,6 +308,11 @@ function usable(action: CoachAction): boolean {
       return (action.draft?.items?.length ?? 0) > 0;
     case 'move_workout':
       return !!action.workoutId;
+    case 'log_meal':
+      return (action.draft?.items?.length ?? 0) > 0
+        && action.draft.items.every((item) => !!item?.foodName && item.quantity > 0);
+    case 'create_foods':
+      return (action.drafts?.length ?? 0) > 0 && action.drafts.every((draft) => !!draft?.name);
     case 'open':
       return action.path.startsWith('/');
     default:
@@ -325,6 +331,8 @@ export function applyAction(repos: Repositories, action: CoachAction): ApplyResu
     case 'create_run_plan': return createRunPlan(repos, action.draft);
     case 'apply_schedule': return applySchedule(repos, action.draft);
     case 'move_workout': return moveWorkout(repos, action.workoutId, action.from, action.to);
+    case 'log_meal': return logMeal(repos, action.draft);
+    case 'create_foods': return createFoods(repos, action.drafts);
     case 'open': return { ok: true, message: '', path: action.path };
     default: return { ok: false, message: 'Ação desconhecida.', path: null };
   }
@@ -365,6 +373,79 @@ function resolveExercise(
     .find((exercise) => exercise.name.toLowerCase() === name.toLowerCase());
   if (existing) return existing.id;
   return repos.exercises.create({ name, muscleGroups, isBodyweight }).id;
+}
+
+/**
+ * Regista uma refeicao.
+ *
+ * Os alimentos sao reaproveitados pelo nome: o historico nutricional e do
+ * alimento, e dois registos com o mesmo nome parti-lo-iam em dois. Um alimento
+ * que ainda nao exista nasce aqui, sempre marcado como estimativa — os valores
+ * vieram de um modelo, nao de um rotulo.
+ */
+function logMeal(repos: Repositories, draft: MealDraft): ApplyResult {
+  const items = draft.items.map((item) => ({
+    id: createId(),
+    foodId: resolveFood(repos, item.foodName, item.food),
+    quantity: item.quantity,
+    unit: item.unit,
+  }));
+
+  repos.meals.create({
+    date: draft.date,
+    type: draft.type,
+    time: draft.time,
+    items,
+    notes: draft.notes,
+    planEntryId: null,
+  });
+
+  return {
+    ok: true,
+    message: items.length === 1 ? 'Refeição registada.' : `${items.length} alimentos registados.`,
+    path: '/alimentacao',
+  };
+}
+
+function resolveFood(repos: Repositories, name: string, values: FoodDraft | null): string {
+  const existing = repos.foods
+    .all()
+    .find((food) => food.name.toLowerCase() === name.toLowerCase());
+
+  if (existing) {
+    // Um alimento que ja existe sem valores ganha os que vierem, e passa a
+    // dizer que sao estimados. Um que ja os tinha fica como esta: o que o
+    // utilizador escreveu vale mais do que um palpite.
+    if (values && existing.kcalPer100g == null && values.kcalPer100g != null) {
+      repos.foods.update(existing.id, { ...values, name: existing.name, source: 'ai_estimate' });
+    }
+    return existing.id;
+  }
+
+  return repos.foods.create({
+    name,
+    brand: values?.brand ?? null,
+    kcalPer100g: values?.kcalPer100g ?? null,
+    proteinPer100g: values?.proteinPer100g ?? null,
+    carbsPer100g: values?.carbsPer100g ?? null,
+    fatPer100g: values?.fatPer100g ?? null,
+    fiberPer100g: values?.fiberPer100g ?? null,
+    gramsPerUnit: values?.gramsPerUnit ?? null,
+    gramsPerMl: values?.gramsPerMl ?? null,
+    barcode: null,
+    source: values?.kcalPer100g != null ? 'ai_estimate' : 'manual',
+  }).id;
+}
+
+function createFoods(repos: Repositories, drafts: FoodDraft[]): ApplyResult {
+  for (const draft of drafts) resolveFood(repos, draft.name, draft);
+  return {
+    ok: true,
+    message: drafts.length === 1
+      ? `"${drafts[0]!.name}" guardado nos alimentos.`
+      : `${drafts.length} alimentos guardados.`,
+    path: '/alimentacao',
+  };
 }
 
 function createHabits(repos: Repositories, drafts: HabitDraft[]): ApplyResult {

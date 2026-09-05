@@ -91,7 +91,10 @@ export function AssistantScreen(): ReactElement {
    * fazer. O parâmetro é consumido de imediato para não voltar num refresh.
    */
   useEffect(() => {
-    if (!searchParams.has('pergunta')) return;
+    if (!searchParams.has('pergunta') && !searchParams.has('foto')) return;
+    // Quem veio pelo atalho da fotografia abre logo o seletor: era esse o
+    // gesto, e obrigá-lo a tocar outra vez no clipe não acrescenta nada.
+    if (searchParams.has('foto')) fileRef.current?.click();
     setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
 
