@@ -290,6 +290,31 @@ export interface AssistantReply {
   fallback?: boolean;
 }
 
+/* --- Base de dados de alimentos ------------------------------------------- */
+
+/** Um alimento como a PACE o guarda: por 100 g, com nulos onde não se sabe. */
+export interface FoodResult {
+  barcode: string | null;
+  name: string;
+  brand: string | null;
+  kcalPer100g: number | null;
+  proteinPer100g: number | null;
+  carbsPer100g: number | null;
+  fatPer100g: number | null;
+  fiberPer100g: number | null;
+}
+
+/**
+ * De onde vêm os valores de um alimento que a pessoa não quer escrever.
+ *
+ * `isAvailable` é falso quando não há backend configurado — e aí a aplicação
+ * continua a funcionar com o que sempre teve: escrever à mão.
+ */
+export interface FoodDatabasePort extends Capability {
+  search(query: string): Promise<FoodResult[]>;
+  byBarcode(barcode: string): Promise<FoodResult | null>;
+}
+
 export interface Platform {
   info: DeviceInfo;
   storage: StoragePort;
@@ -302,4 +327,5 @@ export interface Platform {
   network: NetworkPort;
   auth: AuthPort;
   assistant: AssistantPort;
+  foodDatabase: FoodDatabasePort;
 }

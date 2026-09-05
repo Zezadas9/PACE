@@ -21,6 +21,7 @@ import { askClaude, DEFAULT_MODEL } from './anthropic';
 import {
   clientIp, corsHeaders, fail, json, rateLimited, type Env,
 } from './http';
+import { foodByBarcode, searchFoods } from './foods';
 import { MAX_BODY_BYTES, requestSchema } from './schema';
 
 export default {
@@ -37,6 +38,33 @@ export default {
 
     if (url.pathname === '/health') {
       return json({ ok: true, configured: Boolean(env.ANTHROPIC_API_KEY) }, 200, cors);
+    }
+
+    /*
+     * A procura de alimentos passa por aqui, e nao pelo browser.
+     *
+     * O endpoint do Open Food Facts que sabe procurar texto livre nao devolve
+     * cabecalhos de CORS, e o que os devolve responde 503 a pesquisa: do
+     * browser nao ha maneira de la chegar. E assim o Open Food Facts nunca ve
+     * o IP de quem procura.
+     */
+    if (url.pathname === '/api/foods') {
+      if (request.method !== 'GET') return fail('method_not_allowed', 405, cors);
+      if (origin && Object.keys(cors).length === 0) return fail('forbidden_origin', 403, cors);
+      if (rateLimited(clientIp(request))) return fail('rate_limited', 429, cors);
+
+      const barcode = url.searchParams.get('barcode');
+      const query = url.searchParams.get('q');
+      if (!barcode && !query) return fail('invalid_request', 400, cors);
+
+      const result = barcode
+        ? await foodByBarcode(barcode)
+        : await searchFoods(query ?? '');
+
+      if (!result.ok) return fail(result.failure, 502, cors);
+      // Uma hora de cache: um rotulo nao muda de dia para dia, e a pesquisa
+      // seguinte do mesmo termo nao devia voltar a sair daqui.
+      return json({ foods: result.foods }, 200, { ...cors, 'cache-control': 'public, max-age=3600' });
     }
 
     if (url.pathname !== '/api/coach') return fail('not_found', 404, cors);

@@ -15,6 +15,7 @@ import type { Food } from '../../core/types';
 import { Sheet } from '../../ui/Sheet';
 import { Button } from '../../ui/primitives';
 import { Field, Input } from '../../ui/form';
+import { FoodSearch } from './FoodSearch';
 
 function toNumber(raw: string): number | null {
   const trimmed = raw.trim();
@@ -68,11 +69,38 @@ export function FoodForm({
       }
     >
       <div className="stack stack-5">
+        {draft.source === 'database' ? (
+          <p className="t-sm muted-2">
+            Estes valores vieram de um rótulo, através do Open Food Facts. Se o que tens
+            à frente disser outra coisa, manda o rótulo.
+          </p>
+        ) : null}
+
         {draft.source === 'ai_estimate' ? (
           <p className="t-sm muted-2">
             Estes valores foram estimados pela PACE a partir do nome. São típicos para
             este alimento, não vieram de um rótulo — corrige o que souberes.
           </p>
+        ) : null}
+
+        {semValores ? (
+          <FoodSearch
+            initialQuery={draft.name}
+            onPick={(found) => setDraft((current) => ({
+              ...current,
+              // O nome que a pessoa escreveu fica: e o nome por que ela procura
+              // este alimento na lista, e o do rotulo costuma ser mais comprido.
+              name: current.name.trim() || found.name,
+              brand: found.brand ?? current.brand,
+              kcalPer100g: found.kcalPer100g,
+              proteinPer100g: found.proteinPer100g,
+              carbsPer100g: found.carbsPer100g,
+              fatPer100g: found.fatPer100g,
+              fiberPer100g: found.fiberPer100g,
+              barcode: found.barcode ?? current.barcode,
+              source: 'database',
+            }))}
+          />
         ) : null}
 
         {semValores && onAskPace ? (

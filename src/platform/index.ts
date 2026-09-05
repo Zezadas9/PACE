@@ -29,6 +29,7 @@ import { WebNotificationsPort } from './web/notifications';
 import { LocalAssistantPort } from './web/assistant';
 import { RemoteAssistantPort, withLocalFallback } from './web/remoteAssistant';
 import type { Platform } from './types';
+import { RemoteFoodDatabase, UnavailableFoodDatabase } from './web/foodDatabase';
 
 export async function createWebPlatform(): Promise<Platform> {
   const device = new WebDevicePort();
@@ -44,6 +45,7 @@ export async function createWebPlatform(): Promise<Platform> {
     network: new WebNetworkPort(),
     auth: new UnimplementedAuthPort(),
     assistant: createAssistant(),
+    foodDatabase: createFoodDatabase(),
   };
 }
 
@@ -62,6 +64,19 @@ function createAssistant(): Platform['assistant'] {
   const url = import.meta.env.VITE_PACE_API_URL?.trim();
   if (!url) return local;
   return withLocalFallback(new RemoteAssistantPort(url), local);
+}
+
+/**
+ * A base de dados de alimentos.
+ *
+ * Depende do mesmo Worker que o assistente, e pela mesma razao: o endpoint do
+ * Open Food Facts que sabe procurar texto livre nao devolve cabecalhos de
+ * CORS, e do browser nao ha maneira de la chegar. Sem Worker configurado, a
+ * porta diz honestamente que esta fechada e os ecras escondem a procura.
+ */
+function createFoodDatabase(): Platform['foodDatabase'] {
+  const url = import.meta.env.VITE_PACE_API_URL?.trim();
+  return url ? new RemoteFoodDatabase(url) : new UnavailableFoodDatabase();
 }
 
 export async function createPlatform(): Promise<Platform> {
