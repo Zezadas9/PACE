@@ -8,8 +8,9 @@
  *   comer o desenho;
  * - **ficou partido?** muitos pedacos pequenos e sinal de que a limpeza do halo
  *   levou parte da arte com ela;
- * - **ficou com franja?** pixeis quase transparentes espalhados aparecem como
- *   sujidade sobre o tema oposto.
+ * - **ficou com franja?** pixeis quase transparentes **longe da arte** aparecem
+ *   como sujidade sobre o tema oposto. Os que estao encostados a arte sao a
+ *   sombra suave que lhe da profundidade, e esses ficam.
  *
  *   node tools/check-brand-icons.cjs
  */
@@ -26,6 +27,28 @@ for (const file of files) {
   const { width: W, height: H, data } = png;
   const alphaAt = (x, y) => data[(y * W + x) * 4 + 3];
 
+  /*
+   * A sombra e a sujidade tem o mesmo alfa. O que as separa e a distancia a
+   * arte: uma sombra assenta debaixo do desenho, a sujidade flutua longe dele.
+   */
+  const PERTO = 14;
+  const forte = new Uint8Array(W * H);
+  for (let y = 0; y < H; y += 1) {
+    for (let x = 0; x < W; x += 1) if (alphaAt(x, y) > 128) forte[y * W + x] = 1;
+  }
+  const perto = (x, y) => {
+    for (let dy = -PERTO; dy <= PERTO; dy += 1) {
+      const ny = y + dy;
+      if (ny < 0 || ny >= H) continue;
+      for (let dx = -PERTO; dx <= PERTO; dx += 1) {
+        const nx = x + dx;
+        if (nx < 0 || nx >= W) continue;
+        if (forte[ny * W + nx]) return true;
+      }
+    }
+    return false;
+  };
+
   const seen = new Uint8Array(W * H);
   const comps = [];
   for (let y = 0; y < H; y += 1) {
@@ -33,12 +56,14 @@ for (const file of files) {
       const k = y * W + x;
       if (seen[k] || alphaAt(x, y) <= 10) continue;
       let area = 0;
+      let tocaForte = false;
       const queue = [x, y];
       seen[k] = 1;
       while (queue.length) {
         const cy = queue.pop();
         const cx = queue.pop();
         area += 1;
+        if (alphaAt(cx, cy) > 128) tocaForte = true;
         for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
           const nx = cx + dx;
           const ny = cy + dy;
@@ -49,10 +74,10 @@ for (const file of files) {
           queue.push(nx, ny);
         }
       }
-      comps.push(area);
+      comps.push({ area, forte: tocaForte, x, y });
     }
   }
-  comps.sort((a, b) => b - a);
+  comps.sort((a, b) => b.area - a.area);
 
   let margem = 0;
   for (let x = 0; x < W; x += 1) {
@@ -65,11 +90,20 @@ for (const file of files) {
   }
 
   let franja = 0;
-  for (let i = 3; i < data.length; i += 4) {
-    if (data[i] > 10 && data[i] < 90) franja += 1;
+  for (let y = 0; y < H; y += 1) {
+    for (let x = 0; x < W; x += 1) {
+      const a = alphaAt(x, y);
+      if (a <= 10 || a >= 90) continue;
+      if (!perto(x, y)) franja += 1;
+    }
   }
 
-  const migalhas = comps.slice(1).filter((area) => area >= 4 && area < 60).length;
+  // Uma migalha e um pedaco pequeno longe de tudo. Um pedaco pequeno ao pe do
+  // desenho e a ponta de uma sombra, e nao um resto de recorte.
+  const migalhas = comps
+    .slice(1)
+    .filter((comp) => comp.area >= 4 && comp.area < 60 && !comp.forte && !perto(comp.x, comp.y))
+    .length;
   const problemas = [];
   if (margem > 0) problemas.push(`cortado (${margem} px na margem)`);
   if (migalhas > 3) problemas.push(`${migalhas} migalhas soltas`);

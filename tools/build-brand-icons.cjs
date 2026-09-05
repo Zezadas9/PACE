@@ -299,7 +299,31 @@ function extract(sheet) {
     for (let y = 0; y < H; y += 1) {
       for (let x = 0; x < W; x += 1) {
         const k = y * W + x;
-        if (bg[k] || !inArt(y)) continue;
+        if (!inArt(y)) continue;
+
+        /*
+         * O fundo da folha branca nao e so fundo: e fundo mais a sombra suave
+         * que assenta os desenhos. Apaga-la deixa os icones chapados, como
+         * autocolantes recortados a tesoura — e foi o que aconteceu quando este
+         * codigo comecou por lhe dar alfa zero.
+         *
+         * O erro original era o oposto: a sombra saia com alfa 255 e via-se uma
+         * caixa leitosa a volta da arte. A resposta certa nao e nenhum dos
+         * extremos — e dar-lhe a opacidade que ela tem mesmo. Uma sombra a 8%
+         * de cinzento fica a 8% de alfa: da profundidade sobre o tema claro e
+         * desaparece sobre o escuro, que e o que uma sombra deve fazer.
+         *
+         * Na folha preta nao ha sombra nenhuma a preservar — o que rodeia a
+         * arte e brilho ou ringing do JPEG, e esse sai por inteiro.
+         */
+        if (bg[k]) {
+          if (dark) continue;
+          const shade = distance(x, y);
+          if (shade <= T_FILL) continue;
+          alpha[k] = Math.max(0, Math.min(255, Math.round(((shade - T_FILL) / T_EDGE) * 255)));
+          continue;
+        }
+
         const id = label[k];
         if (id === -1 || areas[id] < MIN_AREA) continue;
 
