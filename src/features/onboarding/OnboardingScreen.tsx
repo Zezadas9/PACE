@@ -10,7 +10,6 @@ import { useCallback, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DEFAULT_PATH } from '../../core/constants';
 import { firstName } from '../../core/utils/format';
-import { seed } from '../../data/seed';
 import { completeOnboarding } from '../../services/profile';
 import { useApp, useFeedback } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
@@ -87,7 +86,6 @@ export function OnboardingScreen(): ReactElement {
   const finish = useCallback(async () => {
     const { heightFeet: _feet, heightInches: _inches, ...draft } = form.draft;
     completeOnboarding(repos, draft);
-    seed(repos);
     await store.flush();
     feedback.play('success');
     navigate(DEFAULT_PATH, { replace: true });

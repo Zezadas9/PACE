@@ -8,13 +8,19 @@
  * Strategy, deliberately small:
  *   - navigations go to the network first and fall back to the cached shell, so
  *     a new deploy is picked up the moment the phone is online;
- *   - everything else is cache-first, because Vite fingerprints its filenames —
- *     a given URL's contents can never change, so a cached copy is never stale.
+ *   - ficheiros com impressao digital no nome (o que o Vite gera em /assets/)
+ *     sao cache-first: aquele URL nunca muda de conteudo, e uma copia em cache
+ *     nunca fica velha;
+ *   - os restantes — os icones, o manifesto — sao servidos da cache e
+ *     atualizados em segundo plano. O nome deles nao muda quando a arte muda, e
+ *     sem isto um icone corrigido so chegava ao telemovel quando alguem se
+ *     lembrasse de subir a versao da cache. Foi assim que icones ja corrigidos
+ *     continuaram semanas por corrigir no telemovel.
  *
  * Bump CACHE_VERSION when the precached list below changes.
  */
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const CACHE = `pace-${CACHE_VERSION}`;
 
 /** Relative on purpose: the app is served from a repository subpath on Pages. */
@@ -108,17 +114,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // O Vite poe tudo o que tem impressao digital no nome em /assets/. Fora dai,
+  // o nome nao muda quando o conteudo muda — e por isso e que estes precisam de
+  // ser revalidados. Uma regra por pasta le-se; uma regra por forma do nome
+  // apanhava "melhor-sequencia.png" como se fosse um hash.
+  const fingerprinted = url.pathname.includes('/assets/');
+
   event.respondWith(
     caches.match(request).then((hit) => {
-      if (hit) return hit;
-      return fetch(request).then((response) => {
-        // Opaque and error responses are not worth keeping.
+      const fresh = fetch(request).then((response) => {
+        // Respostas opacas ou com erro nao valem a pena guardar.
         if (response.ok && response.type === 'basic') {
           const copy = response.clone();
           void caches.open(CACHE).then((cache) => cache.put(request, copy));
         }
         return response;
       });
+
+      if (!hit) return fresh;
+      if (fingerprinted) return hit;
+
+      // Serve o que esta em cache e vai buscar o novo para a proxima vez: rapido
+      // agora, atualizado a seguir. Se nao houver rede, o `catch` deixa a copia
+      // em cache continuar a ser a resposta.
+      void fresh.catch(() => undefined);
+      return hit;
     }),
   );
 });
