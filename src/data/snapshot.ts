@@ -316,6 +316,7 @@ export function normalize(input: Partial<Snapshot> | null): Snapshot {
       // desligada mesmo que o resto do bloco já exista.
       categories: { ...defaults.ai.categories, ...(snapshot.settings?.ai?.categories ?? {}) },
     },
+    backup: { ...defaults.backup, ...(snapshot.settings?.backup ?? {}) },
   };
   return snapshot;
 }

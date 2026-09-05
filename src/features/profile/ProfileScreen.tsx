@@ -33,6 +33,7 @@ import { IdentitySection } from './IdentitySection';
 import { NotificationsSection } from './NotificationsSection';
 import type { Repositories } from '../../data/repositories';
 import { AskPace } from '../assistant/AskPace';
+import { BackupSection } from './BackupSection';
 
 function toNumber(raw: string): number | null {
   if (raw.trim() === '') return null;
@@ -68,6 +69,7 @@ export function ProfileScreen(): ReactElement {
       <GoalsSection summary={summary} repos={repos} />
       <NotificationsSection />
       <FeedbackSection />
+      <BackupSection />
       <AskPace questions={[
         'Que objetivo faz sentido para mim?',
         'O que os meus dados dizem sobre o último mês?',
@@ -416,7 +418,9 @@ function DataSection(): ReactElement {
             sub={
               store.degraded
                 ? 'Armazenamento indisponível — os dados não persistem'
-                : `Via ${platform.storage.name}. Nada é enviado para servidores nesta fase.`
+                : `Via ${platform.storage.name}. ${platform.assistant.isRemote()
+                  ? 'Só o que autorizares no assistente sai daqui, e só quando lhe perguntas algo.'
+                  : 'Nada sai deste dispositivo.'}`
             }
           />
           <Row

@@ -589,12 +589,18 @@ export interface CelebrationState {
   goalsComplete: number;
 }
 
+export interface BackupSettings {
+  /** Quando foi feita a última cópia. Null enquanto nunca tiver havido uma. */
+  lastExportAt: Timestamp | null;
+}
+
 export interface AppSettings {
   notifications: NotificationSettings;
   feedback: FeedbackSettings;
   celebration: CelebrationState;
   /** Additive, como o feedback: normalize preenche, sem migração. */
   ai: AiSettings;
+  backup: BackupSettings;
 }
 
 /* --- Assistant ------------------------------------------------------------- */

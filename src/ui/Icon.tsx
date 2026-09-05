@@ -13,9 +13,23 @@ export type IconName =
   | 'trophy' | 'chart' | 'briefcase' | 'graduation' | 'stethoscope' | 'users'
   | 'home' | 'wallet' | 'edit' | 'today' | 'minus' | 'walk' | 'bike'
   | 'mountain' | 'pause' | 'play' | 'stop' | 'pin' | 'route' | 'flag'
-  | 'camera' | 'image';
+  | 'camera' | 'image' | 'download' | 'upload';
 
 const PATHS: Record<IconName, ReactNode> = {
+  download: (
+    <>
+      <path d="M12 3v12" />
+      <path d="M7 11l5 5 5-5" />
+      <path d="M4 20h16" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M12 20V8" />
+      <path d="M7 12l5-5 5 5" />
+      <path d="M4 4h16" />
+    </>
+  ),
   sun: (
     <>
       <circle cx="12" cy="12" r="4" />

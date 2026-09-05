@@ -314,6 +314,7 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       },
       acceptedAt: null,
     },
+    backup: { lastExportAt: null },
     ...partial,
   };
 }

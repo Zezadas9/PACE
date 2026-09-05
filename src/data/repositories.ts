@@ -145,6 +145,13 @@ export class SettingsRepository {
     return this.store.snapshot.settings;
   }
 
+  updateBackup(patch: Partial<AppSettings['backup']>): AppSettings {
+    const current = this.store.snapshot.settings;
+    this.store.snapshot.settings = { ...current, backup: { ...current.backup, ...patch } };
+    this.store.persist();
+    return this.store.snapshot.settings;
+  }
+
   updateFeedback(patch: Partial<AppSettings['feedback']>): AppSettings {
     const current = this.store.snapshot.settings;
     this.store.snapshot.settings = {
