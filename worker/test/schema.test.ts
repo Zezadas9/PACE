@@ -159,6 +159,81 @@ describe('resposta do modelo', () => {
     expect(mau.success).toBe(false);
   });
 
+  it('aceita uma refeição fotografada, com valores estimados', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'log_meal',
+        label: 'Registar almoço',
+        draft: {
+          date: '2026-09-05',
+          type: 'lunch',
+          time: '13:00',
+          notes: null,
+          items: [{
+            foodName: 'Arroz cozido',
+            quantity: 150,
+            unit: 'g',
+            food: { name: 'Arroz cozido', kcalPer100g: 130, proteinPer100g: 2.7 },
+          }],
+        },
+      }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('recusa uma refeição sem alimentos', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'log_meal',
+        label: 'Registar',
+        draft: { date: '2026-09-05', type: 'lunch', items: [] },
+      }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('recusa valores nutricionais impossíveis', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'create_foods',
+        label: 'Guardar alimento',
+        // 900 g de proteína em 100 g de alimento nao existe.
+        drafts: [{ name: 'X', proteinPer100g: 900 }],
+      }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('aceita um anexo de imagem', () => {
+    const parsed = requestSchema.safeParse({
+      message: 'O que tem este prato?',
+      context,
+      attachment: { kind: 'image', mediaType: 'image/jpeg', data: 'AAAA', name: 'prato.jpg' },
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('recusa um anexo de um tipo que o modelo não lê', () => {
+    const parsed = requestSchema.safeParse({
+      message: 'lê isto',
+      context,
+      attachment: { kind: 'document', mediaType: 'application/zip', data: 'AAAA' },
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('recusa um anexo cujo tipo não bate certo com o kind', () => {
+    const parsed = requestSchema.safeParse({
+      message: 'lê isto',
+      context,
+      attachment: { kind: 'image', mediaType: 'application/pdf', data: 'AAAA' },
+    });
+    expect(parsed.success).toBe(false);
+  });
+
   it('recusa mais ações do que o limite', () => {
     const uma = { kind: 'open', label: 'Ver', path: '/treino' };
     const parsed = turnSchema.safeParse({ ...turn, actions: [uma, uma, uma, uma] });
