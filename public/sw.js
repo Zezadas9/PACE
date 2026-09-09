@@ -20,7 +20,7 @@
  * Bump CACHE_VERSION when the precached list below changes.
  */
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE = `pace-${CACHE_VERSION}`;
 
 /** Relative on purpose: the app is served from a repository subpath on Pages. */

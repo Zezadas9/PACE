@@ -148,7 +148,7 @@ function extract(sheet) {
   /** Quanto um pixel se afasta da cor do fundo. */
   const distance = (x, y) => (dark ? lumAt(x, y) : 255 - lumAt(x, y));
 
-  const T_FILL = dark ? 4 : 10;
+  const T_FILL = dark ? 4 : 4;
   const T_EDGE = dark ? 40 : 46;
   // Ate onde o fundo pode subir a caminho do desenho. Fica abaixo de T_EDGE de
   // proposito: assim o preenchimento nunca chega a tocar no que e claramente
@@ -260,10 +260,109 @@ function extract(sheet) {
     return mask;
   }
 
+  /* --- Sombra ou corpo ---------------------------------------------------
+   *
+   * Na folha branca ha duas coisas com a mesma luminancia, e so a forma as
+   * separa.
+   *
+   * A **sombra** e a mancha suave debaixo do desenho. Vem de preto com pouca
+   * opacidade: sobre o tema claro da profundidade, sobre o escuro devia
+   * desaparecer. Tratada como arte, sai opaca e cinzenta, e ve-se uma caixa
+   * leitosa a volta do icone.
+   *
+   * O **corpo claro** e o papel do "planos" ou o calendario dos dias perfeitos:
+   * quase branco, mas desenho. Tratado como sombra, fica transparente, e o
+   * icone aparece rasgado sobre o tema escuro.
+   *
+   * Nenhum limiar de cor as distingue — as duas vivem entre 5 e 20 de
+   * distancia ao branco. O que as distingue e a espessura: uma sombra e uma
+   * orla fina a volta do desenho, um corpo e uma mancha larga. Uma erosao de
+   * cinco pixeis apaga a primeira e deixa a segunda.
+   */
+  function shadowMask(bg) {
+    const AMBIGUO = 40;
+    const ERODE = 5;
+    const CORPO = 400;
+
+    /*
+     * A cor decide antes da forma.
+     *
+     * Uma sombra sobre papel branco e cinzenta: os tres canais andam juntos. O
+     * miolo claro de uma chama nao e — e amarelo, com o vermelho muito acima
+     * do azul. Sem esta condicao, o brilho no meio das chamas era lido como
+     * sombra e saia transparente: cada chama ficava com um buraco preto no
+     * centro sobre o tema escuro.
+     */
+    const NEUTRO = 20;
+    const candidato = new Uint8Array(W * H);
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        const k = y * W + x;
+        if (bg[k]) continue;
+        if (distance(x, y) >= AMBIGUO) continue;
+        const i = k * 4;
+        const croma = Math.max(data[i], data[i + 1], data[i + 2])
+          - Math.min(data[i], data[i + 1], data[i + 2]);
+        if (croma <= NEUTRO) candidato[k] = 1;
+      }
+    }
+
+    const sombra = new Uint8Array(W * H);
+    const visto = new Uint8Array(W * H);
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        const inicio = y * W + x;
+        if (!candidato[inicio] || visto[inicio]) continue;
+
+        const grupo = [];
+        const fila = [inicio];
+        visto[inicio] = 1;
+        while (fila.length) {
+          const k = fila.pop();
+          grupo.push(k);
+          const cx = k % W;
+          const cy = (k - cx) / W;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = cx + dx;
+            const ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+            const nk = ny * W + nx;
+            if (candidato[nk] && !visto[nk]) { visto[nk] = 1; fila.push(nk); }
+          }
+        }
+
+        // Sobra alguma coisa depois de erodir? Entao e corpo, e fica.
+        let miolo = 0;
+        for (const k of grupo) {
+          const cx = k % W;
+          const cy = (k - cx) / W;
+          let solido = true;
+          for (let dy = -ERODE; dy <= ERODE && solido; dy += 1) {
+            for (let dx = -ERODE; dx <= ERODE; dx += 1) {
+              const nx = cx + dx;
+              const ny = cy + dy;
+              if (nx < 0 || ny < 0 || nx >= W || ny >= H || !candidato[ny * W + nx]) {
+                solido = false;
+                break;
+              }
+            }
+          }
+          if (solido) { miolo += 1; if (miolo > CORPO) break; }
+        }
+
+        if (miolo <= CORPO) for (const k of grupo) sombra[k] = 1;
+      }
+    }
+    return sombra;
+  }
+
   /* --- 2 e 3. De um fundo para a opacidade ------------------------------ */
 
   /** Componentes e opacidade, para um dado fundo. */
   function alphaFrom(bg) {
+    // Na folha preta nao ha sombra a preservar: o que rodeia a arte e brilho
+    // ou ringing do JPEG, e esse sai por inteiro.
+    const sombra = dark ? null : shadowMask(bg);
     const label = new Int32Array(W * H).fill(-1);
     const areas = [];
     for (let y = 0; y < H; y += 1) {
@@ -327,8 +426,20 @@ function extract(sheet) {
         const id = label[k];
         if (id === -1 || areas[id] < MIN_AREA) continue;
 
-        // Distancia ao fundo, ate tres pixeis: e ai que vive o antialiasing e,
-        // na folha branca, a sombra suave que sairia como halo.
+        /*
+         * A sombra sai com a opacidade que tem mesmo.
+         *
+         * E preto por baixo do branco da folha: observado = a*0 + (1-a)*255,
+         * logo a = distancia/255. Uma sombra a 8% de cinzento fica a 8% de
+         * alfa — da profundidade sobre o tema claro e desaparece sobre o
+         * escuro, que e o que uma sombra deve fazer.
+         */
+        if (sombra && sombra[k]) {
+          alpha[k] = Math.max(0, Math.min(255, Math.round(distance(x, y))));
+          continue;
+        }
+
+        // Distancia ao fundo, ate tres pixeis: e ai que vive o antialiasing.
         let near = 0;
         const reach = dark ? 2 : 3;
         for (let r = 1; r <= reach && !near; r += 1) {
@@ -423,7 +534,25 @@ function extract(sheet) {
 
         const observado = data[k * 4 + canal];
         const cobertura = (observado - fundo) / (data[arte + canal] - fundo);
-        refined[k] = Math.max(0, Math.min(255, Math.round(cobertura * 255)));
+
+        /*
+         * So se pode baixar a opacidade de um pixel quando ha certeza.
+         *
+         * A conta parte do principio de que este pixel e uma mistura do fundo
+         * com a arte que tem ao lado. Isso e verdade numa aresta, e e falso no
+         * meio de um corpo claro que por acaso tem arte escura por perto: o
+         * pixel branco do papel do "planos" ficava com o lapis preto como
+         * referencia, saia com 5% de cobertura, e o unmix a seguir
+         * transformava-o em preto. O papel aparecia rasgado sobre o tema
+         * escuro, e intacto sobre o claro — que e onde eu andava a olhar.
+         *
+         * A regra: se o pixel ja era opaco e esta longe do fundo, fica como
+         * esta. Uma cobertura baixa so se aceita onde ela ja era baixa.
+         */
+        const nova = Math.max(0, Math.min(255, Math.round(cobertura * 255)));
+        const anterior = alpha[k];
+        if (nova < anterior - 40 && anterior > 200) continue;
+        refined[k] = nova;
       }
     }
     alpha.set(refined);
@@ -443,8 +572,23 @@ function extract(sheet) {
 
   /* --- 4. Qual dos dois, celula a celula --------------------------------- */
 
+  /*
+   * Cada folha tem o seu problema, e cada uma leva o seu preenchimento.
+   *
+   * Na folha **preta** o que rodeia a arte e brilho e ringing do JPEG: uma orla
+   * fina e ruidosa que o preenchimento suave absorve, porque sobe devagar a
+   * partir do preto. Sem ele, a lua fica com uma franja serrilhada e o icone da
+   * IA com uma mancha escura no meio.
+   *
+   * Na folha **branca** o que rodeia a arte e sombra a serio, e ha corpos
+   * quase brancos que sao desenho. Ai o preenchimento suave entrava pelos
+   * corpos dentro e rasgava-os — o papel do "planos" e o calendario dos dias
+   * perfeitos ficavam aos bocados sobre o tema escuro. Fica o apertado, e a
+   * sombra e tratada por `shadowMask`, que a distingue do corpo pela forma e
+   * pela cor.
+   */
   const alphaTight = alphaFrom(fillTight());
-  const alphaSoft = alphaFrom(fillSoft());
+  const alphaSoft = alphaFrom(dark ? fillSoft() : fillTight());
 
   /*
    * O preenchimento suave resolve a sombra e o ringing, mas ha um caso em que

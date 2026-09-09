@@ -62,11 +62,11 @@ export function streakIcon(days: number): BrandIconName {
  * refaz a conta quando os assets mudarem.
  */
 const DARK_ARTWORK: ReadonlySet<BrandIconName> = new Set([
-  'caminhada', 'caminhada-rapida', 'treinos', 'perfil', 'som', 'vibracao', 'cadeado',
+  'caminhada', 'caminhada-rapida', 'som', 'treinos', 'perfil', 'cadeado', 'vibracao',
 ]);
 
 const LIGHT_ARTWORK: ReadonlySet<BrandIconName> = new Set([
-  'agenda', 'corrida', 'relogio',
+  'agenda', 'corrida', 'planos', 'dias-perfeitos', 'relogio',
 ]);
 
 function contrastOf(name: BrandIconName): 'dark' | 'light' | undefined {
