@@ -486,12 +486,92 @@ const secondsOf = (drill: SportDrill): number =>
   drill.sets * drill.workSec + Math.max(0, drill.sets - 1) * drill.restSec;
 
 /**
+ * Quanto do treino é aquecimento e quanto é retorno à calma.
+ *
+ * Proporções, não durações fixas. Com durações fixas — que era o que estava
+ * aqui — uma sessão de meia hora ficava com catorze minutos de corrida leve e
+ * dez de alongamentos, sobravam seis para o desporto, e o resultado era um
+ * treino de ténis quase sem ténis. Os limites existem para os extremos: quatro
+ * minutos aquecem sempre alguma coisa, e ninguém precisa de vinte.
+ */
+const WARMUP_SHARE = 0.15;
+const COOLDOWN_SHARE = 0.10;
+const WARMUP_RANGE = [4 * 60, 12 * 60] as const;
+const COOLDOWN_RANGE = [3 * 60, 10 * 60] as const;
+
+/**
+ * Abaixo disto um exercício não chega a ser trabalho.
+ *
+ * Serve para decidir quantos exercícios cabem: três minutos cada. Preferir
+ * quatro exercícios de três minutos a um de doze é o que um treinador faz —
+ * numa sessão curta interessa tocar em várias coisas, não esgotar uma.
+ */
+const MIN_DRILL_SEC = 180;
+
+const clamp = (value: number, [low, high]: readonly [number, number]): number =>
+  Math.max(low, Math.min(high, value));
+
+/**
+ * Encolhe uma lista fixa até caber no tempo dado.
+ *
+ * O trabalho contínuo encolhe no relógio, ao meio minuto; o trabalho por
+ * séries encolhe em séries. Nem um nem outro desaparecem: uma corrida leve de
+ * um minuto ainda aquece, zero minutos não.
+ */
+function fitFixed(drills: SportDrill[], seconds: number): SportDrill[] {
+  const full = drills.reduce((sum, drill) => sum + secondsOf(drill), 0);
+  if (full <= seconds || full === 0) return drills.map((drill) => ({ ...drill }));
+
+  const factor = seconds / full;
+  return drills.map((drill) => {
+    if (drill.sets > 1) {
+      return { ...drill, sets: Math.max(2, Math.round(drill.sets * factor)) };
+    }
+    return { ...drill, workSec: Math.max(60, Math.round((drill.workSec * factor) / 30) * 30) };
+  });
+}
+
+/**
+ * Os exercícios que cabem no tempo, com as séries ajustadas ao que sobra.
+ *
+ * A versão anterior enfiava exercícios inteiros até rebentar o orçamento — e,
+ * se nem o primeiro coubesse, metia-o na mesma. Daí sair um treino de meia
+ * hora com quarenta e dois minutos lá dentro. Aqui o orçamento manda: reparte-
+ * se por quantos exercícios lá cabem a três minutos cada, e cada um leva as
+ * séries que a sua parte pagar.
+ */
+function take(drills: SportDrill[], seconds: number): SportDrill[] {
+  if (seconds < MIN_DRILL_SEC || drills.length === 0) return [];
+
+  const count = Math.max(1, Math.min(drills.length, Math.floor(seconds / MIN_DRILL_SEC)));
+  const share = seconds / count;
+
+  const chosen: SportDrill[] = [];
+  let used = 0;
+
+  for (const drill of drills.slice(0, count)) {
+    const unit = drill.workSec + drill.restSec;
+    // Quantas séries ainda pagam com o que sobra, e quantas a parte deste
+    // exercício pediria. Vence a menor das duas, e nunca mais do que o
+    // exercício traz de origem.
+    const affordable = Math.floor((seconds - used + drill.restSec) / unit);
+    const wanted = Math.round((share + drill.restSec) / unit);
+    const sets = Math.min(drill.sets, affordable, Math.max(1, wanted));
+    if (sets < 1) break;
+
+    chosen.push({ ...drill, sets });
+    used += sets * drill.workSec + (sets - 1) * drill.restSec;
+  }
+
+  return chosen;
+}
+
+/**
  * Uma sessão do tamanho pedido.
  *
- * O aquecimento e o retorno à calma não encolhem abaixo do que servem para
- * alguma coisa — são a parte que se corta primeiro e a que menos se devia
- * cortar. O que sobra reparte-se entre a bola e o resto, e a bola leva a maior
- * parte: é a técnica que faz falta e é a que ninguém treina sozinho.
+ * O aquecimento e o retorno à calma acompanham a duração em vez de a comerem,
+ * e o que sobra reparte-se entre a bola e o resto — a bola leva a maior parte,
+ * que é a técnica que faz falta a quem treina sozinho.
  *
  * `want` decide o que entra. Quem pede só a parte física não recebe exercícios
  * com bola, e quem pede só a bola não recebe agachamentos.
@@ -504,8 +584,11 @@ export function buildSportSession(
   const sport = sportFor(text);
   const total = Math.max(20, Math.min(180, minutes)) * 60;
 
-  const warmup = SPORT_WARMUP.map((drill) => ({ ...drill, section: 'warmup' as const }));
-  const cooldown = SPORT_COOLDOWN.map((drill) => ({ ...drill, section: 'cardio' as const }));
+  const warmup = fitFixed(SPORT_WARMUP, clamp(total * WARMUP_SHARE, WARMUP_RANGE))
+    .map((drill) => ({ ...drill, section: 'warmup' as const }));
+  const cooldown = fitFixed(SPORT_COOLDOWN, clamp(total * COOLDOWN_SHARE, COOLDOWN_RANGE))
+    .map((drill) => ({ ...drill, section: 'cardio' as const }));
+
   const fixed = [...warmup, ...cooldown].reduce((sum, drill) => sum + secondsOf(drill), 0);
 
   let budget = Math.max(0, total - fixed);
@@ -513,18 +596,6 @@ export function buildSportSession(
 
   const withBall = sport.drills.filter((drill) => drill.withBall);
   const without = sport.drills.filter((drill) => !drill.withBall);
-
-  const take = (drills: SportDrill[], seconds: number): SportDrill[] => {
-    const chosen: SportDrill[] = [];
-    let used = 0;
-    for (const drill of drills) {
-      const cost = secondsOf(drill);
-      if (used + cost > seconds && chosen.length > 0) break;
-      chosen.push({ ...drill });
-      used += cost;
-    }
-    return chosen;
-  };
 
   const ballBlocks = want.ball ? take(withBall, budget * ballShare) : [];
   budget -= ballBlocks.reduce((sum, drill) => sum + secondsOf(drill), 0);

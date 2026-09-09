@@ -61,10 +61,33 @@ describe('sessões de desporto', () => {
   });
 
   it('acompanha a duração pedida', () => {
-    for (const minutos of [45, 60, 90, 120]) {
-      const session = buildSportSession('futebol', minutos);
-      expect(Math.abs(session.minutes - minutos)).toBeLessThanOrEqual(12);
+    // Meia hora era o caso que faltava aqui, e era o que estava partido: o
+    // aquecimento e o retorno à calma tinham duração fixa, comiam vinte e
+    // quatro dos trinta minutos, e a sessão saía com quarenta e dois.
+    for (const desporto of ['futebol', 'tenis', 'basquete', 'volei']) {
+      for (const minutos of [20, 30, 45, 60, 90, 120]) {
+        const session = buildSportSession(desporto, minutos);
+        expect(Math.abs(session.minutes - minutos)).toBeLessThanOrEqual(3);
+      }
     }
+  });
+
+  it('numa sessão curta prefere vários exercícios a um só', () => {
+    const session = buildSportSession('tenis', 30);
+    const principais = session.blocks.filter((block) => block.section === 'main');
+    expect(principais.length).toBeGreaterThanOrEqual(4);
+    // E o desporto tem de ser a maior parte do treino, não a sobra dele.
+    expect(session.withBallMin + session.withoutBallMin).toBeGreaterThan(session.minutes / 2);
+  });
+
+  it('o aquecimento encolhe com a sessão em vez de a comer', () => {
+    const curta = buildSportSession('futebol', 20);
+    const longa = buildSportSession('futebol', 120);
+    const aquecimento = (s: ReturnType<typeof buildSportSession>): number => s.blocks
+      .filter((block) => block.section === 'warmup')
+      .reduce((sum, b) => sum + b.sets * b.workSec + Math.max(0, b.sets - 1) * b.restSec, 0);
+    expect(aquecimento(curta)).toBeLessThan(aquecimento(longa));
+    expect(aquecimento(curta)).toBeLessThanOrEqual(curta.minutes * 60 * 0.35);
   });
 
   it('começa sempre por aquecer e acaba por arrefecer', () => {

@@ -147,7 +147,10 @@ function sportTurn(intent: CoachIntent): CoachTurn {
       + 'cansadas treinam o erro em vez do gesto.'),
   ];
 
-  if (intent.minutes != null && Math.abs(session.minutes - intent.minutes) > 8) {
+  // A sessão passou a acompanhar o pedido de perto, por isso o aviso só faz
+  // sentido para desvios que se notem. Com a folga antiga, de oito minutos,
+  // um treino que dava quarenta e dois quando se pediram trinta passava calado.
+  if (intent.minutes != null && Math.abs(session.minutes - intent.minutes) > 4) {
     blocks.push(notice(
       'info',
       `Pediste ${intent.minutes} minutos e isto dá para ${session.minutes}. `
