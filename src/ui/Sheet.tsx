@@ -21,13 +21,27 @@ export function Sheet({
 }): ReactElement {
   const panel = useRef<HTMLDivElement>(null);
 
+  /*
+   * O foco entra na folha uma vez, e uma vez so.
+   *
+   * Isto estava junto com o resto do efeito, que depende de `onClose`. Como
+   * quase todos os ecras passam um `onClose` escrito no proprio JSX, ele muda
+   * de identidade a cada render — e o formulario re-renderiza a cada tecla,
+   * porque e o ecra que guarda o rascunho. O efeito voltava a correr, o foco
+   * saltava do campo para o painel, e no telemovel isso fecha o teclado.
+   *
+   * A cada letra. Em todos os formularios da aplicacao.
+   */
   useEffect(() => {
     panel.current?.focus();
+  }, []);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKeyDown);
-    // The page behind must not scroll while a sheet is open.
+    // A pagina por tras nao pode rolar enquanto a folha esta aberta.
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
