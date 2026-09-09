@@ -13,6 +13,8 @@
 
 import type { CSSProperties, ReactElement } from 'react';
 
+import { BRAND_ICON_VERSION } from './brandIconVersion';
+
 export type BrandIconName =
   // Primeira folha
   | 'agenda' | 'treinos' | 'corrida' | 'bicicleta' | 'alimentacao'
@@ -75,9 +77,17 @@ function contrastOf(name: BrandIconName): 'dark' | 'light' | undefined {
   return undefined;
 }
 
-/** Relativo de propósito: a app é servida de um subcaminho no GitHub Pages. */
+/**
+ * O endereço de um ícone.
+ *
+ * Relativo de propósito — a app é servida de um subcaminho no GitHub Pages — e
+ * com a versão da arte no fim. O nome do ficheiro nunca muda quando o desenho
+ * muda, e sem o `?v=` a cópia antiga ficava no telemóvel a esconder a
+ * correção. Com ele, arte nova é um endereço novo, e um endereço novo não
+ * pode estar em cache. `tools/stamp-icons.cjs` mantém o valor.
+ */
 function assetFor(name: BrandIconName): string {
-  return `./icons/${name}.png`;
+  return `./icons/${name}.png?v=${BRAND_ICON_VERSION}`;
 }
 
 export function BrandIcon({

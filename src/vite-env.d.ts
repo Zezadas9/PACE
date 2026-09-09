@@ -14,3 +14,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/**
+ * O identificador da build, substituido pelo Vite em tempo de compilacao.
+ *
+ * Aparece no ecra do perfil. Serve para saber que versao esta mesmo a correr
+ * num telemovel, em vez de o adivinhar.
+ */
+declare const __BUILD_ID__: string;

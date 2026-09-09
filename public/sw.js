@@ -23,6 +23,60 @@
 const CACHE_VERSION = 'v7';
 const CACHE = `pace-${CACHE_VERSION}`;
 
+/**
+ * A versao da arte dos icones. GERADO por tools/stamp-icons.cjs.
+ *
+ * Os nomes dos ficheiros sao fixos; o conteudo nao. Sem isto, um icone
+ * corrigido ficava escondido atras da copia em cache — que foi exatamente o
+ * que aconteceu, mais do que uma vez. Com o resumo dos bytes no URL, arte nova
+ * e um URL novo, e um URL novo nunca esta em cache.
+ */
+const ICONS_VERSION = '0b355c97';
+
+const ICON_NAMES = [
+  'agenda',
+  'alimentacao',
+  'bicicleta',
+  'cadeado',
+  'caixote',
+  'caminhada-rapida',
+  'caminhada',
+  'consistencia',
+  'corrida',
+  'dias-perfeitos',
+  'estatisticas',
+  'frequencia',
+  'hidratacao',
+  'hiking',
+  'ia',
+  'imc-alto',
+  'imc-baixo',
+  'imc-normal',
+  'lembretes',
+  'melhor-sequencia',
+  'objetivos',
+  'perfil',
+  'planos',
+  'progresso',
+  'refeicoes',
+  'relaxamento',
+  'relogio',
+  'saude',
+  'sequencia',
+  'som',
+  'sono',
+  'streak-1',
+  'streak-100',
+  'streak-14',
+  'streak-3',
+  'streak-30',
+  'streak-365',
+  'streak-60',
+  'streak-7',
+  'treinos',
+  'vibracao',
+];
+
 /** Relative on purpose: the app is served from a repository subpath on Pages. */
 const SHELL = [
   './',
@@ -32,47 +86,7 @@ const SHELL = [
   './apple-touch-icon.png',
   // A barra de navegacao e os ecras sao feitos destes icones: sem eles,
   // offline, a aplicacao aparece vazia.
-  './icons/agenda.png',
-  './icons/alimentacao.png',
-  './icons/bicicleta.png',
-  './icons/cadeado.png',
-  './icons/caixote.png',
-  './icons/caminhada-rapida.png',
-  './icons/caminhada.png',
-  './icons/consistencia.png',
-  './icons/corrida.png',
-  './icons/dias-perfeitos.png',
-  './icons/estatisticas.png',
-  './icons/frequencia.png',
-  './icons/hidratacao.png',
-  './icons/hiking.png',
-  './icons/ia.png',
-  './icons/imc-alto.png',
-  './icons/imc-baixo.png',
-  './icons/imc-normal.png',
-  './icons/lembretes.png',
-  './icons/melhor-sequencia.png',
-  './icons/objetivos.png',
-  './icons/perfil.png',
-  './icons/planos.png',
-  './icons/progresso.png',
-  './icons/refeicoes.png',
-  './icons/relaxamento.png',
-  './icons/relogio.png',
-  './icons/saude.png',
-  './icons/sequencia.png',
-  './icons/som.png',
-  './icons/sono.png',
-  './icons/streak-1.png',
-  './icons/streak-100.png',
-  './icons/streak-14.png',
-  './icons/streak-3.png',
-  './icons/streak-30.png',
-  './icons/streak-365.png',
-  './icons/streak-60.png',
-  './icons/streak-7.png',
-  './icons/treinos.png',
-  './icons/vibracao.png',
+  ...ICON_NAMES.map((name) => `./icons/${name}.png?v=${ICONS_VERSION}`),
 ];
 
 self.addEventListener('install', (event) => {

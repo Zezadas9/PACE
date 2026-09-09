@@ -118,3 +118,4 @@ for (const file of files) {
 console.log(avisos === 0
   ? `${files.length} icones verificados, nenhum problema.`
   : `${files.length} icones verificados, ${avisos} com avisos.`);
+

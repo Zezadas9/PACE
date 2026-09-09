@@ -435,6 +435,8 @@ function DataSection(): ReactElement {
       <p className="t-sm muted-2" style={{ marginTop: '0.75rem' }}>
         PACE {APP.version} · {platform.info.platform}
         {platform.info.isNative ? ' (nativo)' : ''}
+        {' · build '}
+        {__BUILD_ID__}
       </p>
     </section>
   );

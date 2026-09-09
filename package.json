@@ -6,7 +6,7 @@
   "description": "PACE — organização pessoal, hábitos, treino, atividade e alimentação.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && node tools/check-icon-stamp.cjs && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -20,8 +20,9 @@
     "worker:login": "npm --prefix worker run login",
     "worker:secrets": "npm --prefix worker run secret:list",
     "worker:whoami": "npm --prefix worker run whoami",
-    "icons:build": "node tools/build-brand-icons.cjs",
-    "icons:check": "node tools/check-brand-icons.cjs"
+    "icons:build": "node tools/build-brand-icons.cjs && node tools/stamp-icons.cjs",
+    "icons:check": "node tools/check-brand-icons.cjs",
+    "icons:stamp": "node tools/stamp-icons.cjs"
   },
   "dependencies": {
     "react": "^19.2.0",
