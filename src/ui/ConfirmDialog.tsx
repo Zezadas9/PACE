@@ -23,15 +23,20 @@ export function ConfirmDialog({
 }): ReactElement {
   const panel = useRef<HTMLDivElement>(null);
 
+  // Guardado, para o efeito abaixo poder correr uma vez so — a mesma razao que
+  // esta explicada no Sheet: um `onCancel` escrito no JSX muda a cada render.
+  const cancelar = useRef(onCancel);
+  cancelar.current = onCancel;
+
   useEffect(() => {
     // Move focus into the sheet so a keyboard or screen-reader user lands here.
     panel.current?.focus();
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onCancel();
+      if (event.key === 'Escape') cancelar.current();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onCancel]);
+  }, []);
 
   return (
     <div className="dialog-backdrop" onClick={onCancel}>

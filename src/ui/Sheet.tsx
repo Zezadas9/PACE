@@ -36,9 +36,30 @@ export function Sheet({
     panel.current?.focus();
   }, []);
 
+  /*
+   * O `onClose` guardado, para o efeito abaixo nao depender dele.
+   *
+   * A alternativa era pedir a cada ecra que envolvesse o seu `onClose` num
+   * `useCallback`. Sao dezenas de sitios, basta um esquecimento para o defeito
+   * voltar, e o esquecimento nao da erro nenhum — so um teclado que fecha.
+   * Fica resolvido aqui, uma vez.
+   */
+  const fechar = useRef(onClose);
+  fechar.current = onClose;
+
+  /*
+   * O Escape e o bloqueio do scroll, montados uma vez.
+   *
+   * Isto dependia de `onClose`, e quase todos os ecras passam um `onClose`
+   * escrito no proprio JSX — muda de identidade a cada render, e o formulario
+   * re-renderiza a cada tecla, porque e o ecra que guarda o rascunho. A cada
+   * letra, portanto, `document.body.style.overflow` era reposto e voltava a
+   * ser `hidden`. No computador nao se nota; no iPhone essa mexida no scroll
+   * do documento fecha o teclado por baixo dos pes de quem esta a escrever.
+   */
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') fechar.current();
     };
     document.addEventListener('keydown', onKeyDown);
     // A pagina por tras nao pode rolar enquanto a folha esta aberta.
@@ -48,7 +69,7 @@ export function Sheet({
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previous;
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="sheet-backdrop" onClick={onClose}>
