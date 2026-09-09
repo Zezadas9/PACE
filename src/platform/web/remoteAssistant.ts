@@ -7,8 +7,7 @@
  * Três coisas que este ficheiro leva a sério:
  *
  * 1. **Timeout.** Uma resposta que nunca chega é pior do que uma resposta
- *    local: o `AbortController` corta aos doze segundos e o motor local
- *    responde.
+ *    local: o `AbortController` corta e o motor local responde.
  * 2. **Desconfiança.** O que volta do backend é validado outra vez aqui. Já foi
  *    validado lá, mas quem escreve o cliente não devia assumir isso.
  * 3. **Nunca um beco.** Qualquer falha — rede, timeout, formato — cai no motor
@@ -19,7 +18,19 @@ import { respond } from '../../domain/coach';
 import type { CoachBlock, CoachTurn } from '../../domain/coach/types';
 import type { AssistantPort, AssistantReply, AssistantRequest } from '../types';
 
-const TIMEOUT_MS = 12_000;
+/**
+ * Quanto tempo esperar pelo modelo.
+ *
+ * Estavam aqui doze segundos, que é o tempo de uma conversa. Um treino
+ * completo não é uma conversa: são alguns milhares de tokens de JSON, e o
+ * modelo leva mais do que isso a escrevê-los. O `AbortController` cortava
+ * antes de a resposta chegar, sempre, e a aplicação dizia que não tinha
+ * chegado ao assistente — quando na verdade tinha desistido dele.
+ *
+ * Quarenta segundos é muito para esperar por uma frase, e é por isso que o
+ * ecrã mostra que está à espera. É pouco para perder um treino inteiro.
+ */
+const TIMEOUT_MS = 40_000;
 
 /**
  * O tamanho maximo do pedido, com folga sobre o que o backend aceita.
@@ -61,6 +72,31 @@ function fit(body: Record<string, unknown>): string {
     if (json.length <= MAX_BODY_BYTES) break;
   }
   return json;
+}
+
+/**
+ * Porque é que a resposta não veio do modelo.
+ *
+ * O `catch` que engolia tudo custou caro: "não cheguei ao assistente online"
+ * dizia-se em cinco situações diferentes — sem rede, sem backend configurado,
+ * demorou de mais, o backend recusou, o formato não bateu certo — e nenhuma
+ * delas se distinguia das outras, nem para quem usa nem para quem corrige.
+ * Passar a saber qual foi custa um campo.
+ */
+export type FallbackReason =
+  | 'sem-configuracao'
+  | 'sem-rede'
+  | 'demorou'
+  | 'recusado'
+  | 'formato'
+  | 'desconhecido';
+
+/** O erro traz o motivo colado, para o fallback o poder ler. */
+class RemoteFailure extends Error {
+  constructor(readonly reason: FallbackReason, readonly status?: number) {
+    super(reason);
+    this.name = 'RemoteFailure';
+  }
 }
 
 const BLOCK_KINDS = ['text', 'list', 'metrics', 'notice', 'references', 'caveat'];
@@ -151,11 +187,11 @@ export class RemoteAssistantPort implements AssistantPort {
         }),
       });
 
-      if (!response.ok) throw new Error(`estado ${response.status}`);
+      if (!response.ok) throw new RemoteFailure('recusado', response.status);
 
       const payload: unknown = await response.json();
       const turn = (payload as { turn?: unknown })?.turn;
-      if (!isTurn(turn)) throw new Error('resposta fora do formato');
+      if (!isTurn(turn)) throw new RemoteFailure('formato');
 
       return {
         // A intenção continua a ser lida pelo motor local: é ela que faz uma
@@ -166,6 +202,12 @@ export class RemoteAssistantPort implements AssistantPort {
         engine: this.engine,
         remote: true,
       };
+    } catch (error) {
+      if (error instanceof RemoteFailure) throw error;
+      // Perguntar ao sinal, e não ao erro: o nome do erro de um `fetch`
+      // cortado muda com o motor, e o sinal sabe sempre se fomos nós a cortar.
+      // Tudo o resto que o `fetch` rejeita é rede que não chegou lá.
+      throw new RemoteFailure(controller.signal.aborted ? 'demorou' : 'sem-rede');
     } finally {
       clearTimeout(timer);
     }
@@ -189,14 +231,21 @@ export function withLocalFallback(
     isAvailable: () => remote.isAvailable(),
 
     async respond(request: AssistantRequest): Promise<AssistantReply> {
+      let reason: FallbackReason = 'sem-rede';
       if (await remote.isAvailable().catch(() => false)) {
         try {
           return await remote.respond(request);
-        } catch {
+        } catch (error) {
           // Sem consola suja: uma falha do backend é um caminho previsto, não
-          // um erro do programa.
+          // um erro do programa. Mas o motivo fica, para o ecrã o poder dizer.
+          reason = error instanceof RemoteFailure ? error.reason : 'desconhecido';
         }
+      } else if (typeof navigator !== 'undefined' && navigator.onLine !== false) {
+        // Há rede, e mesmo assim o remoto diz que não está disponível: o que
+        // falta é o endereço do backend, e isso é configuração, não avaria.
+        reason = 'sem-configuracao';
       }
+
       const reply = await local.respond(request);
 
       // O motor local nao le imagens nem ficheiros. Se a pergunta trazia um,
@@ -206,6 +255,7 @@ export function withLocalFallback(
         return {
           ...reply,
           fallback: true,
+          fallbackReason: reason,
           turn: {
             ...reply.turn,
             blocks: [
@@ -222,7 +272,7 @@ export function withLocalFallback(
         };
       }
 
-      return { ...reply, fallback: true };
+      return { ...reply, fallback: true, fallbackReason: reason };
     },
   };
 }

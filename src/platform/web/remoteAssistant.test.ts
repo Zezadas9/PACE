@@ -172,9 +172,9 @@ describe('withLocalFallback', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('cai no motor local quando a resposta demora demais', async () => {
+  it('cai no motor local quando a resposta demora demais, e diz que demorou', async () => {
     // A promessa nunca resolve: quem termina o pedido é o AbortController do
-    // porto remoto, ao fim dos doze segundos.
+    // porto remoto, ao fim do tempo que ele se dá.
     vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise<Response>(
       (_resolve, reject) => {
         init.signal?.addEventListener('abort', () => reject(new Error('abortado')));
@@ -184,10 +184,23 @@ describe('withLocalFallback', () => {
 
     const port = withLocalFallback(new RemoteAssistantPort('https://worker.dev'), local);
     const pending = port.respond(request());
-    await vi.advanceTimersByTimeAsync(12_500);
+    await vi.advanceTimersByTimeAsync(41_000);
     vi.useRealTimers();
 
-    expect((await pending).fallback).toBe(true);
+    const reply = await pending;
+    expect(reply.fallback).toBe(true);
+    // O motivo importa tanto como o fallback: "demorou" e "sem rede" pedem
+    // coisas diferentes a quem esta do outro lado do ecra.
+    expect(reply.fallbackReason).toBe('demorou');
+  });
+
+  it('distingue o backend a recusar de nao haver rede', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 502 })));
+    const port = withLocalFallback(new RemoteAssistantPort('https://worker.dev'), local);
+    expect((await port.respond(request())).fallbackReason).toBe('recusado');
+
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('failed to fetch'); }));
+    expect((await port.respond(request())).fallbackReason).toBe('sem-rede');
   });
 });
 

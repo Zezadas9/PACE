@@ -16,8 +16,18 @@ import {
   sanitizeTurn, turnSchema, type CoachRequest, type CoachTurnOutput,
 } from './schema';
 
-/** Curto de propósito: a resposta é uma conversa, não um relatório. */
-const MAX_TOKENS = 1200;
+/**
+ * O tecto da resposta.
+ *
+ * Estava em 1200, escolhido para uma conversa. Mas o que sai daqui nem sempre
+ * é conversa: um treino de futebol com doze exercícios, cada um com séries,
+ * tempos e nota, é JSON a sério — e a meio de o escrever o modelo batia no
+ * tecto. A ferramenta ficava com JSON cortado, o Zod recusava-o, e a aplicação
+ * caía no motor local a dizer que não tinha chegado ao assistente. Nada
+ * falhava com barulho; simplesmente nunca funcionava para pedidos grandes,
+ * que são precisamente os que precisam do modelo.
+ */
+const MAX_TOKENS = 4000;
 export const DEFAULT_MODEL = 'claude-sonnet-4-6';
 
 const TOOL_NAME = 'submit_coach_turn';
@@ -181,6 +191,8 @@ const TOOL: Anthropic.Tool = {
 
 export type CoachFailure =
   | 'invalid_response'
+  /** O modelo bateu no tecto de `MAX_TOKENS` a meio da resposta. */
+  | 'response_truncated'
   | 'upstream_error'
   | 'rate_limited'
   | 'unavailable';
@@ -315,6 +327,19 @@ export async function askClaude(
       };
     }
     return { ok: false, failure: 'unavailable' };
+  }
+
+  /*
+   * Uma resposta cortada a meio não é uma resposta inválida.
+   *
+   * Distingui-las importa: "inválida" manda procurar um erro no schema, e não
+   * há nenhum — o modelo escreveu bem, só não teve espaço para acabar. Sem
+   * este ramo, o sintoma era indistinguível de um bug no prompt, e foi por aí
+   * que se perdeu tempo.
+   */
+  if (response.stop_reason === 'max_tokens') {
+    console.warn('anthropic', 'max_tokens');
+    return { ok: false, failure: 'response_truncated' };
   }
 
   const call = response.content.find(

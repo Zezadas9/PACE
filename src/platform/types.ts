@@ -288,6 +288,15 @@ export interface AssistantReply {
   remote?: boolean;
   /** Verdadeiro quando o remoto falhou e respondeu o motor local. */
   fallback?: boolean;
+  /**
+   * Porque é que o remoto não respondeu.
+   *
+   * Sem isto, o ecrã dizia sempre a mesma frase — "não cheguei ao assistente
+   * online" — para cinco causas diferentes, e quem a lia não ficava a saber se
+   * havia alguma coisa a fazer. Há: sem rede espera-se, com o backend a
+   * recusar não vale a pena insistir.
+   */
+  fallbackReason?: string;
 }
 
 /* --- Base de dados de alimentos ------------------------------------------- */

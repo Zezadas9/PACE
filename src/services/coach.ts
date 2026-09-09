@@ -231,6 +231,8 @@ export interface AskResult {
   engine: string;
   /** Verdadeiro quando o remoto falhou e a resposta veio do motor local. */
   fallback: boolean;
+  /** E porquê, para o ecrã poder dizer se há alguma coisa a fazer. */
+  fallbackReason?: string;
 }
 
 export async function ask(
@@ -274,6 +276,7 @@ export async function ask(
     turn: reply.turn,
     engine: reply.engine ?? platform.assistant.engine,
     fallback: reply.fallback === true,
+    fallbackReason: reply.fallbackReason,
   };
 }
 

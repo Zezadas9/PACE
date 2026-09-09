@@ -26,6 +26,36 @@ import { ACCEPTED_TYPES, AttachmentError, prepare } from './attachment';
 import { Blocks } from './blocks';
 import { ActionCard } from './ActionCard';
 
+/**
+ * O que dizer quando a resposta veio do motor local.
+ *
+ * A frase era sempre a mesma para causas que não têm nada a ver umas com as
+ * outras, e por isso não ajudava ninguém: quem estava sem rede não sabia que
+ * bastava esperar, e eu não sabia se o backend estava a recusar ou se estava
+ * apenas a demorar. Cada motivo diz o que se pode fazer, ou que não há nada.
+ */
+function fallbackText(reason: string | undefined): string {
+  const local = 'A resposta veio do motor que corre no telemóvel, que sabe menos '
+    + 'e pode ter percebido mal o pedido.';
+
+  switch (reason) {
+    case 'sem-rede':
+      return `Sem ligação à internet. ${local}`;
+    case 'demorou':
+      return `O assistente online demorou de mais a responder. ${local} `
+        + 'Tenta outra vez — a segunda costuma ser mais rápida.';
+    case 'recusado':
+      return `O assistente online recusou o pedido. ${local} `
+        + 'Se continuar assim, é do servidor e não do teu telemóvel.';
+    case 'formato':
+      return `O assistente online respondeu qualquer coisa que não percebi. ${local}`;
+    case 'sem-configuracao':
+      return `Esta cópia da aplicação não tem assistente online configurado. ${local}`;
+    default:
+      return `Não cheguei ao assistente online. ${local}`;
+  }
+}
+
 const STARTERS = [
   'O que faço hoje?',
   'Cria-me um treino de pernas de 45 minutos',
@@ -112,11 +142,7 @@ export function AssistantScreen(): ReactElement {
       // Quando o backend falha, a resposta local sai à mesma — mas convém
       // dizê-lo, sem alarme e sem esconder.
       setNotice(result.fallback
-        ? {
-          text: 'Não cheguei ao assistente online. Esta resposta veio do motor que corre '
-            + 'no telemóvel, que sabe menos e pode ter percebido mal o pedido.',
-          retry: message,
-        }
+        ? { text: fallbackText(result.fallbackReason), retry: message }
         : null);
     } catch {
       setNotice({
