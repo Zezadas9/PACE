@@ -462,8 +462,21 @@ describe('os outros temas da PACE', () => {
    * invento medias sem noites".
    */
   it('não lê o sono sem autorização', () => {
-    expect(JSON.stringify(respond(context(), 'Durmo mal, ajuda').blocks))
+    const semSono = context({
+      settings: settings({
+        categories: {
+          profile: true, goals: true, training: true, activity: true,
+          nutrition: true, habits: true, sleep: false, feedback: true,
+        },
+      }),
+    });
+    expect(JSON.stringify(respond(semSono, 'Durmo mal, ajuda').blocks))
       .toContain('categoria está desligada');
+  });
+
+  it('com autorização mas sem noites, diz que não há noites', () => {
+    expect(JSON.stringify(respond(context(), 'Durmo mal, ajuda').blocks))
+      .toContain('Ainda não registaste');
   });
 
   it('mesmo sem perceber, oferece caminhos', () => {

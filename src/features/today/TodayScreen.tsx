@@ -12,7 +12,7 @@ import { fromMinutes } from '../../core/scheduling';
 import * as format from '../../core/utils/format';
 import { mediumDate } from '../../core/utils/date';
 import {
-  advanceHabit, setHabitDone, toggleTask, todayModel, type TodayModel,
+  advanceHabit, isFirstRun, setHabitDone, toggleTask, todayModel, type TodayModel,
 } from '../../services/dashboard';
 import { useApp, useFeedback, usePreferences, useStoreVersion } from '../../app/providers/appContext';
 import { Screen } from '../../app/navigation/Screen';
@@ -26,6 +26,7 @@ import { useCelebrations } from './useCelebrations';
 import { StreakCard } from './StreakCard';
 import { AskPace } from '../assistant/AskPace';
 import { SleepCard } from '../sleep/SleepCard';
+import { FirstRunCard } from './FirstRunCard';
 
 export function TodayScreen(): ReactElement {
   const { repos } = useApp();
@@ -33,6 +34,7 @@ export function TodayScreen(): ReactElement {
   const preferences = usePreferences();
   const version = useStoreVersion();
 
+  const primeiroDia = useMemo(() => isFirstRun(repos), [repos, version]);
   const model = useMemo(
     () => todayModel(repos, preferences),
     [repos, preferences, version],
@@ -58,40 +60,65 @@ export function TodayScreen(): ReactElement {
           milestone={celebration.milestone}
         />
       ) : null}
-      <SummaryCard model={model} />
-      <section>
-        <SectionHeader title="Sequência" />
-        <StreakCard stats={model.streak} />
-      </section>
-      <HabitsSection
-        model={model}
-        onTap={(habitId) => tap(() => {
-          const item = model.habits.find((entry) => entry.habit.id === habitId);
-          if (!item || item.done) { advanceHabit(repos, habitId, model.date); return false; }
-          advanceHabit(repos, habitId, model.date);
-          // Only the repetition that reaches the target counts as finishing.
-          return item.value + 1 >= Math.max(1, item.habit.target);
-        })}
-        onFill={(habitId) => tap(() => {
-          setHabitDone(repos, habitId, model.date, true);
-          return true;
-        })}
-      />
-      <TasksSection
-        model={model}
-        onTap={(taskId) => tap(() => {
-          const before = model.tasks.find((task) => task.id === taskId)?.status === 'done';
-          toggleTask(repos, taskId);
-          return !before;
-        })}
-      />
-      <WorkoutSection model={model} />
-      <MovementSection model={model} />
-      <NutritionSection model={model} />
-      <SleepCard />
-      <UpcomingSection model={model} />
-      <RecapSection model={model} />
-      <AskPace questions={[
+      {/*
+        * No primeiro dia nao ha nada que mostrar, e cinco caixas vazias sao a
+        * pior maneira de o dizer. O cartao substitui-as por um caminho.
+        *
+        * O anel a 0% e a sequencia a zero saem tambem: um por cento de nada nao
+        * e uma medida, e explicar a mecanica da sequencia antes de existir algo
+        * para marcar como essencial e explicar uma regra de um jogo que ainda
+        * nao comecou. Tudo isto volta assim que houver a primeira coisa.
+        */}
+      {primeiroDia ? (
+        <FirstRunCard name={model.user?.name ?? null} />
+      ) : (
+        <>
+          <SummaryCard model={model} />
+          <section>
+            <SectionHeader title="Sequência" />
+            <StreakCard stats={model.streak} />
+          </section>
+        </>
+      )}
+      {primeiroDia ? null : (
+        <>
+        <HabitsSection
+          model={model}
+          onTap={(habitId) => tap(() => {
+            const item = model.habits.find((entry) => entry.habit.id === habitId);
+            if (!item || item.done) { advanceHabit(repos, habitId, model.date); return false; }
+            advanceHabit(repos, habitId, model.date);
+            // Only the repetition that reaches the target counts as finishing.
+            return item.value + 1 >= Math.max(1, item.habit.target);
+          })}
+          onFill={(habitId) => tap(() => {
+            setHabitDone(repos, habitId, model.date, true);
+            return true;
+          })}
+        />
+        <TasksSection
+          model={model}
+          onTap={(taskId) => tap(() => {
+            const before = model.tasks.find((task) => task.id === taskId)?.status === 'done';
+            toggleTask(repos, taskId);
+            return !before;
+          })}
+        />
+        <WorkoutSection model={model} />
+        <MovementSection model={model} />
+        <NutritionSection model={model} />
+        <SleepCard />
+        <UpcomingSection model={model} />
+        <RecapSection model={model} />
+        </>
+      )}
+      {/* No primeiro dia, "como esta o meu dia?" e uma pergunta sobre nada.
+          As perguntas de arranque pedem a PACE que crie o que ainda nao ha. */}
+      <AskPace questions={primeiroDia ? [
+        'Organiza-me a semana',
+        'Cria-me um treino para começar',
+        'Que hábitos fazem sentido para mim?',
+      ] : [
         'Como está o meu dia?',
         'O que me falta fazer hoje?',
         'Organiza-me o resto do dia',

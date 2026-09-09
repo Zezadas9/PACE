@@ -269,3 +269,24 @@ function buildUpcoming(repos: Repositories, date: DayKey): UpcomingEvent[] {
 export {
   advanceHabit, completeItem, setHabitDone, toggleTask, toggleWorkoutSession,
 } from './agenda';
+
+/**
+ * A aplicação ainda está vazia?
+ *
+ * Vale a pena saber porque o primeiro dia é diferente de todos os outros. Com
+ * dados, o ecrã de hoje mostra o que há; sem eles, mostrava cinco caixas a
+ * dizer que não há nada — e nenhuma delas dizia por onde começar.
+ *
+ * O perfil não conta. Quem acabou o onboarding tem nome e peso, e continua a
+ * não ter nada seu na aplicação.
+ */
+export function isFirstRun(repos: Repositories): boolean {
+  return repos.habits.all().length === 0
+    && repos.tasks.all().length === 0
+    && repos.events.all().length === 0
+    && repos.workouts.all().length === 0
+    && repos.workoutSessions.all().length === 0
+    && repos.activitySessions.all().length === 0
+    && repos.meals.all().length === 0
+    && repos.sleepEntries.all().length === 0;
+}
