@@ -373,11 +373,19 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
+/* Sete circulos numa linha. A 320 px — o iPhone SE e os Android pequenos —
+   sete vezes 34 px mais os intervalos passam a largura do ecra, e os dois
+   ultimos dias saiam fora do cartao. Agora encolhem ate caberem, com um chao
+   de 26 px para continuarem a ser um alvo e nao um ponto. */
 .streak-day .mark {
   display: grid;
   place-items: center;
-  width: 34px; height: 34px;
+  width: 100%;
+  max-width: 34px;
+  min-width: 26px;
+  aspect-ratio: 1;
   border-radius: var(--r-full);
   background: var(--c-surface-2);
   transition: background var(--d-base) var(--ease), transform var(--d-base) var(--ease-out);
