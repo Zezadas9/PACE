@@ -324,6 +324,24 @@ export interface FoodDatabasePort extends Capability {
   byBarcode(barcode: string): Promise<FoodResult | null>;
 }
 
+/* --- Push ---------------------------------------------------------------- */
+
+/** O resultado de ligar o push, com as causas que o ecra precisa de distinguir. */
+export type PushState = 'ok' | 'unsupported' | 'denied' | 'not-configured' | 'failed';
+
+/**
+ * O que acorda a aplicacao fechada. Hoje so o lembrete da sequencia o usa.
+ *
+ * Separado das notificacoes locais porque vive noutro sitio: estas agendam no
+ * aparelho, o push precisa de um servidor que o envie.
+ */
+export interface PushPort {
+  supported(): boolean;
+  enable(input: { id: string; time: string; timezone: string }): Promise<PushState>;
+  reportDay(input: { id: string; date: string; closed: boolean }): Promise<boolean>;
+  disable(id: string): Promise<void>;
+}
+
 export interface Platform {
   info: DeviceInfo;
   storage: StoragePort;
@@ -337,4 +355,5 @@ export interface Platform {
   auth: AuthPort;
   assistant: AssistantPort;
   foodDatabase: FoodDatabasePort;
+  push: PushPort;
 }

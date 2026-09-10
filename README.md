@@ -155,6 +155,21 @@ ambas as plataformas disparam imediatamente uma notificação agendada no passad
 o que receberia o utilizador com uma rajada de avisos velhos sempre que abrisse
 a aplicação.
 
+### O lembrete da sequência
+
+Um aviso por dia, à hora escolhida no perfil (20:00 por omissão), e **só se o
+dia ainda não fechou**. Quem já marcou os essenciais não recebe nada.
+
+Não passa pelo planeador acima, porque na web as notificações locais só
+disparam com a aplicação aberta. Este chega por **Web Push**, enviado pelo
+Worker (`worker/src/push.ts`), e acorda a aplicação fechada. No iPhone isso
+exige a PACE instalada no ecrã principal, em iOS 16.4 ou mais recente.
+
+O servidor sabe o mínimo: o endereço de push que o browser dá, a hora, o fuso
+horário, e "o dia de hoje fechou" — um sim ou não. O push vai **vazio**; o
+texto ("faltam os essenciais para manteres os teus 12 dias") escreve-o o
+service worker no telemóvel, com um número que nunca sai de lá.
+
 ---
 
 ## Treino
@@ -677,9 +692,21 @@ npm run worker:login
 # 3. A chave da Anthropic, como secret do Worker — nunca num ficheiro
 npm run worker:secret        # pede a chave e guarda-a na Cloudflare
 
-# 4. Publicar
+# 4. O lembrete da sequência (uma vez): chaves VAPID e o KV das subscrições
+npm run worker:push-setup
+
+# 5. Publicar
 npm run worker:deploy        # imprime o URL: https://pace-coach.<conta>.workers.dev
 ```
+
+**Lembrete da sequência.** `worker:push-setup` gera o par de chaves VAPID: a
+pública fica no `wrangler.toml` (o browser recebe-a de qualquer maneira); a
+privada vai direta para os secrets do Worker, pelo stdin do wrangler — nunca é
+escrita num ficheiro nem aparece no ecrã. Cria também o KV onde ficam as
+subscrições e liga-o ao Worker. Corre-o outra vez sem medo: salta o que já
+estiver feito, e nunca troca as chaves, porque isso invalidava todas as
+subscrições. Sem este passo o resto do Worker funciona na mesma; o lembrete
+diz, no perfil, que o servidor ainda não está configurado.
 
 **Modelo.** `ANTHROPIC_MODEL` está em `worker/wrangler.toml` e arranca em
 `claude-sonnet-4-6`. Podes trocá-lo por outro (por exemplo `claude-opus-5`, mais

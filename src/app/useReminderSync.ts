@@ -9,6 +9,7 @@
 
 import { useEffect, useRef } from 'react';
 import { syncReminders } from '../services/notifications';
+import { syncStreakReminder } from '../services/streakReminder';
 import { useApp, useStoreVersion } from './providers/appContext';
 
 const DEBOUNCE_MS = 800;
@@ -24,6 +25,9 @@ export function useReminderSync(): void {
       void syncReminders(repos, platform).catch(() => {
         // A refused or unavailable notification service is not an app failure.
       });
+      // O lembrete da sequencia vai por outro caminho — push, pelo Worker —
+      // mas muda com as mesmas coisas: um essencial marcado fecha o dia.
+      void syncStreakReminder(repos, platform).catch(() => {});
     }, DEBOUNCE_MS);
 
     return () => {
@@ -33,7 +37,9 @@ export function useReminderSync(): void {
 
   useEffect(() => {
     return platform.device.onAppStateChange((state) => {
-      if (state === 'active') void syncReminders(repos, platform).catch(() => {});
+      if (state !== 'active') return;
+      void syncReminders(repos, platform).catch(() => {});
+      void syncStreakReminder(repos, platform).catch(() => {});
     });
   }, [repos, platform, store]);
 }

@@ -24,6 +24,14 @@ const CACHE_VERSION = 'v7';
 const CACHE = `pace-${CACHE_VERSION}`;
 
 /**
+ * Uma cache a parte, que nao muda com a versao, para o pouco que o lembrete
+ * da sequencia precisa de saber: quantos dias tem a sequencia. A aplicacao
+ * escreve-o; o push le-o. Sem ele, o texto do aviso seria sempre o generico.
+ */
+const STATE_CACHE = 'pace-estado';
+const STREAK_KEY = './_sequencia';
+
+/**
  * A versao da arte dos icones. GERADO por tools/stamp-icons.cjs.
  *
  * Os nomes dos ficheiros sao fixos; o conteudo nao. Sem isto, um icone
@@ -106,7 +114,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys
+        .filter((key) => key !== CACHE && key !== STATE_CACHE)
+        .map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -158,6 +168,41 @@ self.addEventListener('fetch', (event) => {
       return hit;
     }),
   );
+});
+
+/**
+ * O lembrete da sequencia.
+ *
+ * O push chega vazio — o servidor nao sabe nada da sequencia, de proposito — e
+ * o texto escreve-se aqui, com o numero que a aplicacao deixou na cache. So
+ * chega quando o dia ainda nao fechou: e o servidor que decide isso.
+ *
+ * `tag` fixa: se por algum motivo chegarem dois, o segundo substitui o
+ * primeiro em vez de se empilhar.
+ */
+self.addEventListener('push', (event) => {
+  event.waitUntil((async () => {
+    let days = 0;
+    try {
+      const cache = await caches.open(STATE_CACHE);
+      const hit = await cache.match(STREAK_KEY);
+      if (hit) days = Number((await hit.json()).days) || 0;
+    } catch {
+      /* Sem o numero, fica o texto generico. */
+    }
+
+    const body = days > 0
+      ? `Faltam os essenciais de hoje para manteres os teus ${days} ${days === 1 ? 'dia' : 'dias'}.`
+      : 'Fecha os essenciais de hoje e começa uma sequência.';
+
+    await self.registration.showNotification('Não percas a tua sequência 🔥', {
+      body,
+      tag: 'pace-sequencia',
+      icon: './apple-touch-icon.png',
+      badge: './apple-touch-icon.png',
+      data: { route: '/hoje' },
+    });
+  })());
 });
 
 /**

@@ -603,6 +603,14 @@ export interface NotificationSettings {
   permissionRequested: boolean;
   /** The user accepted a plan above the per-habit warning threshold. */
   highVolumeAccepted: boolean;
+  /**
+   * O lembrete diario da sequencia, a hora escolhida. So sai se o dia ainda
+   * nao tiver fechado. Na web chega por push, com a aplicacao fechada.
+   */
+  streakReminder: boolean;
+  streakReminderTime: ClockTime;
+  /** Identificador opaco da subscricao de push deste aparelho. */
+  pushId: string | null;
 }
 
 /** Sound and haptics. Additive: normalize fills them in, so no migration is needed. */

@@ -22,7 +22,8 @@
     "worker:whoami": "npm --prefix worker run whoami",
     "icons:build": "node tools/build-brand-icons.cjs && node tools/stamp-icons.cjs",
     "icons:check": "node tools/check-brand-icons.cjs",
-    "icons:stamp": "node tools/stamp-icons.cjs"
+    "icons:stamp": "node tools/stamp-icons.cjs",
+    "worker:push-setup": "npm --prefix worker run push:setup"
   },
   "dependencies": {
     "react": "^19.2.0",

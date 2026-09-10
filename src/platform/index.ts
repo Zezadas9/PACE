@@ -28,6 +28,7 @@ import {
 import { WebNotificationsPort } from './web/notifications';
 import { LocalAssistantPort } from './web/assistant';
 import { RemoteAssistantPort, withLocalFallback } from './web/remoteAssistant';
+import { UnavailablePushPort, WebPushPort } from './web/push';
 import type { Platform } from './types';
 import { RemoteFoodDatabase, UnavailableFoodDatabase } from './web/foodDatabase';
 
@@ -46,6 +47,7 @@ export async function createWebPlatform(): Promise<Platform> {
     auth: new UnimplementedAuthPort(),
     assistant: createAssistant(),
     foodDatabase: createFoodDatabase(),
+    push: createPush(),
   };
 }
 
@@ -77,6 +79,12 @@ function createAssistant(): Platform['assistant'] {
 function createFoodDatabase(): Platform['foodDatabase'] {
   const url = import.meta.env.VITE_PACE_API_URL?.trim();
   return url ? new RemoteFoodDatabase(url) : new UnavailableFoodDatabase();
+}
+
+/** O push vem do mesmo Worker. Sem ele, nao ha quem o envie. */
+function createPush(): Platform['push'] {
+  const url = import.meta.env.VITE_PACE_API_URL?.trim();
+  return url ? new WebPushPort(url) : new UnavailablePushPort();
 }
 
 export async function createPlatform(): Promise<Platform> {

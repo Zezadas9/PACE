@@ -13,7 +13,8 @@
     "secret": "wrangler secret put ANTHROPIC_API_KEY",
     "secret:list": "wrangler secret list",
     "login": "wrangler login",
-    "whoami": "wrangler whoami"
+    "whoami": "wrangler whoami",
+    "push:setup": "node tools/setup-push.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

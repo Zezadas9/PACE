@@ -10,6 +10,14 @@ compatibility_flags = ["nodejs_compat"]
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 # Origens autorizadas, separadas por virgula. Nunca "*" em producao.
 ALLOWED_ORIGINS = "https://zezadas9.github.io,http://localhost:5173,http://localhost:4173"
+# Quem os servicos de push (Apple, Google) contactam se algo correr mal.
+VAPID_SUBJECT = "https://zezadas9.github.io/"
 
 # A chave NAO vive aqui. Fica como secret:
 #   npx wrangler secret put ANTHROPIC_API_KEY
+
+# O lembrete diario da sequencia: de quinze em quinze minutos o Worker ve quem
+# esta na hora e ainda nao fechou o dia. As chaves e o KV prepara-os
+# `npm run worker:push-setup`; sem eles, isto nao faz nada.
+[triggers]
+crons = ["*/15 * * * *"]

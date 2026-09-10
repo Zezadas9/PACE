@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { PermissionState } from '../../platform/types';
 import { previewPlan, setEnabled, syncReminders } from '../../services/notifications';
+import { syncStreakReminder, type StreakReminderStatus } from '../../services/streakReminder';
 import { useApp, useStoreVersion } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
 import { Card, SectionHeader } from '../../ui/primitives';
@@ -16,6 +17,35 @@ import { Field } from '../../ui/form';
 import { TimeField } from '../../ui/TimeField';
 import { Row, Rows } from '../../ui/data';
 import { Switch } from '../../ui/Switch';
+
+/**
+ * O que dizer por baixo do lembrete da sequencia.
+ *
+ * Cada causa tem a sua frase, porque cada uma pede outra coisa a quem a le: no
+ * iPhone e instalar no ecra principal, sem permissao e ir as definicoes, sem
+ * servidor nao ha nada a fazer deste lado.
+ */
+function streakSubtitle(
+  enabled: boolean,
+  on: boolean,
+  time: string,
+  state: StreakReminderStatus | null,
+): string {
+  if (!enabled) return 'Liga os lembretes acima para este também poder sair.';
+  if (!on) return 'Desligado.';
+  switch (state) {
+    case 'unsupported':
+      return 'No iPhone, só chega com a PACE no ecrã principal (iOS 16.4 ou mais recente).';
+    case 'denied':
+      return 'Sem permissão para notificações. Tens de a dar nas definições do sistema.';
+    case 'not-configured':
+      return 'O servidor ainda não tem os avisos configurados.';
+    case 'failed':
+      return 'Não consegui falar com o servidor. Tento outra vez quando abrires a aplicação.';
+    default:
+      return `Todos os dias às ${time}, só se o dia ainda não estiver fechado.`;
+  }
+}
 
 export function NotificationsSection(): ReactElement {
   const { repos, platform } = useApp();
@@ -26,6 +56,17 @@ export function NotificationsSection(): ReactElement {
   const [permission, setPermission] = useState<PermissionState>('prompt');
 
   const settings = repos.settings.get().notifications;
+  const [streakState, setStreakState] = useState<StreakReminderStatus | null>(null);
+
+  // O estado real do lembrete, e nao o que o interruptor diz: ligado mas sem
+  // o telemovel o suportar e uma coisa diferente de ligado e a funcionar.
+  useEffect(() => {
+    let cancelled = false;
+    void syncStreakReminder(repos, platform)
+      .then((state) => { if (!cancelled) setStreakState(state); })
+      .catch(() => { if (!cancelled) setStreakState('failed'); });
+    return () => { cancelled = true; };
+  }, [repos, platform, settings.enabled, settings.streakReminder, settings.streakReminderTime]);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +158,15 @@ export function NotificationsSection(): ReactElement {
             chevron
             onClick={() => void test()}
           />
+          <Switch
+            checked={settings.enabled && settings.streakReminder}
+            disabled={!settings.enabled}
+            title="Não perder a sequência"
+            subtitle={streakSubtitle(
+              settings.enabled, settings.streakReminder, settings.streakReminderTime, streakState,
+            )}
+            onChange={(next) => repos.settings.update({ streakReminder: next })}
+          />
         </Rows>
       </Card>
 
@@ -128,9 +178,9 @@ export function NotificationsSection(): ReactElement {
             outra coisa.
           </p>
           <p className="t-sm muted-2">
-            Nesta versão web, os avisos chegam enquanto a aplicação estiver
-            aberta ou tiver sido aberta há pouco. Para avisos com a aplicação
-            fechada é preciso a versão nativa.
+            Nesta versão web, os avisos dos hábitos chegam enquanto a aplicação
+            estiver aberta ou tiver sido aberta há pouco. O da sequência é
+            diferente: chega mesmo com a aplicação fechada.
           </p>
           <div className="grid-2">
             <Field label="A partir das">
@@ -146,6 +196,18 @@ export function NotificationsSection(): ReactElement {
               />
             </Field>
           </div>
+          {settings.enabled && settings.streakReminder ? (
+            <Field
+              label="Lembrete da sequência às"
+              hint="Não segue a janela acima: é um aviso só, e só se o dia não fechou."
+            >
+              <TimeField
+                value={settings.streakReminderTime}
+                ariaLabel="Hora do lembrete da sequência"
+                onChange={(value) => repos.settings.update({ streakReminderTime: value })}
+              />
+            </Field>
+          ) : null}
         </div>
       </Card>
       </div>

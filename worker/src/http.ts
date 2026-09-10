@@ -7,7 +7,9 @@
  * pedido.
  */
 
-export interface Env {
+import type { PushEnv } from './push';
+
+export interface Env extends PushEnv {
   ANTHROPIC_API_KEY?: string;
   ANTHROPIC_MODEL?: string;
   ALLOWED_ORIGINS?: string;
@@ -41,7 +43,7 @@ export function corsHeaders(origin: string | null, env: Env): Record<string, str
   if (!origin || !allowed.includes(origin)) return {};
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'content-type',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',

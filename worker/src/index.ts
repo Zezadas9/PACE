@@ -23,6 +23,7 @@ import {
 } from './http';
 import { foodByBarcode, searchFoods } from './foods';
 import { MAX_BODY_BYTES, requestSchema } from './schema';
+import { handlePush, pushConfigured, runDailyPush } from './push';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -37,7 +38,11 @@ export default {
     }
 
     if (url.pathname === '/health') {
-      return json({ ok: true, configured: Boolean(env.ANTHROPIC_API_KEY) }, 200, cors);
+      return json({
+        ok: true,
+        configured: Boolean(env.ANTHROPIC_API_KEY),
+        push: pushConfigured(env),
+      }, 200, cors);
     }
 
     /*
@@ -65,6 +70,13 @@ export default {
       // Uma hora de cache: um rotulo nao muda de dia para dia, e a pesquisa
       // seguinte do mesmo termo nao devia voltar a sair daqui.
       return json({ foods: result.foods }, 200, { ...cors, 'cache-control': 'public, max-age=3600' });
+    }
+
+    // O lembrete da sequencia. Ver src/push.ts.
+    if (url.pathname.startsWith('/api/push/')) {
+      if (origin && Object.keys(cors).length === 0) return fail('forbidden_origin', 403, cors);
+      if (rateLimited(clientIp(request))) return fail('rate_limited', 429, cors);
+      return handlePush(request, url, env, cors);
     }
 
     if (url.pathname !== '/api/coach') return fail('not_found', 404, cors);
@@ -125,5 +137,13 @@ export default {
     }
 
     return json({ turn: result.turn }, 200, cors);
+  },
+
+  /**
+   * De quinze em quinze minutos: quem esta na hora do lembrete e ainda nao
+   * fechou o dia recebe-o. Sem KV nem chaves configuradas, nao faz nada.
+   */
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runDailyPush(env).then(() => undefined));
   },
 };

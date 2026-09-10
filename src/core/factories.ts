@@ -317,6 +317,11 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       endTime: '22:00',
       permissionRequested: false,
       highVolumeAccepted: false,
+      // Ligado por omissao: foi pedido. So passa a valer quando as
+      // notificacoes estiverem ligadas, e isso continua a ser uma escolha.
+      streakReminder: true,
+      streakReminderTime: '20:00',
+      pushId: null,
     },
     feedback: { sound: true, haptics: true },
     celebration: { perfectDay: null, streak: 0, goalsComplete: 0 },
