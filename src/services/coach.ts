@@ -503,7 +503,9 @@ function createRunPlan(repos: Repositories, draft: RunPlanDraft): ApplyResult {
       activityId: null,
     })),
   });
-  return { ok: true, message: `Plano "${plan.title}" criado.`, path: '/ia/corrida' };
+  // Para a Atividade, e nao para a IA: e la que o plano se corre, e era la que
+  // quem o criava o ia procurar sem o encontrar.
+  return { ok: true, message: `Plano "${plan.title}" criado.`, path: '/atividade/plano' };
 }
 
 /**

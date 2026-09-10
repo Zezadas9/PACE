@@ -20,8 +20,8 @@ import {
 } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
 import { Screen } from '../../app/navigation/Screen';
-import { Card, SectionHeader } from '../../ui/primitives';
-import { EmptyState, Row, Rows } from '../../ui/data';
+import { Button, Card, SectionHeader } from '../../ui/primitives';
+import { EmptyState, ProgressBar, Row, Rows } from '../../ui/data';
 import { Fab } from '../../ui/Fab';
 import { PageHeader } from '../../ui/page';
 import { Icon, type IconName } from '../../ui/Icon';
@@ -33,6 +33,8 @@ import {
   EvolutionSection, FrequencySection, InsightsSection, RecordsSection,
 } from './EvolutionSection';
 import { AskPace } from '../assistant/AskPace';
+import { describeSession } from '../assistant/RunPlanScreen';
+import { runPlanView, type RunPlanView } from '../../services/coach';
 
 type SheetState =
   | { kind: 'manual'; entry?: ManualEntry; id?: string }
@@ -80,6 +82,8 @@ export function ActivityScreen(): ReactElement {
     }),
     [repos, unit, version],
   );
+
+  const plan = useMemo(() => runPlanView(repos), [repos, version]);
 
   // Tocar num tipo não arranca nada: leva ao ecrã de preparação, onde se vê o
   // estado do GPS e o que está em aberto antes de o cronómetro começar.
@@ -138,6 +142,15 @@ export function ActivityScreen(): ReactElement {
             ))}
           </div>
         )}
+
+        {plan ? (
+          <RunPlanSection
+            view={plan}
+            unit={unit}
+            onStart={() => begin('run')}
+            onOpen={() => navigate('/atividade/plano')}
+          />
+        ) : null}
 
         <GoalsSection
           goals={model.goals}
@@ -205,6 +218,64 @@ export function ActivityScreen(): ReactElement {
         }}
       />
     </>
+  );
+}
+
+/**
+ * O plano de corrida, no sitio onde se corre.
+ *
+ * O plano nasce numa conversa com o assistente, mas corre-se aqui. Vivia so no
+ * separador da IA, e quem o criava e vinha a Atividade para correr nao o
+ * encontrava — precisamente o sitio onde fazia mais falta.
+ *
+ * O cartao nao e tocavel: um botao dentro de outro botao nao e HTML valido,
+ * e o leitor de ecra nao saberia qual dos dois anunciar.
+ */
+function RunPlanSection({
+  view, unit, onStart, onOpen,
+}: {
+  view: RunPlanView;
+  unit: 'km' | 'mi';
+  onStart: () => void;
+  onOpen: () => void;
+}): ReactElement {
+  const { plan, next, doneCount, total } = view;
+  const today = todayKey();
+
+  return (
+    <section>
+      <SectionHeader title="Plano de corrida" actionLabel="Ver plano" onAction={onOpen} />
+      <Card>
+        <div className="row row-between">
+          <span className="t-eyebrow">{plan.title}</span>
+          <span className="t-num t-sm muted">{doneCount} de {total}</span>
+        </div>
+        <div style={{ marginTop: 'var(--s-2)' }}>
+          <ProgressBar ratio={total > 0 ? doneCount / total : 0} />
+        </div>
+
+        {next ? (
+          <>
+            <p className="t-sm muted" style={{ marginTop: 'var(--s-4)' }}>
+              {next.date === today ? 'Hoje' : mediumDate(next.date)}
+            </p>
+            <p className="t-h1" style={{ marginTop: '0.25rem' }}>
+              {describeSession(next, unit)}
+            </p>
+            {next.note ? <p className="t-sm muted">{next.note}</p> : null}
+            {/* Um botao so, a toda a largura. O "Ver plano" ja esta no cabecalho
+                da seccao, e dois lado a lado partiam o texto em duas linhas. */}
+            <div style={{ marginTop: 'var(--s-4)' }}>
+              <Button variant="primary" icon="run" label="Começar corrida" block onClick={onStart} />
+            </div>
+          </>
+        ) : (
+          <p className="t-sm muted" style={{ marginTop: 'var(--s-4)' }}>
+            Plano concluído. Se quiseres uma distância maior, pede ao assistente.
+          </p>
+        )}
+      </Card>
+    </section>
   );
 }
 

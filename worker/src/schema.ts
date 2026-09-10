@@ -309,7 +309,7 @@ const mealDraft = z.object({
  */
 export const OPEN_PATHS = [
   '/hoje', '/agenda', '/treino', '/atividade', '/atividade/historico',
-  '/alimentacao', '/sono', '/ia', '/ia/corrida', '/ia/dados', '/perfil',
+  '/alimentacao', '/sono', '/ia', '/ia/corrida', '/atividade/plano', '/ia/dados', '/perfil',
 ] as const;
 
 export const actionSchema = z.discriminatedUnion('kind', [

@@ -78,7 +78,11 @@ export function AppRoutes(): ReactElement {
             <Route path="/sono" element={<SleepScreen />} />
             <Route path="/ia" element={<AssistantScreen />} />
             <Route path="/ia/dados" element={<ConsentScreen />} />
-            <Route path="/ia/corrida" element={<RunPlanScreen />} />
+            {/* O plano corre-se na Atividade. O endereco antigo continua a
+                funcionar: ha conversas guardadas e respostas do modelo que
+                apontam para ele. */}
+            <Route path="/atividade/plano" element={<RunPlanScreen />} />
+            <Route path="/ia/corrida" element={<Navigate to="/atividade/plano" replace />} />
             <Route path="/perfil" element={<ProfileScreen />} />
           </Route>
           <Route path="*" element={<Navigate to={DEFAULT_PATH} replace />} />

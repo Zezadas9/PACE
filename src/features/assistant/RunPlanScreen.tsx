@@ -23,7 +23,7 @@ import { EmptyState, ProgressBar, Row, Rows } from '../../ui/data';
 import { Sheet } from '../../ui/Sheet';
 import { Field, Input } from '../../ui/form';
 
-function describeSession(session: RunPlanSession, unit: 'km' | 'mi'): string {
+export function describeSession(session: RunPlanSession, unit: 'km' | 'mi'): string {
   if (session.kind === 'walk_run') {
     const first = session.segments[0];
     if (!first) return 'Corrida e caminhada';
@@ -63,7 +63,7 @@ export function RunPlanScreen(): ReactElement {
   if (!view) {
     return (
       <Screen>
-        <PageHeader eyebrow="Assistente" title="Plano de corrida" />
+        <PageHeader eyebrow="Atividade" title="Plano de corrida" />
         <EmptyState
           brand="corrida"
           title="Sem plano ativo"
@@ -85,7 +85,7 @@ export function RunPlanScreen(): ReactElement {
     <>
       <Screen>
         <PageHeader
-          eyebrow="Assistente"
+          eyebrow="Atividade"
           title={plan.title}
           subtitle={`${doneCount} de ${total} sessões concluídas`}
         />
@@ -180,7 +180,7 @@ export function RunPlanScreen(): ReactElement {
               confirmLabel: 'Terminar',
               danger: true,
             });
-            if (ok) { endRunPlan(repos); navigate('/ia'); }
+            if (ok) { endRunPlan(repos); navigate('/atividade'); }
           })()}
         />
       </Screen>

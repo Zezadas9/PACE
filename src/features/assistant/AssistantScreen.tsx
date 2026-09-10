@@ -214,7 +214,7 @@ export function AssistantScreen(): ReactElement {
       ) : null}
 
       {plan ? (
-        <Card onClick={() => navigate('/ia/corrida')}>
+        <Card onClick={() => navigate('/atividade/plano')}>
           <div className="row row-between">
             <div className="grow">
               <p className="t-eyebrow">Plano de corrida</p>
