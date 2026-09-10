@@ -31,7 +31,7 @@ const CACHE = `pace-${CACHE_VERSION}`;
  * que aconteceu, mais do que uma vez. Com o resumo dos bytes no URL, arte nova
  * e um URL novo, e um URL novo nunca esta em cache.
  */
-const ICONS_VERSION = '0b355c97';
+const ICONS_VERSION = '7aec8f4d';
 
 const ICON_NAMES = [
   'agenda',
@@ -42,8 +42,10 @@ const ICON_NAMES = [
   'caminhada-rapida',
   'caminhada',
   'consistencia',
+  'consistencia-escuro',
   'corrida',
   'dias-perfeitos',
+  'dias-perfeitos-escuro',
   'estatisticas',
   'frequencia',
   'hidratacao',
@@ -63,6 +65,7 @@ const ICON_NAMES = [
   'relogio',
   'saude',
   'sequencia',
+  'sequencia-escuro',
   'som',
   'sono',
   'streak-1',

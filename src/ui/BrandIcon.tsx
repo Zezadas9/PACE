@@ -71,6 +71,19 @@ const LIGHT_ARTWORK: ReadonlySet<BrandIconName> = new Set([
   'agenda', 'corrida', 'planos', 'dias-perfeitos', 'relogio',
 ]);
 
+/**
+ * Icones com uma copia propria para o tema escuro.
+ *
+ * Os tres da sequencia vem da folha branca, e sobre branco o que sobra do
+ * recorte nao se ve. Sobre preto via-se tudo: poeira por baixo da chama e das
+ * barras, buracos na estrela, um bloco branco pendurado por baixo do
+ * calendario. A copia escura e gerada a parte por `tools/build-brand-icons.cjs`
+ * — assim a versao clara, que esta boa, nao corre risco nenhum.
+ */
+const DARK_VARIANT: ReadonlySet<BrandIconName> = new Set([
+  'sequencia', 'dias-perfeitos', 'consistencia',
+]);
+
 function contrastOf(name: BrandIconName): 'dark' | 'light' | undefined {
   if (DARK_ARTWORK.has(name)) return 'dark';
   if (LIGHT_ARTWORK.has(name)) return 'light';
@@ -86,8 +99,8 @@ function contrastOf(name: BrandIconName): 'dark' | 'light' | undefined {
  * correção. Com ele, arte nova é um endereço novo, e um endereço novo não
  * pode estar em cache. `tools/stamp-icons.cjs` mantém o valor.
  */
-function assetFor(name: BrandIconName): string {
-  return `./icons/${name}.png?v=${BRAND_ICON_VERSION}`;
+function assetFor(name: BrandIconName, variant: '' | '-escuro' = ''): string {
+  return `./icons/${name}${variant}.png?v=${BRAND_ICON_VERSION}`;
 }
 
 export function BrandIcon({
@@ -101,26 +114,41 @@ export function BrandIcon({
   className?: string;
 }): ReactElement {
   const style: CSSProperties = { width: size, height: size };
+  const classes = (theme?: 'theme-light-only' | 'theme-dark-only'): string => [
+    'brand-icon',
+    float ? 'is-floating' : '',
+    `brand-${name}`,
+    theme ?? '',
+    className ?? '',
+  ].filter(Boolean).join(' ');
 
-  return (
-    <img
-      className={[
-        'brand-icon',
-        float ? 'is-floating' : '',
-        `brand-${name}`,
-        className ?? '',
-      ].filter(Boolean).join(' ')}
-      data-contrast={contrastOf(name)}
-      src={assetFor(name)}
-      width={size}
-      height={size}
-      style={style}
-      alt={label ?? ''}
-      aria-hidden={label ? undefined : true}
-      draggable={false}
-      decoding="async"
-    />
-  );
+  const common = {
+    'data-contrast': contrastOf(name),
+    width: size,
+    height: size,
+    style,
+    alt: label ?? '',
+    'aria-hidden': label ? undefined : true,
+    draggable: false,
+    decoding: 'async' as const,
+  };
+
+  /*
+   * As duas copias ficam no DOM e o CSS mostra uma. Escolher em JavaScript
+   * obrigava a seguir o tema do sistema em tempo real; o CSS ja o faz, com as
+   * mesmas regras que o resto da aplicacao usa. A escondida tem
+   * `display: none`, por isso nao ocupa espaco nem e anunciada.
+   */
+  if (DARK_VARIANT.has(name)) {
+    return (
+      <>
+        <img {...common} className={classes('theme-light-only')} src={assetFor(name)} />
+        <img {...common} className={classes('theme-dark-only')} src={assetFor(name, '-escuro')} />
+      </>
+    );
+  }
+
+  return <img {...common} className={classes()} src={assetFor(name)} />;
 }
 
 /**

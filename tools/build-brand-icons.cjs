@@ -872,8 +872,13 @@ function stripHaloSafely(image, box, threshold) {
   return true;
 }
 
-/** Escreve um icone: centrado, do mesmo tamanho visual, com a mesma margem. */
-function writeIcon(image, box, name) {
+/**
+ * Escreve um icone: centrado, do mesmo tamanho visual, com a mesma margem.
+ *
+ * `file` existe para as variantes: a do tema escuro usa os ajustes do icone de
+ * que vem, mas grava-se com outro nome.
+ */
+function writeIcon(image, box, name, file = name) {
   const tweak = TWEAKS[name];
   const out = new PNG({ width: CANVAS, height: CANVAS });
   out.data.fill(0);
@@ -909,9 +914,213 @@ function writeIcon(image, box, name) {
     }
   }
 
-  const file = path.join(OUT_DIR, `${name}.png`);
-  fs.writeFileSync(file, PNG.sync.write(out, { deflateLevel: 9 }));
-  return fs.statSync(file).size;
+  const target = path.join(OUT_DIR, `${file}.png`);
+  fs.writeFileSync(target, PNG.sync.write(out, { deflateLevel: 9 }));
+  return fs.statSync(target).size;
+}
+
+/* --- Variantes para o tema escuro ---------------------------------------- */
+
+/**
+ * Os icones da folha branca que precisam de uma copia so para o tema escuro.
+ *
+ * Sobre branco, o que sobra do recorte e invisivel: a sombra do chao e branca
+ * sobre branco, e um buraco na estrela mostra o branco da pagina, que e da cor
+ * da estrela. Sobre preto, as duas coisas saltam a vista — uma mancha clara por
+ * baixo da chama, poeira entre as barras, uma estrela com buracos pretos e um
+ * bloco branco pendurado por baixo do calendario.
+ *
+ * Mexer no recorte comum para os corrigir punha em risco a versao clara, que
+ * esta boa. Por isso estes tres ganham uma copia propria, `<nome>-escuro.png`,
+ * e a app escolhe entre as duas conforme o tema.
+ *
+ * `neutralBody` diz se o desenho tem partes legitimas sem cor. A chama e as
+ * barras nao tem — tudo o que e delas e laranja, amarelo ou azul, e o que e
+ * branco ou cinzento e sujidade. O calendario tem: o proprio calendario e
+ * branco, e ai a cor nao chega para separar o corpo do chao.
+ */
+const DARK_VARIANTS = {
+  sequencia: { neutralBody: false },
+  consistencia: { neutralBody: false },
+  'dias-perfeitos': { neutralBody: true },
+};
+
+/** Acima disto um pixel tem cor; abaixo, e branco, cinzento ou preto. */
+const CROMA_CORPO = 25;
+
+function darkVariant(image, box, { neutralBody }) {
+  const { W, data, alpha, background } = image;
+  const bw = box.w;
+  const bh = box.h;
+  const n = bw * bh;
+  const at = (p) => {
+    const x = p % bw;
+    return (box.y0 + (p - x) / bw) * W + (box.x0 + x);
+  };
+
+  // Opacidade e cor de cada pixel da caixa. A cor e a do desenho, com o branco
+  // da folha retirado — sem isso, uma aresta laranja meio transparente parecia
+  // rosa-claro e contava como neutra.
+  const a = new Uint8Array(n);
+  const colorido = new Uint8Array(n);
+  for (let p = 0; p < n; p += 1) {
+    const k = at(p);
+    a[p] = alpha[k];
+    const av = alpha[k] / 255;
+    // Abaixo de 15% a divisao pelo alfa amplifica ruido em vez de cor.
+    if (av < 0.15) continue;
+    const i = k * 4;
+    const r = unmix(data[i], av, background);
+    const g = unmix(data[i + 1], av, background);
+    const b = unmix(data[i + 2], av, background);
+    const max = Math.max(r, g, b);
+    const croma = max - Math.min(r, g, b);
+    const luz = 0.299 * r + 0.587 * g + 0.114 * b;
+    /*
+     * Palido: claro e quase sem cor. E o reflexo rosado por baixo da chama —
+     * tem cor que chegue para passar no croma, mas nao e a chama. O miolo
+     * amarelo e tao claro como ele, e fica porque e saturado.
+     */
+    const palido = luz > 170 && max > 0 && croma / max < 0.3;
+    if (croma > CROMA_CORPO && !palido) colorido[p] = 1;
+  }
+
+  /** O que se alcanca a partir da borda da caixa, andando so por `passa`. */
+  const alcance = (passa) => {
+    const visto = new Uint8Array(n);
+    const pilha = [];
+    const entra = (p) => {
+      if (visto[p] || !passa(p)) return;
+      visto[p] = 1;
+      pilha.push(p);
+    };
+    for (let x = 0; x < bw; x += 1) { entra(x); entra((bh - 1) * bw + x); }
+    for (let y = 0; y < bh; y += 1) { entra(y * bw); entra(y * bw + bw - 1); }
+    while (pilha.length) {
+      const p = pilha.pop();
+      const x = p % bw;
+      if (x > 0) entra(p - 1);
+      if (x < bw - 1) entra(p + 1);
+      if (p >= bw) entra(p - bw);
+      if (p < n - bw) entra(p + bw);
+    }
+    return visto;
+  };
+
+  const corpo = new Uint8Array(n);
+
+  if (!neutralBody) {
+    // O corpo e o que tem cor, e o que a cor fecha por dentro — o brilho
+    // quase branco no meio de uma chama e dela, a poeira ao lado nao e.
+    const fora = alcance((p) => !colorido[p]);
+    for (let p = 0; p < n; p += 1) if (a[p] >= 128 && !fora[p]) corpo[p] = 1;
+  } else {
+    // O chao fica abaixo da ultima linha com cor. Tres pixeis coloridos
+    // chegam para contar: o fundo do emblema e uma curva, nao uma recta.
+    let ultima = bh - 1;
+    for (let y = bh - 1; y >= 0; y -= 1) {
+      let conta = 0;
+      for (let x = 0; x < bw; x += 1) {
+        if (colorido[y * bw + x] && a[y * bw + x] >= 128) conta += 1;
+      }
+      if (conta >= 3) { ultima = y; break; }
+    }
+    const chao = ultima + 2;
+
+    // Depois, as pecas solidas acima do chao. As pequenas sao migalhas.
+    const solido = (p) => a[p] >= 96 && Math.floor(p / bw) <= chao;
+    const peca = new Int32Array(n).fill(-1);
+    const areas = [];
+    for (let inicio = 0; inicio < n; inicio += 1) {
+      if (peca[inicio] >= 0 || !solido(inicio)) continue;
+      const id = areas.length;
+      let area = 0;
+      const pilha = [inicio];
+      peca[inicio] = id;
+      while (pilha.length) {
+        const p = pilha.pop();
+        area += 1;
+        const x = p % bw;
+        for (const q of [x > 0 ? p - 1 : -1, x < bw - 1 ? p + 1 : -1, p - bw, p + bw]) {
+          if (q < 0 || q >= n || peca[q] >= 0 || !solido(q)) continue;
+          peca[q] = id;
+          pilha.push(q);
+        }
+      }
+      areas.push(area);
+    }
+    const maior = Math.max(0, ...areas);
+    for (let p = 0; p < n; p += 1) {
+      if (peca[p] >= 0 && areas[peca[p]] >= maior * 0.05) corpo[p] = 1;
+    }
+  }
+
+  /*
+   * Para achar os buracos, o corpo e fechado um pixel primeiro.
+   *
+   * O JPEG deixa falhas de um pixel nos aros finos; com uma falha, o miolo do
+   * aro comunica com o exterior e nunca e visto como buraco. O fecho so serve
+   * para esta procura: os pixeis que acrescenta nao ficam opacos, senao cada
+   * canto concavo do desenho ganhava um ponto branco.
+   */
+  const fechado = new Uint8Array(n);
+  for (let p = 0; p < n; p += 1) {
+    if (corpo[p]) { fechado[p] = 1; continue; }
+    const x = p % bw;
+    const y = (p - x) / bw;
+    let lados = 0;
+    if (x > 0 && corpo[p - 1]) lados += 1;
+    if (x < bw - 1 && corpo[p + 1]) lados += 1;
+    if (y > 0 && corpo[p - bw]) lados += 1;
+    if (y < bh - 1 && corpo[p + bw]) lados += 1;
+    if (lados >= 2) fechado[p] = 1;
+  }
+
+  // Buracos: o que o corpo fecha e dele. Ficam opacos e com a cor da folha —
+  // a da estrela, a do aro — em vez de mostrarem o fundo do tema.
+  const aberto = alcance((p) => !fechado[p]);
+  const tapado = new Uint8Array(n);
+  for (let p = 0; p < n; p += 1) {
+    if (!corpo[p] && !aberto[p]) { corpo[p] = 1; tapado[p] = 1; }
+  }
+
+  // A linha mais baixa do corpo em cada coluna. Abaixo dela, no calendario, o
+  // que ha e a sombra do chao — e sobre preto essa sombra e uma prateleira
+  // clara colada ao fundo do desenho.
+  const fundo = new Int32Array(bw).fill(-1);
+  for (let x = 0; x < bw; x += 1) {
+    for (let y = bh - 1; y >= 0; y -= 1) {
+      if (corpo[y * bw + x]) { fundo[x] = y; break; }
+    }
+  }
+
+  // A orla: um pixel meio transparente so fica se estiver encostado ao corpo.
+  // E o antisserrilhado da aresta; mais longe do que isso e poeira.
+  const out = new Uint8Array(alpha);
+  for (let p = 0; p < n; p += 1) {
+    const k = at(p);
+    if (tapado[p]) { out[k] = 255; continue; }
+    if (corpo[p]) continue;
+    const x = p % bw;
+    const y = (p - x) / bw;
+    let encostado = false;
+    for (let dy = -1; dy <= 1 && !encostado; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= bw || ny >= bh) continue;
+        if (corpo[ny * bw + nx]) { encostado = true; break; }
+      }
+    }
+    if (!encostado) { out[k] = 0; continue; }
+    // Encostado, mas so fica se for aresta do desenho e nao a sombra dele: na
+    // chama e nas barras a aresta tem cor; no calendario, a sombra e a que
+    // fica por baixo.
+    if (!neutralBody && !colorido[p]) { out[k] = 0; continue; }
+    if (neutralBody && y > fundo[x]) out[k] = 0;
+  }
+
+  return { ...image, alpha: out };
 }
 
 /* --- Correr ------------------------------------------------------------- */
@@ -936,6 +1145,11 @@ for (const sheet of SHEETS) {
       }
       bytes += writeIcon(image, box, name);
       written += 1;
+      const variante = DARK_VARIANTS[name];
+      if (variante) {
+        bytes += writeIcon(darkVariant(image, box, variante), box, name, `${name}-escuro`);
+        written += 1;
+      }
     });
   });
   console.log(`${sheet.file}: ok`);

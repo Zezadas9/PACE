@@ -186,3 +186,19 @@ button:active .brand-icon { transform: scale(0.92); }
   width: 2.25rem;
   height: 2.25rem;
 }
+
+/* --- Copias para o tema escuro -------------------------------------------------
+   Alguns icones tem uma versao so para o escuro (ver DARK_VARIANT em
+   BrandIcon.tsx). As duas estao no DOM; mostra-se a do tema em uso, com as
+   mesmas regras de tema do resto do ficheiro — escolha explicita primeiro,
+   sistema quando nao ha escolha. */
+
+.brand-icon.theme-dark-only { display: none; }
+
+:root[data-theme="dark"] .brand-icon.theme-dark-only { display: block; }
+:root[data-theme="dark"] .brand-icon.theme-light-only { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-icon.theme-dark-only { display: block; }
+  :root:not([data-theme="light"]) .brand-icon.theme-light-only { display: none; }
+}

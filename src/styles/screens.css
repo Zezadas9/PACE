@@ -385,6 +385,11 @@
   width: 100%;
   max-width: 34px;
   min-width: 26px;
+  /* A agenda tem um `.mark` generico — o pontinho de 4 px. Esta regra
+     sobrepunha-lhe a largura mas nao a altura, e com uma altura escrita o
+     aspect-ratio e ignorado: os circulos da semana ficavam com 34 x 4 px, e o
+     conteudo transbordava por cima das letras dos dias. */
+  height: auto;
   aspect-ratio: 1;
   border-radius: var(--r-full);
   background: var(--c-surface-2);

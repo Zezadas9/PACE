@@ -408,3 +408,257 @@
 .agenda-time { width: 2.85rem; }
 .fill-all { padding: 0.28rem 0.6rem; font-size: 0.625rem; letter-spacing: 0.05em; }
 .agenda-open .title { line-height: 1.25; }
+
+/* --- Sequência: a parte que dá gosto ------------------------------------------------
+   Tudo o que mexe aqui mexe mais quanto mais quente está a sequência: o cartão
+   recebe --heat, de 0 a 1, e o brilho e as faúlhas leem-no. Nada disto corre
+   para quem pediu menos movimento ao sistema. */
+
+.streak { position: relative; overflow: hidden; isolation: isolate; }
+
+/* Um calor discreto a sair do canto da chama. Aos 30 dias vê-se; ao primeiro,
+   quase não. */
+.streak::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -45%;
+  left: -30%;
+  width: 90%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c-ember) 0%, transparent 62%);
+  opacity: calc(var(--heat, 0) * 0.16);
+  pointer-events: none;
+  transition: opacity 900ms var(--ease);
+}
+
+.streak-hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+
+.streak-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c-ember) 60%, transparent) 0%, transparent 68%);
+  opacity: 0;
+  pointer-events: none;
+}
+.streak-hero[data-hot="true"] .streak-glow {
+  opacity: calc(0.3 + var(--heat, 0) * 0.55);
+  animation: streak-glow 2.8s ease-in-out infinite;
+}
+@keyframes streak-glow {
+  0%, 100% { transform: scale(0.84); }
+  50%      { transform: scale(1.08); }
+}
+
+/* A chama deixa de flutuar e passa a arder: sobe um pouco, estica e encolhe,
+   com a base parada — como uma chama, e não como um balão. */
+.streak-hero .streak-flame { position: relative; z-index: 1; transform-origin: 50% 88%; }
+.streak-hero[data-hot="true"] .streak-flame {
+  animation:
+    flame-in 520ms var(--ease-out) both,
+    flame-flicker 2.4s ease-in-out 520ms infinite;
+}
+@keyframes flame-flicker {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  25%      { transform: translateY(-1px) scale(1.03, 0.97); }
+  50%      { transform: translateY(-3px) scale(0.97, 1.05); }
+  75%      { transform: translateY(-1px) scale(1.02, 0.99); }
+}
+
+.streak-embers {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 12px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.streak-embers i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--size, 3px);
+  height: var(--size, 3px);
+  border-radius: 50%;
+  background: #FFC04D;
+  box-shadow: 0 0 6px 1px rgba(255, 138, 40, 0.8);
+  opacity: 0;
+  animation: ember-rise 2.6s ease-out infinite;
+}
+@keyframes ember-rise {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+  12%  { opacity: 1; }
+  100% { transform: translate(var(--dx, 0px), -48px) scale(0.2); opacity: 0; }
+}
+
+/* O número salta quando sobe, e um "+1" sobe com ele. */
+.streak-count-wrap { position: relative; display: inline-block; }
+.streak-count.is-rising {
+  transform-origin: left 80%;
+  animation: count-rise 640ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes count-rise {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.22); color: var(--c-ember); }
+  100% { transform: scale(1); }
+}
+.streak-plus {
+  position: absolute;
+  top: -2px;
+  left: 100%;
+  margin-left: 6px;
+  font-weight: var(--fw-medium);
+  color: var(--c-ember);
+  pointer-events: none;
+  animation: plus-rise 1200ms var(--ease-out) both;
+}
+@keyframes plus-rise {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.8); }
+  20%  { opacity: 1; transform: translateY(0) scale(1.12); }
+  100% { opacity: 0; transform: translateY(-24px) scale(1); }
+}
+
+/* A semana: os dias perfeitos acendem um a um, e dois seguidos ficam presos por
+   uma corrente que cresce do dia anterior para o seguinte. */
+.streak-day { position: relative; }
+/* O involucro do circulo ocupa a celula toda: e a referencia da corrente, que
+   parte do centro dele para o centro do dia anterior. */
+.streak-day .mark-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.streak-day .mark { position: relative; z-index: 1; }
+.streak-day[data-state="perfect"] .mark {
+  animation-delay: calc(var(--i, 0) * 70ms);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c-ember) 30%, transparent);
+}
+.streak-chain {
+  position: absolute;
+  z-index: 0;
+  top: calc(50% - 2px);
+  right: 50%;
+  width: calc(100% + var(--s-2));
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c-ember) 45%, transparent), var(--c-ember));
+  transform-origin: left center;
+  animation: chain-grow 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+}
+@keyframes chain-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Hoje, enquanto não fecha, respira. Um convite, e não um alarme. */
+.streak-day[data-today="true"][data-state="open"] .mark {
+  animation: today-breathe 2.4s ease-in-out infinite;
+}
+@keyframes today-breathe {
+  0%, 100% { box-shadow: 0 0 0 1.5px var(--c-accent); }
+  50%      { box-shadow: 0 0 0 1.5px var(--c-accent), 0 0 0 6px color-mix(in srgb, var(--c-ember) 22%, transparent); }
+}
+
+/* O próximo marco e a escada. */
+.streak-track {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.streak-next strong { font-weight: var(--fw-medium); color: var(--c-ember); }
+.streak-next-bar {
+  position: relative;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  overflow: hidden;
+}
+.streak-next-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #FF8A3D, #FFC04D);
+  transition: width 700ms var(--ease-out);
+}
+/* Um brilho a atravessar a barra de vez em quando: está viva, está a encher. */
+.streak-next-bar > span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.55) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: bar-shine 3s ease-in-out 800ms infinite;
+}
+@keyframes bar-shine {
+  0%        { transform: translateX(-100%); }
+  55%, 100% { transform: translateX(100%); }
+}
+
+.streak-ladder {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.streak-rung {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.streak-rung .rung-art {
+  display: grid;
+  place-items: center;
+  width: min(30px, 100%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transition: transform 300ms var(--ease-out);
+}
+/* O que ainda não se ganhou fica a cinzento: vê-se o que falta, sem gritar. */
+.streak-rung[data-reached="false"] .rung-art { filter: grayscale(1); opacity: 0.32; }
+.streak-rung[data-reached="true"] .rung-art {
+  background: var(--c-ember-soft);
+  animation: mark-pop 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.streak-rung[data-current="true"] .rung-art {
+  transform: scale(1.16);
+  box-shadow: 0 0 0 1.5px var(--c-ember);
+}
+.streak-rung .rung-days {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.streak-rung[data-reached="true"] .rung-days { color: var(--c-ink-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-glow,
+  .streak-hero[data-hot="true"] .streak-flame,
+  .streak-count.is-rising,
+  .streak-chain,
+  .streak-day .mark,
+  .streak-next-bar > span::after,
+  .streak-rung .rung-art { animation: none !important; }
+  .streak-embers,
+  .streak-plus { display: none; }
+}
+

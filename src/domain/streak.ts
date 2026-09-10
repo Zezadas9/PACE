@@ -265,3 +265,42 @@ export function streakDetail(
     toRecord,
   };
 }
+
+/**
+ * Quao quente esta a sequencia, de 0 a 1.
+ *
+ * Logaritmico de proposito: do dia 1 ao dia 7 a diferenca tem de se ver, e do
+ * dia 200 ao 207 nao — senao a chama estava sempre ao maximo ao fim de um mes,
+ * e deixava de haver para onde crescer. Chega ao topo aos 30 dias.
+ */
+export function streakHeat(days: number): number {
+  if (days <= 0) return 0;
+  return Math.min(1, Math.log(days + 1) / Math.log(31));
+}
+
+export interface MilestoneProgress {
+  /** O ultimo marco ja passado, ou 0 antes do primeiro. */
+  from: number;
+  to: number;
+  /** Quanto do caminho entre os dois ja foi feito, de 0 a 1. */
+  ratio: number;
+  left: number;
+}
+
+/**
+ * O caminho entre o ultimo marco e o proximo.
+ *
+ * Mede-se a partir do marco anterior e nao do zero: aos 31 dias, a caminho dos
+ * 60, uma barra contada do zero estaria a meio e pareceria que falta muito. Do
+ * marco anterior esta no principio, que e onde a pessoa sente que esta.
+ */
+export function milestoneProgress(current: number, next: number | null): MilestoneProgress | null {
+  if (next == null || next <= current) return null;
+  const from = STREAK_MILESTONES.filter((milestone) => milestone <= current).pop() ?? 0;
+  return {
+    from,
+    to: next,
+    ratio: (current - from) / (next - from),
+    left: next - current,
+  };
+}
