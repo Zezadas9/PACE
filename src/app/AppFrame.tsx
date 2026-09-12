@@ -7,21 +7,31 @@
 
 import { useEffect, type ReactElement } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { ACTIVITY_SESSION_PATH, ONBOARDING_PATH, SESSION_PATH } from '../core/constants';
+import {
+  ACTIVITY_SESSION_PATH, ONBOARDING_PATH, SESSION_PATH, SUBSCRIPTION_PATH,
+} from '../core/constants';
 import { TabBar } from './navigation/TabBar';
 import { useHardwareBack } from './navigation/useHardwareBack';
 import {
   useApp, useFeedback, usePreferences, useStoreVersion,
 } from './providers/appContext';
 import { useUi } from './providers/uiContext';
+import { useLicenceSync } from './useLicenceSync';
 import { useReminderSync } from './useReminderSync';
 
 export function AppFrame(): ReactElement {
   const location = useLocation();
-  // Onboarding and a running session both own the whole screen.
+  /*
+   * Onboarding and a running session both own the whole screen.
+   *
+   * A assinatura tambem: com a aplicacao bloqueada, os separadores so
+   * ressaltavam de volta para aqui — uma barra que so serve para nao funcionar.
+   * Quem chega por escolha sai pelo botao "Voltar".
+   */
   const bare = location.pathname === ONBOARDING_PATH
     || location.pathname === SESSION_PATH
-    || location.pathname === ACTIVITY_SESSION_PATH;
+    || location.pathname === ACTIVITY_SESSION_PATH
+    || location.pathname === SUBSCRIPTION_PATH;
 
   useHardwareBack();
   useTheme();
@@ -30,6 +40,7 @@ export function AppFrame(): ReactElement {
   useDegradedStorageWarning();
   useFeedbackPreferences();
   useReminderSync();
+  useLicenceSync();
 
   return (
     <div className="app" data-chrome={bare ? 'bare' : 'full'}>

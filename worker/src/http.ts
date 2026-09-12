@@ -7,9 +7,10 @@
  * pedido.
  */
 
+import type { LicencaEnv } from './licenca';
 import type { PushEnv } from './push';
 
-export interface Env extends PushEnv {
+export interface Env extends PushEnv, LicencaEnv {
   ANTHROPIC_API_KEY?: string;
   ANTHROPIC_MODEL?: string;
   ALLOWED_ORIGINS?: string;
@@ -44,7 +45,8 @@ export function corsHeaders(origin: string | null, env: Env): Record<string, str
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'content-type',
+    // `authorization` leva o cartao de licenca.
+    'Access-Control-Allow-Headers': 'content-type, authorization',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };

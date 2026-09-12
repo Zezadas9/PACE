@@ -6,11 +6,13 @@
  * is the set of origins this bundle has to survive.
  */
 
-import type { ReactElement, ReactNode } from 'react';
+import { useMemo, type ReactElement, type ReactNode } from 'react';
 import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
-import { DEFAULT_PATH, ONBOARDING_PATH } from '../core/constants';
+import { DEFAULT_PATH, ONBOARDING_PATH, SUBSCRIPTION_PATH } from '../core/constants';
 import { AppFrame } from './AppFrame';
-import { useUser } from './providers/appContext';
+import { useApp, useStoreVersion, useUser } from './providers/appContext';
+import { accessOf, accountStart } from '../services/subscription';
+import { SubscriptionScreen } from '../features/subscription/SubscriptionScreen';
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { TodayScreen } from '../features/today/TodayScreen';
 import { AgendaScreen } from '../features/agenda/AgendaScreen';
@@ -32,6 +34,24 @@ import { RunPlanScreen } from '../features/assistant/RunPlanScreen';
 function RequireOnboarding({ children }: { children: ReactNode }): ReactElement {
   const user = useUser();
   if (!user?.onboardingCompleted) return <Navigate to={ONBOARDING_PATH} replace />;
+  return <>{children}</>;
+}
+
+/**
+ * Sem acesso, so o ecra da assinatura.
+ *
+ * `unknown` — ainda nao se falou com o servidor — deixa passar: bloquear quem
+ * acabou de instalar sem rede era comecar mal. E `services/subscription.ts`
+ * que fecha essa porta ao fim da semana, mesmo sem servidor nenhum.
+ */
+function RequireAccess({ children }: { children: ReactNode }): ReactElement {
+  const { repos } = useApp();
+  const version = useStoreVersion();
+  const access = useMemo(
+    () => accessOf(repos.settings.get().licence, accountStart(repos)),
+    [repos, version],
+  );
+  if (access === 'blocked') return <Navigate to={SUBSCRIPTION_PATH} replace />;
   return <>{children}</>;
 }
 
@@ -62,7 +82,15 @@ export function AppRoutes(): ReactElement {
               </RequireOnboarding>
             }
           >
-            <Route path="/hoje" element={<TodayScreen />} />
+            <Route path={SUBSCRIPTION_PATH} element={<SubscriptionScreen />} />
+            <Route
+              element={
+                <RequireAccess>
+                  <Outlet />
+                </RequireAccess>
+              }
+            >
+              <Route path="/hoje" element={<TodayScreen />} />
             <Route path="/agenda" element={<AgendaScreen />} />
             <Route path="/treino" element={<WorkoutScreen />} />
             {/* Full-screen: mid-set is the worst moment to tap a tab by accident. */}
@@ -83,7 +111,8 @@ export function AppRoutes(): ReactElement {
                 apontam para ele. */}
             <Route path="/atividade/plano" element={<RunPlanScreen />} />
             <Route path="/ia/corrida" element={<Navigate to="/atividade/plano" replace />} />
-            <Route path="/perfil" element={<ProfileScreen />} />
+              <Route path="/perfil" element={<ProfileScreen />} />
+            </Route>
           </Route>
           <Route path="*" element={<Navigate to={DEFAULT_PATH} replace />} />
         </Route>

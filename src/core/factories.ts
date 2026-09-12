@@ -324,6 +324,17 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       pushId: null,
     },
     feedback: { sound: true, haptics: true },
+    licence: {
+      device: null,
+      card: null,
+      state: null,
+      validUntil: null,
+      endsAt: null,
+      renewsAt: null,
+      portalUrl: null,
+      canBuy: false,
+      checkedAt: null,
+    },
     celebration: { perfectDay: null, streak: 0, goalsComplete: 0 },
     // O assistente nasce desligado e sem acesso a nada: a autorização é do
     // utilizador, categoria a categoria, e não uma caixa já assinalada.

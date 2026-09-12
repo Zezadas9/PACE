@@ -639,8 +639,34 @@ export interface BackupSettings {
   lastExportAt: Timestamp | null;
 }
 
+/**
+ * A assinatura, tal como este telemovel a conhece.
+ *
+ * Nada aqui e de confianca por si so: o cartao e assinado pelo servidor, e e o
+ * servidor que o verifica quando a aplicacao lhe pede seja o que for. O que
+ * esta guardado aqui serve para a aplicacao saber o que mostrar, e para
+ * continuar a abrir sem rede ate o cartao expirar.
+ */
+export interface LicenceSettings {
+  /** Identificador opaco deste aparelho. */
+  device: string | null;
+  card: string | null;
+  state: 'trial' | 'paid' | 'lifetime' | 'blocked' | 'unmanaged' | null;
+  /** Ate quando o cartao vale, lido do proprio cartao. */
+  validUntil: string | null;
+  /** Quando acaba a experiencia. */
+  endsAt: string | null;
+  renewsAt: string | null;
+  portalUrl: string | null;
+  /** Se a loja esta pronta a vender — sem isso nao se mostra o botao. */
+  canBuy: boolean;
+  checkedAt: string | null;
+}
+
 export interface AppSettings {
   notifications: NotificationSettings;
+  /** Additive, como o resto: normalize preenche, sem migracao. */
+  licence: LicenceSettings;
   feedback: FeedbackSettings;
   celebration: CelebrationState;
   /** Additive, como o feedback: normalize preenche, sem migração. */

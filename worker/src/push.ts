@@ -19,18 +19,10 @@
 
 import { z } from 'zod';
 import { fail, json } from './http';
+import type { KvStore } from './kv';
 
-/** O bocado da API do KV que isto usa. Estreito, para os testes o imitarem. */
-export interface PushStore {
-  get(key: string): Promise<string | null>;
-  put(key: string, value: string): Promise<void>;
-  delete(key: string): Promise<void>;
-  list(options: { prefix: string; cursor?: string }): Promise<{
-    keys: Array<{ name: string }>;
-    list_complete: boolean;
-    cursor?: string;
-  }>;
-}
+/** O armazenamento das subscricoes. A forma vive em `kv.ts`, com as licencas. */
+export type PushStore = KvStore;
 
 export interface PushEnv {
   PUSH?: PushStore;

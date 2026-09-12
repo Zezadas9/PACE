@@ -324,6 +324,39 @@ export interface FoodDatabasePort extends Capability {
   byBarcode(barcode: string): Promise<FoodResult | null>;
 }
 
+/* --- Licenca ------------------------------------------------------------- */
+
+/** O que o servidor diz sobre o direito de usar a aplicacao. */
+export interface LicenceInfo {
+  state: 'trial' | 'paid' | 'lifetime' | 'blocked' | 'unmanaged';
+  /** O cartao assinado. Ausente quando nao ha acesso. */
+  card?: string;
+  /** Quando acaba a experiencia. */
+  endsAt?: string;
+  renewsAt?: string | null;
+  /** Onde se gere a subscricao, no Lemon Squeezy. */
+  portalUrl?: string | null;
+  /** Se a loja esta pronta a vender. */
+  canBuy?: boolean;
+}
+
+export type RedeemResult =
+  | { ok: true; info: LicenceInfo }
+  | { ok: false; error: 'invalid' | 'email' | 'offline' };
+
+/**
+ * A porta da assinatura.
+ *
+ * Nao sabe precos nem cartoes de credito: pergunta o estado, entrega codigos e
+ * pede o endereco do checkout. Quem cobra e o Lemon Squeezy, e quem decide e o
+ * Worker.
+ */
+export interface LicencePort {
+  status(device: string): Promise<LicenceInfo | null>;
+  redeem(device: string, code: string, email: string): Promise<RedeemResult>;
+  checkout(device: string, code: string | null): Promise<string | null>;
+}
+
 /* --- Push ---------------------------------------------------------------- */
 
 /** O resultado de ligar o push, com as causas que o ecra precisa de distinguir. */
@@ -356,4 +389,5 @@ export interface Platform {
   assistant: AssistantPort;
   foodDatabase: FoodDatabasePort;
   push: PushPort;
+  licence: LicencePort;
 }

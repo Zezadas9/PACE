@@ -14,6 +14,13 @@ ANTHROPIC_MODEL = "claude-sonnet-4-6"
 ALLOWED_ORIGINS = "https://zezadas9.github.io,http://localhost:5173,http://localhost:4173"
 # Quem os servicos de push (Apple, Google) contactam se algo correr mal.
 VAPID_SUBJECT = "https://zezadas9.github.io/"
+# Onde a aplicacao vive: e para aqui que o checkout volta depois de pagar.
+APP_URL = "https://zezadas9.github.io/PACE"
+# A loja e o produto no Lemon Squeezy. Identificadores publicos, nao segredos.
+# Ficam vazios ate `npm run worker:pagamentos-setup` os preencher; enquanto
+# estiverem vazios, a aplicacao nao cobra nada a ninguem.
+LS_STORE_ID = ""
+LS_VARIANT_ID = ""
 
 # A chave NAO vive aqui. Fica como secret:
 #   npx wrangler secret put ANTHROPIC_API_KEY

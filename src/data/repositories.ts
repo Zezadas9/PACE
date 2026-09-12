@@ -129,6 +129,16 @@ export class SettingsRepository {
     return this.store.snapshot.settings;
   }
 
+  updateLicence(patch: Partial<AppSettings['licence']>): AppSettings {
+    const current = this.store.snapshot.settings;
+    this.store.snapshot.settings = {
+      ...current,
+      licence: { ...current.licence, ...patch },
+    };
+    this.store.persist();
+    return this.store.snapshot.settings;
+  }
+
   updateCelebration(patch: Partial<AppSettings['celebration']>): AppSettings {
     const current = this.store.snapshot.settings;
     this.store.snapshot.settings = {

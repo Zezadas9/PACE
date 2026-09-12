@@ -14,7 +14,8 @@
     "secret:list": "wrangler secret list",
     "login": "wrangler login",
     "whoami": "wrangler whoami",
-    "push:setup": "node tools/setup-push.mjs"
+    "push:setup": "node tools/setup-push.mjs",
+    "pagamentos:setup": "node tools/setup-pagamentos.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

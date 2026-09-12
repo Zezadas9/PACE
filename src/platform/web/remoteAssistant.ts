@@ -15,6 +15,7 @@
  */
 
 import { respond } from '../../domain/coach';
+import { cardHeaders } from './licence';
 import type { CoachBlock, CoachTurn } from '../../domain/coach/types';
 import type { AssistantPort, AssistantReply, AssistantRequest } from '../types';
 
@@ -176,7 +177,9 @@ export class RemoteAssistantPort implements AssistantPort {
     try {
       const response = await fetch(`${this.baseUrl.replace(/\/+$/, '')}/api/coach`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        // O cartao de licenca vai em todos os pedidos que custam dinheiro: e
+        // ele que o Worker verifica antes de chamar o modelo.
+        headers: { 'content-type': 'application/json', ...cardHeaders() },
         signal: controller.signal,
         body: fit({
           message: request.message,

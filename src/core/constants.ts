@@ -290,6 +290,7 @@ export const TABS: ReadonlyArray<TabRoute> = [
   { id: 'profile', path: '/perfil', label: 'Perfil', icon: 'user', brand: 'perfil' },
 ];
 
+export const SUBSCRIPTION_PATH = '/assinatura';
 export const ONBOARDING_PATH = '/onboarding';
 export const DEFAULT_PATH = '/hoje';
 export const SESSION_PATH = '/treino/sessao';

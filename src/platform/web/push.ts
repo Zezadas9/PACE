@@ -14,6 +14,7 @@
  */
 
 import type { PushPort, PushState } from '../types';
+import { cardHeaders } from './licence';
 
 function decode64url(text: string): Uint8Array<ArrayBuffer> {
   const base64 = text.replace(/-/g, '+').replace(/_/g, '/');
@@ -32,7 +33,7 @@ async function post(url: string, body: unknown): Promise<Response | null> {
   try {
     return await fetch(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...cardHeaders() },
       body: JSON.stringify(body),
     });
   } catch {
@@ -63,7 +64,7 @@ export class WebPushPort implements PushPort {
 
     let keyResponse: Response;
     try {
-      keyResponse = await fetch(this.url('/api/push/key'));
+      keyResponse = await fetch(this.url('/api/push/key'), { headers: cardHeaders() });
     } catch {
       return 'failed';
     }

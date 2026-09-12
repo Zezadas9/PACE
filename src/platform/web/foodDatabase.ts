@@ -11,6 +11,7 @@
  */
 
 import type { FoodDatabasePort, FoodResult } from '../types';
+import { cardHeaders } from './licence';
 
 /** Mais do que o Worker espera pela base de dados, para ser ele a decidir. */
 const TIMEOUT_MS = 14_000;
@@ -36,7 +37,7 @@ export class RemoteFoodDatabase implements FoodDatabasePort {
     try {
       const response = await fetch(
         `${this.baseUrl.replace(/\/+$/, '')}/api/foods?${params}`,
-        { signal: controller.signal },
+        { signal: controller.signal, headers: cardHeaders() },
       );
       if (!response.ok) return [];
       const payload: unknown = await response.json();

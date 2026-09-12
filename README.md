@@ -788,6 +788,74 @@ identidade é que ainda não existe.
 
 ---
 
+## Pagamentos e assinatura
+
+Uma semana a experimentar, sem cartão nenhum, e depois **5 € por mês**.
+
+O dinheiro passa pelo **Lemon Squeezy**, que vende em nome da loja: é ele que
+trata do IVA europeu e das facturas, e é na página dele que o cartão é escrito.
+Nem a aplicação nem o Worker vêem um número de cartão.
+
+### Como o acesso é decidido
+
+O Worker emite um **cartão de licença** — um JWT curto, assinado com um segredo
+que só ele conhece (`worker/src/token.ts`). A aplicação guarda-o e mostra-o em
+todos os pedidos que custam dinheiro.
+
+O bloqueio tem duas metades, e a segunda é a que conta:
+
+- **Na aplicação.** Sem acesso, só o ecrã da assinatura. É uma cortesia, e quem
+  perceber do assunto contorna-a mexendo no que está guardado no telemóvel.
+- **No Worker.** A IA, a procura de alimentos e os avisos da sequência exigem um
+  cartão válido, e um cartão não se fabrica sem o segredo. É aqui que o acesso
+  se decide, porque é isto que custa dinheiro a sério.
+
+A semana de experiência é contada **no servidor**, por aparelho, e não no
+telemóvel — uma data guardada no telemóvel muda-se num instante.
+
+O cartão vale alguns dias de cada vez. Enquanto valer, a aplicação funciona sem
+rede, como funciona em tudo o resto; uma subscrição cancelada perde o acesso
+quando o cartão que está no telemóvel expirar, e não no instante do
+cancelamento. É o preço de funcionar offline, e é um preço de dias.
+
+### Recuperar o acesso noutro telemóvel
+
+Cada compra gera uma **chave de licença**, que o Lemon Squeezy envia por email no
+recibo. No ecrã da assinatura, essa chave mais o email da compra repõem o acesso
+— as duas coisas, porque uma chave sozinha podia andar de mão em mão. O Worker
+confirma com o Lemon Squeezy que a chave é desta loja e deste produto, como a
+documentação deles avisa que é preciso fazer.
+
+### Códigos
+
+Nenhum código está escrito na aplicação. Quem abrir o JavaScript não encontra
+nenhum:
+
+- **Descontos** (por exemplo 50% durante três meses) vivem no painel do Lemon
+  Squeezy. A aplicação envia para lá o que a pessoa escrever, e é o Lemon
+  Squeezy que decide se vale.
+- **Código de acesso** — o que dá acesso permanente, sem pagar — vive num secret
+  do Worker (`ACCESS_CODE`). É comparado em tempo constante, para não se poder
+  adivinhar letra a letra.
+
+### Configurar
+
+No painel do Lemon Squeezy: cria a loja, um produto de subscrição a 5 €/mês com
+**license keys** ligadas, os descontos que quiseres divulgar, uma chave de API,
+e um webhook para `https://<o-teu-worker>.workers.dev/api/pagamento/webhook` com
+os eventos `subscription_*`. Depois:
+
+```bash
+npm run worker:pagamentos-setup   # pede as chaves, gera o segredo, cria o KV
+npm run worker:deploy
+```
+
+Enquanto a loja e o produto não estiverem preenchidos no `wrangler.toml`, a
+aplicação não cobra nada a ninguém: o Worker responde `unmanaged` e toda a gente
+entra. É o estado em que o repositório vive.
+
+---
+
 ## Correção e polimento
 
 ### Tema: claro ou escuro, escolhido uma vez

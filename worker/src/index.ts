@@ -24,6 +24,9 @@ import {
 import { foodByBarcode, searchFoods } from './foods';
 import { MAX_BODY_BYTES, requestSchema } from './schema';
 import { handlePush, pushConfigured, runDailyPush } from './push';
+import {
+  handleCheckout, handleLicenca, handleWebhook, paymentsConfigured, requireLicence,
+} from './licenca';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -42,6 +45,7 @@ export default {
         ok: true,
         configured: Boolean(env.ANTHROPIC_API_KEY),
         push: pushConfigured(env),
+        payments: paymentsConfigured(env),
       }, 200, cors);
     }
 
@@ -58,6 +62,9 @@ export default {
       if (origin && Object.keys(cors).length === 0) return fail('forbidden_origin', 403, cors);
       if (rateLimited(clientIp(request))) return fail('rate_limited', 429, cors);
 
+      const gate = await requireLicence(request, env, cors);
+      if (gate) return gate;
+
       const barcode = url.searchParams.get('barcode');
       const query = url.searchParams.get('q');
       if (!barcode && !query) return fail('invalid_request', 400, cors);
@@ -72,10 +79,28 @@ export default {
       return json({ foods: result.foods }, 200, { ...cors, 'cache-control': 'public, max-age=3600' });
     }
 
+    /*
+     * Pagamentos e licencas. Ver src/licenca.ts.
+     *
+     * O webhook nao leva licenca nem origem permitida: quem o chama e o Lemon
+     * Squeezy, de servidor para servidor, e o que o autentica e a assinatura.
+     */
+    if (url.pathname === '/api/pagamento/webhook') return handleWebhook(request, env, cors);
+
+    if (url.pathname.startsWith('/api/licenca') || url.pathname === '/api/pagamento/checkout') {
+      if (origin && Object.keys(cors).length === 0) return fail('forbidden_origin', 403, cors);
+      if (rateLimited(clientIp(request))) return fail('rate_limited', 429, cors);
+      return url.pathname === '/api/pagamento/checkout'
+        ? handleCheckout(request, env, cors)
+        : handleLicenca(request, url, env, cors);
+    }
+
     // O lembrete da sequencia. Ver src/push.ts.
     if (url.pathname.startsWith('/api/push/')) {
       if (origin && Object.keys(cors).length === 0) return fail('forbidden_origin', 403, cors);
       if (rateLimited(clientIp(request))) return fail('rate_limited', 429, cors);
+      const gate = await requireLicence(request, env, cors);
+      if (gate) return gate;
       return handlePush(request, url, env, cors);
     }
 
@@ -85,6 +110,9 @@ export default {
     // Uma origem fora da lista não passa daqui, mesmo que o browser tenha
     // deixado o pedido sair (curl, por exemplo, ignora CORS).
     if (origin && Object.keys(cors).length === 0) return fail('forbidden_origin', 403, cors);
+
+    const gate = await requireLicence(request, env, cors);
+    if (gate) return gate;
 
     if (!env.ANTHROPIC_API_KEY) return fail('not_configured', 503, cors);
 

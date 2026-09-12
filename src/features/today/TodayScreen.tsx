@@ -24,6 +24,7 @@ import { Icon } from '../../ui/Icon';
 import { PerfectDayCard } from './PerfectDayCard';
 import { useCelebrations } from './useCelebrations';
 import { StreakCard } from './StreakCard';
+import { TrialNotice } from '../subscription/TrialNotice';
 import { AskPace } from '../assistant/AskPace';
 import { SleepCard } from '../sleep/SleepCard';
 import { FirstRunCard } from './FirstRunCard';
@@ -53,6 +54,7 @@ export function TodayScreen(): ReactElement {
   return (
     <Screen>
       <Hero model={model} />
+      <TrialNotice />
       {celebration.perfectDay ? (
         <PerfectDayCard
           essentials={model.essentials}

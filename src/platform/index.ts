@@ -29,6 +29,7 @@ import { WebNotificationsPort } from './web/notifications';
 import { LocalAssistantPort } from './web/assistant';
 import { RemoteAssistantPort, withLocalFallback } from './web/remoteAssistant';
 import { UnavailablePushPort, WebPushPort } from './web/push';
+import { RemoteLicencePort, UnmanagedLicencePort } from './web/licence';
 import type { Platform } from './types';
 import { RemoteFoodDatabase, UnavailableFoodDatabase } from './web/foodDatabase';
 
@@ -48,6 +49,7 @@ export async function createWebPlatform(): Promise<Platform> {
     assistant: createAssistant(),
     foodDatabase: createFoodDatabase(),
     push: createPush(),
+    licence: createLicence(),
   };
 }
 
@@ -79,6 +81,17 @@ function createAssistant(): Platform['assistant'] {
 function createFoodDatabase(): Platform['foodDatabase'] {
   const url = import.meta.env.VITE_PACE_API_URL?.trim();
   return url ? new RemoteFoodDatabase(url) : new UnavailableFoodDatabase();
+}
+
+/**
+ * A assinatura vem do mesmo Worker.
+ *
+ * Sem Worker configurado nao ha loja, nao ha licencas e nao se cobra nada — a
+ * aplicacao abre para toda a gente, que e como ela viveu ate agora.
+ */
+function createLicence(): Platform['licence'] {
+  const url = import.meta.env.VITE_PACE_API_URL?.trim();
+  return url ? new RemoteLicencePort(url) : new UnmanagedLicencePort();
 }
 
 /** O push vem do mesmo Worker. Sem ele, nao ha quem o envie. */
