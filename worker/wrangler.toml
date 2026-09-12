@@ -6,6 +6,8 @@ compatibility_date = "2026-06-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
+# Publica: o browser recebe-a. A privada e um secret — ver tools/setup-push.mjs.
+VAPID_PUBLIC_KEY = "BBQGII6iSTLKGJr0AbIQZhCglgagEvvk5QFE7VwS8YmpY8oDdiLN1t4qTccXAfbLfhAjIy1P7yGUCD202VR9jIY"
 # O modelo e configuravel sem tocar no codigo. Ver README para as alternativas.
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 # Origens autorizadas, separadas por virgula. Nunca "*" em producao.
