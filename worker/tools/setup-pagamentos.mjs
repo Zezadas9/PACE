@@ -71,18 +71,31 @@ function setVar(name, value) {
  */
 const pendentes = [];
 
-/** Um segredo pedido e guardado, sem passar por ficheiro nenhum. */
-async function secret(name, pergunta) {
+/**
+ * Um segredo, pedido pelo wrangler e nao por nos.
+ *
+ * O valor nunca passa por este script. Quem o pede e o wrangler, que o esconde
+ * enquanto se escreve e o manda direito para a Cloudflare. Ganha-se mais do
+ * que discricao: um prompt nosso a espera de texto engolia tudo o que se
+ * escrevesse, e um comando escrito por engano ficava guardado como se fosse
+ * uma chave. Ja aconteceu tres vezes.
+ */
+async function secret(name, descricao) {
   if (capture(['secret', 'list']).includes(`"${name}"`)) {
-    const resposta = (await rl.question(`${name} já existe. Substituir? (s/N) `)).trim().toLowerCase();
-    if (resposta !== 's') return;
+    const resposta = (await rl.question(`${name} ja esta guardado. Substituir? (s/N) `)).trim();
+    if (resposta.toLowerCase() !== 's') return;
   }
-  const valor = (await rl.question(`${pergunta}\n(Enter para deixar para depois)\n> `)).trim();
-  if (!valor) {
+
+  console.log('');
+  console.log(descricao);
+  const tem = (await rl.question('Tens isso a mao agora? (s/N) ')).trim().toLowerCase();
+  if (tem !== 's') {
     pendentes.push(name);
     return;
   }
-  wrangler(['secret', 'put', name], valor);
+
+  console.log('O wrangler vai pedir o valor. Cola e carrega em Enter — nao se ve o que escreves.');
+  wrangler(['secret', 'put', name]);
 }
 
 /* --- O armazenamento das licenças ------------------------------------------ */
@@ -153,9 +166,9 @@ if (!capture(['secret', 'list']).includes('"LICENCE_SECRET"')) {
   console.log('Chave de assinatura das licenças: já existe.');
 }
 
-await secret('LS_API_KEY', 'Cola a chave de API do Lemon Squeezy (Settings » API):');
-await secret('LS_WEBHOOK_SECRET', 'Cola o "signing secret" do webhook (Settings » Webhooks):');
-await secret('ACCESS_CODE', 'Escolhe o código de acesso permanente (o que dá 100% de desconto para sempre):');
+await secret('LS_API_KEY', 'A chave de API do Lemon Squeezy, em Settings » API.');
+await secret('LS_WEBHOOK_SECRET', 'O "signing secret" do webhook — inventa-o tu, entre 6 e 40 caracteres, e escreve o mesmo no painel deles.');
+await secret('ACCESS_CODE', 'O código de acesso permanente — o que dá acesso para sempre a quem o souber.');
 
 const loja = (await rl.question(
   'Número da loja (store id), em Settings » Stores:\n(Enter para deixar para depois)\n> ',
@@ -166,7 +179,9 @@ const produto = (await rl.question(
 
 if (loja && produto) {
   if (!/^[0-9]+$/.test(loja) || !/^[0-9]+$/.test(produto)) {
-    console.error('A loja e o produto são números. Volta a correr quando os tiveres à mão.');
+    console.error('');
+    console.error('A loja e o produto sao numeros, e o que escreveste nao e um.');
+    console.error('Se querias correr um comando, sai primeiro com Ctrl+C.');
     process.exit(1);
   }
   setVar('LS_STORE_ID', loja);
