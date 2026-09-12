@@ -16,7 +16,8 @@
     "whoami": "wrangler whoami",
     "push:setup": "node tools/setup-push.mjs",
     "pagamentos:setup": "node tools/setup-pagamentos.mjs",
-    "ls:ids": "node tools/ls-ids.mjs"
+    "ls:ids": "node tools/ls-ids.mjs",
+    "secret:codigo": "wrangler secret put ACCESS_CODE"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

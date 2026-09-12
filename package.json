@@ -25,7 +25,8 @@
     "icons:stamp": "node tools/stamp-icons.cjs",
     "worker:push-setup": "npm --prefix worker run push:setup",
     "worker:pagamentos-setup": "npm --prefix worker run pagamentos:setup",
-    "worker:ls-ids": "npm --prefix worker run ls:ids"
+    "worker:ls-ids": "npm --prefix worker run ls:ids",
+    "worker:codigo": "npm --prefix worker run secret:codigo"
   },
   "dependencies": {
     "react": "^19.2.0",
