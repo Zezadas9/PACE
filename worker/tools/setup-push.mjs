@@ -64,17 +64,90 @@ async function keys() {
   console.log('Chaves VAPID: criadas. A pública ficou no wrangler.toml; a privada, nos secrets do Worker.');
 }
 
+const NAMESPACE = 'pace-push';
+
+function hasBinding() {
+  return /binding\s*=\s*"PUSH"/.test(toml());
+}
+
+/** Corre o wrangler e fica com o que ele escreveu, em vez de o deixar passar. */
+function capture(args) {
+  const result = spawnSync('npx', ['wrangler', ...args], {
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe'],
+    shell: process.platform === 'win32',
+  });
+  return `${result.stdout ?? ''}${result.stderr ?? ''}`;
+}
+
+/**
+ * O id do KV que ja exista com este nome.
+ *
+ * Procura-se o id ao lado do titulo, e nao o primeiro id que aparecer: a conta
+ * pode ter outros KV, e ligar o Worker ao errado era pior do que falhar.
+ */
+function existingId() {
+  const output = capture(['kv', 'namespace', 'list']);
+  const pares = [
+    ...output.matchAll(/"id"\s*:\s*"([0-9a-f]{32})"[^}]*?"title"\s*:\s*"([^"]+)"/g),
+    ...output.matchAll(/"title"\s*:\s*"([^"]+)"[^}]*?"id"\s*:\s*"([0-9a-f]{32})"/g),
+  ];
+  for (const [, primeiro, segundo] of pares) {
+    const id = /^[0-9a-f]{32}$/.test(primeiro) ? primeiro : segundo;
+    const titulo = id === primeiro ? segundo : primeiro;
+    if (titulo.includes(NAMESPACE)) return id;
+  }
+  return null;
+}
+
+function bind(id) {
+  writeFileSync(CONFIG, `${toml().trimEnd()}
+
+# Onde ficam as subscricoes do lembrete. Escrito por tools/setup-push.mjs.
+[[kv_namespaces]]
+binding = "PUSH"
+id = "${id}"
+`);
+}
+
 function store() {
-  if (/binding\s*=\s*"PUSH"/.test(toml())) {
-    console.log('KV das subscrições: já existe.');
+  if (hasBinding()) {
+    console.log('KV das subscrições: já ligado.');
     return;
   }
-  wrangler(['kv', 'namespace', 'create', 'pace-push', '--binding', 'PUSH', '--update-config']);
-  if (!/binding\s*=\s*"PUSH"/.test(toml())) {
-    console.error('Criei o KV, mas o wrangler não o ligou no wrangler.toml.');
-    console.error('Copia o id que ele mostrou acima para um bloco [[kv_namespaces]] com binding = "PUSH".');
+
+  /*
+   * Voltar a correr isto nao pode criar um segundo KV.
+   *
+   * Da primeira vez o espaco foi criado mas a ligacao nunca chegou ao
+   * wrangler.toml — o `--update-config` nao a escreveu. Sem esta procura, cada
+   * tentativa seguinte criava outro espaco vazio e deixava o Worker ligado ao
+   * ultimo, com as subscricoes no primeiro.
+   */
+  let id = existingId();
+  if (id) {
+    bind(id);
+    console.log('KV das subscrições: já existia, e agora ficou ligado.');
+    return;
+  }
+
+  wrangler(['kv', 'namespace', 'create', NAMESPACE, '--binding', 'PUSH', '--update-config']);
+  if (hasBinding()) {
+    console.log('KV das subscrições: criado e ligado.');
+    return;
+  }
+
+  id = existingId();
+  if (!id) {
+    console.error('Criei o KV mas nao consegui descobrir o id dele.');
+    console.error('Corre `npx wrangler kv namespace list` e acrescenta ao wrangler.toml:');
+    console.error('');
+    console.error('[[kv_namespaces]]');
+    console.error('binding = "PUSH"');
+    console.error('id = "<o id>"');
     process.exit(1);
   }
+  bind(id);
   console.log('KV das subscrições: criado e ligado.');
 }
 
