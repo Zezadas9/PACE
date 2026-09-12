@@ -87,13 +87,19 @@ const day = (now: Date): string => now.toISOString().slice(0, 10);
  */
 const OPEN_STATUS = ['on_trial', 'active', 'past_due', 'cancelled'];
 
+/**
+ * So se cobra quando ha mesmo onde pagar.
+ *
+ * Isto exige a loja inteira, e nao so a maquinaria das licencas. Sem esta
+ * exigencia, ter a chave de assinatura e o armazenamento bastava para a
+ * contagem comecar — e, sete dias depois, a aplicacao fechava-se a pessoas que
+ * nao tinham como pagar, porque a loja ainda nao existia. Enquanto faltar uma
+ * destas cinco coisas, a aplicacao e de graca para toda a gente.
+ */
 export function paymentsConfigured(env: LicencaEnv): boolean {
-  return Boolean(env.LICENCAS && env.LICENCE_SECRET?.trim());
-}
-
-function canSell(env: LicencaEnv): boolean {
   return Boolean(
-    paymentsConfigured(env)
+    env.LICENCAS
+    && env.LICENCE_SECRET?.trim()
     && env.LS_API_KEY?.trim()
     && env.LS_STORE_ID?.trim()
     && env.LS_VARIANT_ID?.trim(),
@@ -327,7 +333,7 @@ export async function handleLicenca(
   if (url.pathname === '/api/licenca') {
     const { card, record: updated } = await cardFor(device, record, env, now, fetcher);
     if (updated !== record) await writeJson(store, key, updated);
-    return json({ ...card, canBuy: canSell(env) }, 200, cors);
+    return json({ ...card, canBuy: true }, 200, cors);
   }
 
   return fail('not_found', 404, cors);
@@ -341,7 +347,7 @@ export async function handleCheckout(
   cors: Record<string, string>,
   fetcher: typeof fetch = fetch,
 ): Promise<Response> {
-  if (!canSell(env)) return fail('not_configured', 503, cors);
+  if (!paymentsConfigured(env)) return fail('not_configured', 503, cors);
   if (request.method !== 'POST') return fail('method_not_allowed', 405, cors);
 
   const raw = await request.text();

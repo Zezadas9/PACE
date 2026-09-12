@@ -61,17 +61,26 @@ function setVar(name, value) {
     : texto.replace(/^\[vars\]\s*$/m, (bloco) => `${bloco}\n${linha}`));
 }
 
+/*
+ * O que ficou por preencher.
+ *
+ * Uma resposta em branco salta o passo em vez de abortar tudo. O painel do
+ * Lemon Squeezy nem sempre esta disponivel — tem limites de pedidos, e uma
+ * loja nova demora a ficar pronta — e ficar preso num prompt por causa disso
+ * era um mau desenho. Volta-se a correr, e so falta o que falta.
+ */
+const pendentes = [];
+
 /** Um segredo pedido e guardado, sem passar por ficheiro nenhum. */
 async function secret(name, pergunta) {
-  const existe = capture(['secret', 'list']).includes(`"${name}"`);
-  if (existe) {
+  if (capture(['secret', 'list']).includes(`"${name}"`)) {
     const resposta = (await rl.question(`${name} já existe. Substituir? (s/N) `)).trim().toLowerCase();
     if (resposta !== 's') return;
   }
-  const valor = (await rl.question(`${pergunta}\n> `)).trim();
+  const valor = (await rl.question(`${pergunta}\n(Enter para deixar para depois)\n> `)).trim();
   if (!valor) {
-    console.error(`${name} ficou por preencher. Volta a correr quando o tiveres.`);
-    process.exit(1);
+    pendentes.push(name);
+    return;
   }
   wrangler(['secret', 'put', name], valor);
 }
@@ -148,16 +157,31 @@ await secret('LS_API_KEY', 'Cola a chave de API do Lemon Squeezy (Settings » AP
 await secret('LS_WEBHOOK_SECRET', 'Cola o "signing secret" do webhook (Settings » Webhooks):');
 await secret('ACCESS_CODE', 'Escolhe o código de acesso permanente (o que dá 100% de desconto para sempre):');
 
-const loja = (await rl.question('Número da loja (store id), em Settings » Stores:\n> ')).trim();
-const produto = (await rl.question('Número do produto (variant id) da subscrição de 5 €/mês:\n> ')).trim();
-if (!/^\d+$/.test(loja) || !/^\d+$/.test(produto)) {
-  console.error('A loja e o produto são números. Volta a correr com eles à mão.');
-  process.exit(1);
+const loja = (await rl.question(
+  'Número da loja (store id), em Settings » Stores:\n(Enter para deixar para depois)\n> ',
+)).trim();
+const produto = (await rl.question(
+  'Número do produto (variant id) da subscrição de 5 €/mês:\n(Enter para deixar para depois)\n> ',
+)).trim();
+
+if (loja && produto) {
+  if (!/^[0-9]+$/.test(loja) || !/^[0-9]+$/.test(produto)) {
+    console.error('A loja e o produto são números. Volta a correr quando os tiveres à mão.');
+    process.exit(1);
+  }
+  setVar('LS_STORE_ID', loja);
+  setVar('LS_VARIANT_ID', produto);
+  console.log('Loja e produto: escritos no wrangler.toml.');
+} else {
+  pendentes.push('a loja e o produto');
 }
-setVar('LS_STORE_ID', loja);
-setVar('LS_VARIANT_ID', produto);
-console.log('Loja e produto: escritos no wrangler.toml.');
 
 store();
 rl.close();
-console.log('\nFalta publicar o Worker:\n\n  npm run worker:deploy\n');
+if (pendentes.length > 0) {
+  console.log(`\nFicou por preencher: ${pendentes.join(', ')}.`);
+  console.log('Volta a correr `npm run worker:pagamentos-setup` quando tiveres isso.');
+  console.log('O que já está feito fica como está, e até lá não se cobra nada a ninguém.');
+} else {
+  console.log('\nFalta publicar o Worker:\n\n  npm run worker:deploy\n');
+}

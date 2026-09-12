@@ -30,3 +30,8 @@ LS_VARIANT_ID = ""
 # `npm run worker:push-setup`; sem eles, isto nao faz nada.
 [triggers]
 crons = ["*/15 * * * *"]
+
+# Onde ficam as subscricoes do lembrete da sequencia.
+[[kv_namespaces]]
+binding = "PUSH"
+id = "1ab28ee487134a13bec7cf94411ec233"
