@@ -81,6 +81,10 @@ const TOOL_DESCRIPTION = [
   'unreadable: ["o que nao se conseguiu ler"] } — para um horario escolar ou de',
   'trabalho. 0 = domingo, 1 = segunda. Uma aula em varios dias e uma linha so.',
   '',
+  'create_playlist — draft: { title, forWorkout: "titulo exato de um treino"|null,',
+  'forRun: true|false, tracks: [{ title, artist }], note|null } — musicas que',
+  'existem, com o titulo e o artista como aparecem nas apps. Nunca links.',
+  '',
   'open — path: um dos ecrãs autorizados.',
 ].join('\n');
 

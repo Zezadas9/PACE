@@ -12,7 +12,7 @@ import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Entity, Exercise,
   Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task,
   User, WaterEntry, Workout, WorkoutSession, CoachMessage, RunPlan,
-  SleepEntry,
+  SleepEntry, Playlist,
 } from '../core/types';
 import type { CollectionKey } from './snapshot';
 import type { Store } from './store';
@@ -163,6 +163,13 @@ export class SettingsRepository {
     return this.store.snapshot.settings;
   }
 
+  updateMusic(patch: Partial<AppSettings['music']>): AppSettings {
+    const current = this.store.snapshot.settings;
+    this.store.snapshot.settings = { ...current, music: { ...current.music, ...patch } };
+    this.store.persist();
+    return this.store.snapshot.settings;
+  }
+
   updateFeedback(patch: Partial<AppSettings['feedback']>): AppSettings {
     const current = this.store.snapshot.settings;
     this.store.snapshot.settings = {
@@ -196,6 +203,7 @@ export interface Repositories {
   runPlans: Collection<RunPlan>;
   coachMessages: Collection<CoachMessage>;
   streaks: Collection<Streak>;
+  playlists: Collection<Playlist>;
 }
 
 export function createRepositories(store: Store): Repositories {
@@ -219,6 +227,7 @@ export function createRepositories(store: Store): Repositories {
     waterEntries: new Collection(store, 'waterEntries', factories.createWaterEntry),
     sleepEntries: new Collection(store, 'sleepEntries', factories.createSleepEntry),
     runPlans: new Collection(store, 'runPlans', factories.createRunPlan),
+    playlists: new Collection(store, 'playlists', factories.createPlaylist),
     coachMessages: new Collection(store, 'coachMessages', factories.createCoachMessage),
     streaks: new Collection(store, 'streaks', factories.createStreak),
   };

@@ -29,6 +29,7 @@ import { BrandIcon } from '../../ui/BrandIcon';
 import { Field, Input, Segmented } from '../../ui/form';
 import { AppearanceSection } from './AppearanceSection';
 import { FeedbackSection } from './FeedbackSection';
+import { MusicSection } from '../music/MusicSection';
 import { IdentitySection } from './IdentitySection';
 import { NotificationsSection } from './NotificationsSection';
 import type { Repositories } from '../../data/repositories';
@@ -69,6 +70,7 @@ export function ProfileScreen(): ReactElement {
       <GoalsSection summary={summary} repos={repos} />
       <NotificationsSection />
       <FeedbackSection />
+      <MusicSection />
       <BackupSection />
       <AskPace questions={[
         'Que objetivo faz sentido para mim?',

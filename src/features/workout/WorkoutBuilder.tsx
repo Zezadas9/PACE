@@ -19,6 +19,7 @@ import { Sheet } from '../../ui/Sheet';
 import { Button, Chip } from '../../ui/primitives';
 import { Field, Input } from '../../ui/form';
 import { TimeField } from '../../ui/TimeField';
+import { PlaylistField } from '../music/PlaylistField';
 import { Icon } from '../../ui/Icon';
 
 /** Whole minutes read better than "1.5 min"; anything else stays in seconds. */
@@ -171,6 +172,11 @@ export function WorkoutBuilder({
             onChange={(value) => patch({ timeOfDay: value || null })}
           />
         </Field>
+
+        <PlaylistField
+          value={draft.playlistId}
+          onChange={(playlistId) => patch({ playlistId })}
+        />
 
         {hasSections(draft.type) ? (
           /* Warm-up, main set and cardio, each with its own list. Only the

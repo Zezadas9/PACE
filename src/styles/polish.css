@@ -715,3 +715,71 @@
   .guide-bar > span { transition: none; }
 }
 
+/* --- Musica -------------------------------------------------------------------------
+   Um botao grande o bastante para se acertar a correr, que diz o que vai
+   abrir e onde. */
+
+.music-bar { display: flex; align-items: center; gap: var(--s-2); }
+.music-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  color: inherit;
+  text-align: left;
+}
+.music-glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+}
+/* Sem isto, um nome de playlist comprido empurra o botao para fora do ecra. */
+.music-pill .grow { min-width: 0; }
+.music-title,
+.music-sub {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.music-title { font-weight: var(--fw-medium); }
+.music-sub { font-size: var(--fs-xs); color: var(--c-ink-3); }
+.music-change { flex: none; min-height: 44px; padding: 0 var(--s-2); }
+
+.playlist-tracks {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.playlist-track {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 48px;
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--c-line);
+  color: inherit;
+  text-decoration: none;
+}
+.playlist-n {
+  flex: none;
+  width: 1.5rem;
+  text-align: right;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-3);
+}
+.playlist-title { display: block; font-weight: var(--fw-medium); }
+.playlist-artist { display: block; font-size: var(--fs-sm); color: var(--c-ink-2); }
+

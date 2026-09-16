@@ -33,6 +33,8 @@ import { RestTimer } from './RestTimer';
 import { clock, useTicker } from './useTicker';
 import { useVoice } from '../guidance/useVoice';
 import { useWakeLock } from '../guidance/useWakeLock';
+import { MusicButton } from '../music/MusicButton';
+import { setWorkoutPlaylist } from '../../services/music';
 
 type NextSet = NonNullable<ReturnType<typeof training.nextSet>>;
 
@@ -188,6 +190,14 @@ export function SessionScreen(): ReactElement {
           {progress?.blocksCompleted ?? 0}/{progress?.blocksTotal ?? 0} exercícios
         </span>
       </div>
+
+      {workout ? (
+        <MusicButton
+          playlistId={workout.playlistId ?? null}
+          pickTitle="Música do treino"
+          onAttach={(id) => setWorkoutPlaylist(repos, workout.id, id)}
+        />
+      ) : null}
 
       {restSeconds != null ? (
         <RestTimer key={restKey} seconds={restSeconds} onDone={restDone} />

@@ -112,7 +112,7 @@ const BLOCK_KINDS = ['text', 'list', 'metrics', 'notice', 'references', 'caveat'
 
 const ACTION_KINDS = [
   'create_workout', 'create_habits', 'create_run_plan', 'apply_schedule',
-  'log_meal', 'create_foods', 'create_events', 'open',
+  'log_meal', 'create_foods', 'create_events', 'create_playlist', 'open',
 ];
 
 /**
@@ -143,6 +143,10 @@ function isAction(value: unknown): boolean {
   if (typeof action.label !== 'string' || action.label.trim() === '') return false;
 
   if (action.kind === 'open') return typeof action.path === 'string' && OPEN_PATHS.has(action.path);
+  if (action.kind === 'create_playlist') {
+    const tracks = (action.draft as { tracks?: unknown } | undefined)?.tracks;
+    return Array.isArray(tracks) && tracks.length > 0;
+  }
   if (action.kind === 'create_events') {
     const items = (action.draft as { items?: unknown } | undefined)?.items;
     return Array.isArray(items) && items.length > 0;

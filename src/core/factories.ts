@@ -10,7 +10,7 @@ import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, CoachMessage, Entity,
   Exercise, Food, Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, RunPlan,
   Streak, Task, User, WaterEntry, Workout, WorkoutSession,
-  SleepEntry,
+  SleepEntry, Playlist,
 } from './types';
 import { noRecurrence } from './scheduling';
 import { createId } from './utils/id';
@@ -324,6 +324,7 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       pushId: null,
     },
     feedback: { sound: true, haptics: true, voice: true },
+    music: { app: 'spotify', runPlaylistId: null },
     licence: {
       device: null,
       card: null,
@@ -347,6 +348,18 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       acceptedAt: null,
     },
     backup: { lastExportAt: null },
+    ...partial,
+  };
+}
+
+export function createPlaylist(partial: Partial<Playlist> = {}): Playlist {
+  return {
+    ...base(),
+    title: '',
+    url: null,
+    tracks: [],
+    source: 'manual',
+    note: null,
     ...partial,
   };
 }

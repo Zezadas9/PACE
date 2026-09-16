@@ -60,6 +60,35 @@ describe('grantAll', () => {
   });
 });
 
+describe('applyAction — uma playlist', () => {
+  const faixas = [
+    { title: 'Eye of the Tiger', artist: 'Survivor' },
+    { title: 'Lose Yourself', artist: 'Eminem' },
+    { title: 'Stronger', artist: 'Kanye West' },
+  ];
+
+  it('guarda a lista, liga-a ao treino, e devolve-a para o ecra a abrir', () => {
+    const treino = repos.workouts.create({ title: 'Forca A' });
+    const result = applyAction(repos, {
+      kind: 'create_playlist',
+      label: 'Guardar playlist',
+      draft: { title: 'Forca total', forWorkout: 'Forca A', forRun: false, tracks: faixas, note: null },
+    });
+    expect(result.ok).toBe(true);
+    expect(result.message).toContain('Forca A');
+    expect(result.ref).toBe(repos.playlists.all()[0]?.id);
+    expect(repos.workouts.byId(treino.id)?.playlistId).toBe(result.ref);
+  });
+
+  it('recusa uma lista curta de mais ou com musicas sem artista', () => {
+    const curta = { title: 'X', forWorkout: null, forRun: false, tracks: faixas.slice(0, 2), note: null };
+    expect(applyAction(repos, { kind: 'create_playlist', label: 'x', draft: curta }).ok).toBe(false);
+    const semArtista = { ...curta, tracks: [...faixas, { title: 'Sem artista', artist: ' ' }] };
+    expect(applyAction(repos, { kind: 'create_playlist', label: 'x', draft: semArtista }).ok).toBe(false);
+    expect(repos.playlists.all()).toHaveLength(0);
+  });
+});
+
 describe('applyAction — um horario', () => {
   const horario = {
     title: 'Horario do 12.o B',

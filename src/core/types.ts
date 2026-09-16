@@ -294,6 +294,37 @@ export interface WorkoutBlock {
 }
 
 /** A reusable plan, not a performance. */
+/* --- Musica --------------------------------------------------------------- */
+
+/** A app onde se ouve musica. Decide para onde abrem as musicas de uma playlist. */
+export type MusicApp = 'spotify' | 'apple' | 'youtube';
+
+export interface PlaylistTrack {
+  title: string;
+  artist: string;
+}
+
+/**
+ * Uma playlist para treinar.
+ *
+ * Pode ser um link para uma playlist que ja existe na app de musica, uma lista
+ * de musicas (a IA faz listas), ou as duas coisas — a lista feita pela IA ganha
+ * um link quando a pessoa a cria na app e o cola aqui.
+ */
+export interface Playlist extends Entity {
+  title: string;
+  url: string | null;
+  tracks: PlaylistTrack[];
+  source: 'ai' | 'manual';
+  note: string | null;
+}
+
+export interface MusicSettings {
+  app: MusicApp;
+  /** A playlist das corridas e caminhadas — as do plano e as livres. */
+  runPlaylistId: string | null;
+}
+
 export interface Workout extends Entity {
   title: string;
   type: WorkoutType;
@@ -311,6 +342,11 @@ export interface Workout extends Entity {
   goalId: string | null;
   tags: string[];
   archived: boolean;
+  /**
+   * A playlist deste treino. Opcional nos dados: os treinos guardados antes de
+   * haver musica nao a tem, e ler `undefined` como "sem musica" e o certo.
+   */
+  playlistId?: string | null;
 }
 
 export interface SetLog {
@@ -669,6 +705,7 @@ export interface AppSettings {
   notifications: NotificationSettings;
   /** Additive, como o resto: normalize preenche, sem migracao. */
   licence: LicenceSettings;
+  music: MusicSettings;
   feedback: FeedbackSettings;
   celebration: CelebrationState;
   /** Additive, como o feedback: normalize preenche, sem migração. */

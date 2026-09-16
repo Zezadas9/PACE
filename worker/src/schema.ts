@@ -369,6 +369,27 @@ const eventsDraft = z.object({
 });
 
 /**
+ * Uma playlist para um treino ou para correr.
+ *
+ * So titulos e artistas. Um campo de link nao existe aqui de proposito: um
+ * link escrito por um modelo e um link inventado, e o Zod deita fora o que nao
+ * conhece — nunca chega a aplicacao.
+ */
+const playlistDraft = z.object({
+  title: z.string().min(1).max(80),
+  forWorkout: z.string().max(60).nullable().default(null),
+  forRun: z.boolean().default(false),
+  tracks: z
+    .array(z.object({
+      title: z.string().min(1).max(120),
+      artist: z.string().min(1).max(120),
+    }))
+    .min(3)
+    .max(40),
+  note: z.string().max(300).nullable().default(null),
+});
+
+/**
  * Para onde uma ação "open" pode levar.
  *
  * Uma lista fechada, e não um caminho livre: o destino vem de texto gerado, e
@@ -409,6 +430,11 @@ export const actionSchema = z.discriminatedUnion('kind', [
     kind: z.literal('create_foods'),
     label: z.string().min(1).max(MAX_LABEL),
     drafts: z.array(foodDraft).min(1).max(10),
+  }),
+  z.object({
+    kind: z.literal('create_playlist'),
+    label: z.string().min(1).max(MAX_LABEL),
+    draft: playlistDraft,
   }),
   z.object({
     kind: z.literal('create_events'),

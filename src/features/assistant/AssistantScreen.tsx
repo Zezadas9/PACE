@@ -22,6 +22,7 @@ import { Screen } from '../../app/navigation/Screen';
 import { BrandIcon } from '../../ui/BrandIcon';
 import { SchedulePlanSheet } from './SchedulePlanSheet';
 import { EventsPlanSheet } from './EventsPlanSheet';
+import { PlaylistSheet } from '../music/PlaylistSheet';
 import { Button, Card } from '../../ui/primitives';
 import { Icon } from '../../ui/Icon';
 import {
@@ -95,6 +96,8 @@ export function AssistantScreen(): ReactElement {
   const [notice, setNotice] = useState<{ text: string; retry: string | null } | null>(null);
   /** A proposta de semana aberta para rever — aceitar, editar ou rejeitar. */
   const [schedule, setSchedule] = useState<ScheduleDraft | null>(null);
+  /** A playlist acabada de guardar, aberta para se ouvir logo. */
+  const [openPlaylist, setOpenPlaylist] = useState<string | null>(null);
   /** Um horario para rever antes de entrar na agenda. */
   const [timetable, setTimetable] = useState<{ label: string; draft: EventsDraft } | null>(null);
   /**
@@ -223,6 +226,7 @@ export function AssistantScreen(): ReactElement {
       }
       feedback.play('complete');
       toast(result.message);
+      if (action.kind === 'create_playlist' && result.ref) setOpenPlaylist(result.ref);
     })();
   }, [repos, confirm, feedback, toast, navigate]);
 
@@ -342,7 +346,7 @@ export function AssistantScreen(): ReactElement {
                   ) : null}
                 </span>
               ) : (
-                <span className="coach-attachment-doc" aria-hidden="true"><Icon name="file" /></span>
+                <span className="coach-attachment-doc" aria-hidden="true"><Icon name="file" size={18} /></span>
               )}
               <span className="coach-attachment-label t-sm">{item.label}</span>
               <button
@@ -412,6 +416,9 @@ export function AssistantScreen(): ReactElement {
         >
           Apagar conversa
         </button>
+      ) : null}
+      {openPlaylist ? (
+        <PlaylistSheet playlistId={openPlaylist} onClose={() => setOpenPlaylist(null)} />
       ) : null}
       {timetable ? (
         <EventsPlanSheet

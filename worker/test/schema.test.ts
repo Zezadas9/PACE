@@ -268,6 +268,44 @@ describe('resposta do modelo', () => {
     expect(parsed.success).toBe(false);
   });
 
+  it('aceita uma playlist, e deita fora um link que o modelo tenha inventado', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'create_playlist',
+        label: 'Guardar playlist',
+        draft: {
+          title: 'Correr a 170',
+          forRun: true,
+          url: 'https://open.spotify.com/playlist/inventada',
+          tracks: [
+            { title: 'Eye of the Tiger', artist: 'Survivor' },
+            { title: 'Lose Yourself', artist: 'Eminem' },
+            { title: 'Stronger', artist: 'Kanye West' },
+          ],
+        },
+      }],
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      const acao = parsed.data.actions[0] as { draft: Record<string, unknown> };
+      expect(acao.draft.url).toBeUndefined();
+      expect(acao.draft.forWorkout).toBeNull();
+    }
+  });
+
+  it('recusa uma playlist com menos de tres musicas', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'create_playlist',
+        label: 'Guardar',
+        draft: { title: 'X', tracks: [{ title: 'A', artist: 'B' }] },
+      }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
   it('aceita um horario, com aulas em varios dias e o que ficou por ler', () => {
     const parsed = turnSchema.safeParse({
       ...turn,

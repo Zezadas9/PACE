@@ -18,9 +18,10 @@ import type {
   UserPreferences,
 } from '../core/types';
 import type {
-  CoachContext, CoachTurn, EventsDraft, FoodDraft, HabitDraft, MealDraft, RunPlanDraft,
-  ScheduleDraft, WorkoutDraft,
+  CoachContext, CoachTurn, EventsDraft, FoodDraft, HabitDraft, MealDraft, PlaylistDraft,
+  RunPlanDraft, ScheduleDraft, WorkoutDraft,
 } from '../domain/coach/types';
+import { createPlaylistFromDraft } from './music';
 import { eventsFromDraft } from '../domain/timetable';
 import type { CoachIntent } from '../domain/coach/intent';
 import type { CoachAction } from '../domain/coach/types';
@@ -293,6 +294,8 @@ export interface ApplyResult {
   message: string;
   /** Para onde levar o utilizador a ver o que acabou de acontecer. */
   path: string | null;
+  /** O que foi criado, quando o ecra o quer abrir a seguir. */
+  ref?: string | null;
 }
 
 /**
@@ -307,6 +310,10 @@ const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function usable(action: CoachAction): boolean {
   switch (action.kind) {
+    case 'create_playlist':
+      return !!action.draft?.title?.trim()
+        && (action.draft.tracks?.length ?? 0) >= 3
+        && action.draft.tracks.every((track) => !!track?.title?.trim() && !!track?.artist?.trim());
     case 'create_events':
       return (action.draft?.items?.length ?? 0) > 0
         && action.draft.items.every((item) => !!item?.title?.trim()
@@ -352,6 +359,7 @@ export function applyAction(repos: Repositories, action: CoachAction): ApplyResu
     case 'log_meal': return logMeal(repos, action.draft);
     case 'create_foods': return createFoods(repos, action.drafts);
     case 'create_events': return createEvents(repos, action.draft);
+    case 'create_playlist': return createPlaylist(repos, action.draft);
     case 'open': return { ok: true, message: '', path: action.path };
     default: return { ok: false, message: 'Ação desconhecida.', path: null };
   }
@@ -522,6 +530,15 @@ function createRunPlan(repos: Repositories, draft: RunPlanDraft): ApplyResult {
   // Para a Atividade, e nao para a IA: e la que o plano se corre, e era la que
   // quem o criava o ia procurar sem o encontrar.
   return { ok: true, message: `Plano "${plan.title}" criado.`, path: '/atividade/plano' };
+}
+
+/** Guarda a playlist que a IA fez, e liga-a ao treino ou as corridas. */
+function createPlaylist(repos: Repositories, draft: PlaylistDraft): ApplyResult {
+  const { playlist, attachedTo } = createPlaylistFromDraft(repos, draft);
+  const onde = attachedTo === 'corridas'
+    ? ' para as corridas'
+    : attachedTo ? ` no treino ${attachedTo}` : '';
+  return { ok: true, message: `Playlist guardada${onde}.`, path: null, ref: playlist.id };
 }
 
 /**

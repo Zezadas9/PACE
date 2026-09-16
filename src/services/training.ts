@@ -41,6 +41,8 @@ export interface WorkoutDraft {
   estimatedMin: number | null;
   description: string | null;
   blocks: BlockDraft[];
+  /** A playlist deste treino, ou null. */
+  playlistId: string | null;
 }
 
 export function emptyBlockDraft(section: WorkoutSection = 'main'): BlockDraft {
@@ -67,6 +69,7 @@ export function emptyWorkoutDraft(): WorkoutDraft {
     estimatedMin: 45,
     description: null,
     blocks: [emptyBlockDraft()],
+    playlistId: null,
   };
 }
 
@@ -80,6 +83,7 @@ export function draftFromWorkout(workout: Workout, exercises: Exercise[]): Worko
     timeOfDay: workout.timeOfDay,
     estimatedMin: workout.estimatedMin,
     description: workout.tags[0] ?? null,
+    playlistId: workout.playlistId ?? null,
     blocks: workout.blocks.map((block) => ({
       id: block.id,
       section: block.section,
@@ -136,6 +140,7 @@ export function saveWorkout(repos: Repositories, draft: WorkoutDraft): Workout {
     // Description rides in tags[0] rather than adding a field the model does
     // not otherwise need; workouts have no free-text column yet.
     tags: draft.description ? [draft.description] : [],
+    playlistId: draft.playlistId,
   };
 
   if (draft.id) {

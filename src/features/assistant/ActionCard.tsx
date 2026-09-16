@@ -58,6 +58,18 @@ function summary(action: CoachAction): string[] {
           : '',
       ].filter(Boolean);
     }
+    case 'create_playlist': {
+      const lista = action.draft;
+      const onde = lista.forRun
+        ? 'para as corridas'
+        : lista.forWorkout ? `para o treino ${lista.forWorkout}` : 'nas tuas playlists';
+      return [
+        `${lista.tracks.length} músicas · ${onde}`,
+        ...lista.tracks.slice(0, 5).map((track) => `${track.title} — ${track.artist}`),
+        lista.tracks.length > 5 ? `… e mais ${lista.tracks.length - 5}` : '',
+        'Cada música abre na tua app de música.',
+      ].filter(Boolean);
+    }
     case 'create_events': {
       const aulas = groupEventItems(action.draft.items);
       const vezes = weeklyCount(action.draft.items);

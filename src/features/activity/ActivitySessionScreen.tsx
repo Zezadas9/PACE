@@ -35,6 +35,8 @@ import { ActivitySummarySheet } from './ActivitySummarySheet';
 import { RunGuideCard, useDistanceGuide, useRunGuide } from '../guidance/RunGuide';
 import { useVoice } from '../guidance/useVoice';
 import { useWakeLock } from '../guidance/useWakeLock';
+import { MusicButton } from '../music/MusicButton';
+import { setRunPlaylist } from '../../services/music';
 
 export function ActivitySessionScreen(): ReactElement {
   const { repos, platform } = useApp();
@@ -76,6 +78,8 @@ export function ActivitySessionScreen(): ReactElement {
     if (!session?.planSessionId) return null;
     return runPlanView(repos)?.plan.sessions.find((item) => item.id === session.planSessionId) ?? null;
   }, [repos, session?.planSessionId, version]);
+
+  const runPlaylistId = useMemo(() => repos.settings.get().music.runPlaylistId, [repos, version]);
 
   const phases = useMemo(
     () => (planSession ? runGuide(planSession, unit) : []),
@@ -142,6 +146,12 @@ export function ActivitySessionScreen(): ReactElement {
       </header>
 
       {guide ? <RunGuideCard state={guide} voice={voice} /> : null}
+
+      <MusicButton
+        playlistId={runPlaylistId}
+        pickTitle="Música para correr"
+        onAttach={(id) => setRunPlaylist(repos, id)}
+      />
 
       <div className="live-primary">
         <span className="live-value t-num">{clock(metrics.durationSec)}</span>

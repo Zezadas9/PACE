@@ -161,6 +161,22 @@ export interface EventsDraft {
   unreadable: string[];
 }
 
+/**
+ * Uma playlist feita pela IA para um treino ou para correr.
+ *
+ * So musicas e artistas, nunca links: um link gerado e um link inventado. A
+ * aplicacao faz a ponte para a app de musica de quem ouve.
+ */
+export interface PlaylistDraft {
+  title: string;
+  /** O titulo exato de um treino que ja exista, ou null. */
+  forWorkout: string | null;
+  /** Para as corridas e caminhadas. */
+  forRun: boolean;
+  tracks: Array<{ title: string; artist: string }>;
+  note: string | null;
+}
+
 /** Um alimento com os seus valores. Nulos onde nao se sabe. */
 export interface FoodDraft {
   name: string;
@@ -198,6 +214,7 @@ export type CoachAction =
   | { kind: 'log_meal'; label: string; draft: MealDraft }
   | { kind: 'create_foods'; label: string; drafts: FoodDraft[] }
   | { kind: 'create_events'; label: string; draft: EventsDraft }
+  | { kind: 'create_playlist'; label: string; draft: PlaylistDraft }
   | { kind: 'open'; label: string; path: string };
 
 export interface CoachTurn {

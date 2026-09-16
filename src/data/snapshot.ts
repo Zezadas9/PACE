@@ -12,7 +12,7 @@ import type {
   ActivityGoal, ActivitySession, AppSettings, CalendarEvent, Exercise, Food,
   Goal, Habit, HabitEntry, Meal, MealPlan, NutritionGoal, Streak, Task, User,
   CoachMessage, RunPlan, WaterEntry, Workout, WorkoutSession,
-  SleepEntry,
+  SleepEntry, Playlist,
 } from '../core/types';
 
 export interface Snapshot {
@@ -40,6 +40,12 @@ export interface Snapshot {
   sleepEntries: SleepEntry[];
   runPlans: RunPlan[];
   coachMessages: CoachMessage[];
+  /**
+   * As playlists. Coleccao aditiva: um snapshot antigo nao a tem, e o
+   * `normalize` enche-a vazia — sem migracao, e por isso sem mudar a versao
+   * dos dados.
+   */
+  playlists: Playlist[];
   streaks: Streak[];
 }
 
@@ -52,6 +58,7 @@ export const COLLECTION_KEYS: CollectionKey[] = [
   'goals', 'habits', 'habitEntries', 'tasks', 'events', 'exercises', 'workouts',
   'workoutSessions', 'activitySessions', 'activityGoals', 'foods', 'meals',
   'mealPlans', 'nutritionGoals', 'waterEntries', 'sleepEntries', 'runPlans', 'coachMessages', 'streaks',
+  'playlists',
 ];
 
 export const STORAGE_KEY = `${APP.storageNamespace}.snapshot`;
@@ -82,6 +89,7 @@ export function emptySnapshot(): Snapshot {
     runPlans: [],
     coachMessages: [],
     streaks: [],
+    playlists: [],
   };
 }
 
@@ -321,6 +329,7 @@ export function normalize(input: Partial<Snapshot> | null): Snapshot {
     notifications: { ...defaults.notifications, ...(snapshot.settings?.notifications ?? {}) },
     licence: { ...defaults.licence, ...(snapshot.settings?.licence ?? {}) },
     feedback: { ...defaults.feedback, ...(snapshot.settings?.feedback ?? {}) },
+    music: { ...defaults.music, ...(snapshot.settings?.music ?? {}) },
     celebration: { ...defaults.celebration, ...(snapshot.settings?.celebration ?? {}) },
     ai: {
       ...defaults.ai,
