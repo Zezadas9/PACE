@@ -10,6 +10,7 @@
 import type { ReactElement } from 'react';
 import type { CoachAction } from '../../domain/coach/types';
 import { WEEKDAY_NAMES } from '../../domain/coach/agenda-plan';
+import { groupEventItems, weeklyCount } from '../../domain/timetable';
 
 /** "seg, qua, sex" — os dias como se leem, não como estão guardados. */
 function describeDays(weekdays: number[]): string {
@@ -55,6 +56,21 @@ function summary(action: CoachAction): string[] {
         action.draft.untouched.length > 0
           ? `${action.draft.untouched.length} compromissos ficam como estão`
           : '',
+      ].filter(Boolean);
+    }
+    case 'create_events': {
+      const aulas = groupEventItems(action.draft.items);
+      const vezes = weeklyCount(action.draft.items);
+      return [
+        `${action.draft.title} · ${vezes} ${vezes === 1 ? 'marcação' : 'marcações'} por semana`,
+        ...aulas.slice(0, 4).map((item) => `${item.title} — ${describeDays(item.weekdays)}, `
+          + `${item.startTime}${item.endTime ? `–${item.endTime}` : ''}`),
+        aulas.length > 4 ? `… e mais ${aulas.length - 4}` : '',
+        action.draft.until ? `Até ${action.draft.until.split('-').reverse().join('/')}` : '',
+        action.draft.unreadable.length > 0
+          ? `Ficou por ler: ${action.draft.unreadable.length === 1 ? '1 coisa' : `${action.draft.unreadable.length} coisas`}`
+          : '',
+        'Nada do que já tens na agenda é alterado.',
       ].filter(Boolean);
     }
     case 'move_workout':

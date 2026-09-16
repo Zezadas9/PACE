@@ -345,3 +345,60 @@
   width: 14px; height: 14px;
   stroke: currentColor; fill: none; stroke-width: 1.8;
 }
+
+/* --- O horario antes de entrar na agenda ----------------------------------------- */
+
+.timetable-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.timetable-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s-3);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: inherit;
+  text-align: left;
+  transition: opacity var(--d-base) var(--ease), background var(--d-base) var(--ease);
+}
+.timetable-row[data-out="true"] { opacity: 0.45; background: var(--c-surface-2); }
+.timetable-row[data-out="true"] .timetable-title { text-decoration: line-through; }
+.timetable-check {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--c-line-strong);
+}
+.timetable-row[data-out="false"] .timetable-check {
+  background: var(--c-ink);
+  border-color: var(--c-ink);
+  color: var(--c-surface);
+}
+.timetable-check svg { width: 0.9rem; height: 0.9rem; }
+.timetable-title { display: block; font-weight: var(--fw-medium); }
+.timetable-sub { display: block; font-size: var(--fs-sm); color: var(--c-ink-2); }
+.timetable-tag {
+  flex: none;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-3);
+}
+.timetable-note {
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.timetable-note[data-tone="caution"] { background: var(--c-ember-soft); }
+.timetable-note ul { margin: var(--s-1) 0; padding-left: 1.1rem; }
+

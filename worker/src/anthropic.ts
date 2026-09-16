@@ -75,6 +75,12 @@ const TOOL_DESCRIPTION = [
   'create_foods — drafts: [ o mesmo objeto "food" acima ]. Para quando o utilizador',
   'so quer os valores de um alimento, sem registar refeicao nenhuma.',
   '',
+  'create_events — draft: { title, startDate "AAAA-MM-DD"|null, until "AAAA-MM-DD"|null,',
+  'items: [{ title, category (school|work|appointment|meeting|commitment|personal),',
+  'weekdays: [0-6], startTime "HH:MM", endTime "HH:MM"|null, location|null }],',
+  'unreadable: ["o que nao se conseguiu ler"] } — para um horario escolar ou de',
+  'trabalho. 0 = domingo, 1 = segunda. Uma aula em varios dias e uma linha so.',
+  '',
   'open — path: um dos ecrãs autorizados.',
 ].join('\n');
 

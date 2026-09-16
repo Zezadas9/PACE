@@ -268,6 +268,41 @@ describe('resposta do modelo', () => {
     expect(parsed.success).toBe(false);
   });
 
+  it('aceita um horario, com aulas em varios dias e o que ficou por ler', () => {
+    const parsed = turnSchema.safeParse({
+      ...turn,
+      actions: [{
+        kind: 'create_events',
+        label: 'Por o horario na agenda',
+        draft: {
+          title: 'Horario do 12.o B',
+          until: '2027-01-31',
+          items: [
+            { title: 'Matematica', category: 'school', weekdays: [1, 3], startTime: '09:00', endTime: '10:30', location: 'Sala 2' },
+            { title: 'Fisica', category: 'school', weekdays: [2], startTime: '11:00' },
+          ],
+          unreadable: ['A hora de Ingles a quinta'],
+        },
+      }],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('recusa uma aula que acaba antes de comecar, ou sem dias', () => {
+    const acao = (item: Record<string, unknown>) => ({
+      ...turn,
+      actions: [{
+        kind: 'create_events',
+        label: 'Por na agenda',
+        draft: { title: 'x', items: [{ title: 'Aula', category: 'school', weekdays: [1], startTime: '10:00', ...item }] },
+      }],
+    });
+    expect(turnSchema.safeParse(acao({ endTime: '09:00' })).success).toBe(false);
+    expect(turnSchema.safeParse(acao({ weekdays: [] })).success).toBe(false);
+    expect(turnSchema.safeParse(acao({ weekdays: [7] })).success).toBe(false);
+    expect(turnSchema.safeParse(acao({ startTime: '9h' })).success).toBe(false);
+  });
+
   it('recusa mais ações do que o limite', () => {
     const uma = { kind: 'open', label: 'Ver', path: '/treino' };
     const parsed = turnSchema.safeParse({ ...turn, actions: [uma, uma, uma, uma] });

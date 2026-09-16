@@ -341,6 +341,34 @@ const mealDraft = z.object({
 });
 
 /**
+ * Um horario escolar ou de trabalho, lido de uma fotografia ou de um ficheiro.
+ *
+ * Uma aula que se repete em varios dias vai numa linha so. O que nao se leu
+ * vai em `unreadable`, dito em vez de inventado. A aplicacao mostra tudo numa
+ * revisao antes de escrever, e so acrescenta: o que ja estava na agenda nao e
+ * tocado.
+ */
+const eventItem = z.object({
+  title: z.string().min(1).max(80),
+  category: z.enum(['school', 'work', 'appointment', 'meeting', 'commitment', 'personal']),
+  weekdays: z.array(z.number().int().min(0).max(6)).min(1).max(7),
+  startTime: clock,
+  endTime: clock.nullable().default(null),
+  location: z.string().max(80).nullable().default(null),
+}).refine(
+  (item) => item.endTime == null || item.endTime > item.startTime,
+  { message: 'a aula tem de acabar depois de comecar' },
+);
+
+const eventsDraft = z.object({
+  title: z.string().min(1).max(80),
+  items: z.array(eventItem).min(1).max(60),
+  startDate: dayKey.nullable().default(null),
+  until: dayKey.nullable().default(null),
+  unreadable: z.array(z.string().min(1).max(160)).max(10).default([]),
+});
+
+/**
  * Para onde uma ação "open" pode levar.
  *
  * Uma lista fechada, e não um caminho livre: o destino vem de texto gerado, e
@@ -381,6 +409,11 @@ export const actionSchema = z.discriminatedUnion('kind', [
     kind: z.literal('create_foods'),
     label: z.string().min(1).max(MAX_LABEL),
     drafts: z.array(foodDraft).min(1).max(10),
+  }),
+  z.object({
+    kind: z.literal('create_events'),
+    label: z.string().min(1).max(MAX_LABEL),
+    draft: eventsDraft,
   }),
   z.object({
     kind: z.literal('open'),

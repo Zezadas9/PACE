@@ -18,9 +18,10 @@ import type {
   UserPreferences,
 } from '../core/types';
 import type {
-  CoachContext, CoachTurn, FoodDraft, HabitDraft, MealDraft, RunPlanDraft, ScheduleDraft,
-  WorkoutDraft,
+  CoachContext, CoachTurn, EventsDraft, FoodDraft, HabitDraft, MealDraft, RunPlanDraft,
+  ScheduleDraft, WorkoutDraft,
 } from '../domain/coach/types';
+import { eventsFromDraft } from '../domain/timetable';
 import type { CoachIntent } from '../domain/coach/intent';
 import type { CoachAction } from '../domain/coach/types';
 import { adapt, applyAdaptation } from '../domain/coach/running';
@@ -302,8 +303,17 @@ export interface ApplyResult {
  * do utilizador: um treino sem exercícios ou um plano sem sessões não é um erro
  * que se corrige depois — é lixo guardado com o nome de uma coisa boa.
  */
+const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 function usable(action: CoachAction): boolean {
   switch (action.kind) {
+    case 'create_events':
+      return (action.draft?.items?.length ?? 0) > 0
+        && action.draft.items.every((item) => !!item?.title?.trim()
+          && CLOCK.test(item.startTime)
+          && (item.endTime == null || CLOCK.test(item.endTime))
+          && Array.isArray(item.weekdays) && item.weekdays.length > 0
+          && item.weekdays.every((day) => Number.isInteger(day) && day >= 0 && day <= 6));
     case 'create_workout':
       return (action.draft?.blocks?.length ?? 0) > 0
         && action.draft.blocks.every((block) => !!block?.exerciseName && block.sets > 0);
@@ -341,6 +351,7 @@ export function applyAction(repos: Repositories, action: CoachAction): ApplyResu
     case 'move_workout': return moveWorkout(repos, action.workoutId, action.from, action.to);
     case 'log_meal': return logMeal(repos, action.draft);
     case 'create_foods': return createFoods(repos, action.drafts);
+    case 'create_events': return createEvents(repos, action.draft);
     case 'open': return { ok: true, message: '', path: action.path };
     default: return { ok: false, message: 'Ação desconhecida.', path: null };
   }
@@ -511,6 +522,22 @@ function createRunPlan(repos: Repositories, draft: RunPlanDraft): ApplyResult {
   // Para a Atividade, e nao para a IA: e la que o plano se corre, e era la que
   // quem o criava o ia procurar sem o encontrar.
   return { ok: true, message: `Plano "${plan.title}" criado.`, path: '/atividade/plano' };
+}
+
+/**
+ * Poe um horario na agenda.
+ *
+ * So acrescenta: o que ja la estava fica como estava, mesmo quando se
+ * sobrepoe. A revisao mostrou as sobreposicoes antes do toque que chega aqui.
+ */
+function createEvents(repos: Repositories, draft: EventsDraft): ApplyResult {
+  const events = eventsFromDraft(draft, todayKey());
+  for (const event of events) repos.events.create(event);
+  return {
+    ok: true,
+    message: events.length === 1 ? '1 evento na agenda.' : `${events.length} eventos na agenda.`,
+    path: '/agenda',
+  };
 }
 
 /**

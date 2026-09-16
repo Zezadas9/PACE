@@ -12,7 +12,7 @@
  */
 
 import type {
-  ActivitySession, AiSettings, DayKey, Exercise, Food, Goal, Habit, HabitEntry, Meal,
+  ActivitySession, AiSettings, DayKey, EventCategory, Exercise, Food, Goal, Habit, HabitEntry, Meal,
   MealItem, RunPlan, SessionDifficulty, SleepEntry, UserPreferences, WaterEntry, Workout,
   WorkoutSession,
 } from '../../core/types';
@@ -132,6 +132,35 @@ export interface ScheduleDraft {
   summary: string[];
 }
 
+/**
+ * Uma aula ou um turno, tal como sai de um horario escolar ou de trabalho.
+ *
+ * Uma aula que se repete em varios dias vai numa linha so, com os dias todos.
+ */
+export interface EventDraftItem {
+  title: string;
+  category: EventCategory;
+  /** 0 = domingo .. 6 = sabado. */
+  weekdays: number[];
+  /** "09:00" */
+  startTime: string;
+  endTime: string | null;
+  location: string | null;
+}
+
+/** Um horario inteiro, pronto a ser revisto antes de entrar na agenda. */
+export interface EventsDraft {
+  /** "Horario do 12.o B", "Turnos de outubro". */
+  title: string;
+  items: EventDraftItem[];
+  /** A partir de quando. Null e a partir de hoje. */
+  startDate: DayKey | null;
+  /** Ate quando, quando o horario tem fim — o fim do semestre, por exemplo. */
+  until: DayKey | null;
+  /** O que nao se conseguiu ler, dito em vez de inventado. */
+  unreadable: string[];
+}
+
 /** Um alimento com os seus valores. Nulos onde nao se sabe. */
 export interface FoodDraft {
   name: string;
@@ -168,6 +197,7 @@ export type CoachAction =
   | { kind: 'move_workout'; label: string; workoutId: string; from: number; to: number }
   | { kind: 'log_meal'; label: string; draft: MealDraft }
   | { kind: 'create_foods'; label: string; drafts: FoodDraft[] }
+  | { kind: 'create_events'; label: string; draft: EventsDraft }
   | { kind: 'open'; label: string; path: string };
 
 export interface CoachTurn {

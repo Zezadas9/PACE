@@ -8,7 +8,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { CoachAction, CoachTurn , ScheduleDraft } from '../../domain/coach/types';
+import type {
+  CoachAction, CoachTurn, EventsDraft, ScheduleDraft,
+} from '../../domain/coach/types';
 import {
   aiSettings, applyAction, ask, clearHistory, history, runPlanView,
 } from '../../services/coach';
@@ -19,6 +21,7 @@ import { useUi } from '../../app/providers/uiContext';
 import { Screen } from '../../app/navigation/Screen';
 import { BrandIcon } from '../../ui/BrandIcon';
 import { SchedulePlanSheet } from './SchedulePlanSheet';
+import { EventsPlanSheet } from './EventsPlanSheet';
 import { Button, Card } from '../../ui/primitives';
 import { Icon } from '../../ui/Icon';
 import {
@@ -92,6 +95,8 @@ export function AssistantScreen(): ReactElement {
   const [notice, setNotice] = useState<{ text: string; retry: string | null } | null>(null);
   /** A proposta de semana aberta para rever — aceitar, editar ou rejeitar. */
   const [schedule, setSchedule] = useState<ScheduleDraft | null>(null);
+  /** Um horario para rever antes de entrar na agenda. */
+  const [timetable, setTimetable] = useState<{ label: string; draft: EventsDraft } | null>(null);
   /**
    * As fotografias, os vídeos e os ficheiros que seguem com a próxima mensagem.
    *
@@ -197,6 +202,11 @@ export function AssistantScreen(): ReactElement {
       // mudada linha a linha, e só depois aceite.
       if (action.kind === 'apply_schedule') {
         setSchedule(action.draft);
+        return;
+      }
+      // Um horario lido de uma fotografia tambem: e ler que se erra.
+      if (action.kind === 'create_events') {
+        setTimetable({ label: action.label, draft: action.draft });
         return;
       }
       const ok = await confirm({
@@ -402,6 +412,27 @@ export function AssistantScreen(): ReactElement {
         >
           Apagar conversa
         </button>
+      ) : null}
+      {timetable ? (
+        <EventsPlanSheet
+          draft={timetable.draft}
+          onClose={() => setTimetable(null)}
+          onConfirm={(edited) => {
+            const result = applyAction(repos, {
+              kind: 'create_events',
+              label: timetable.label,
+              draft: edited,
+            });
+            setTimetable(null);
+            if (!result.ok) {
+              toast(result.message || 'Não consegui pôr isso na agenda.');
+              return;
+            }
+            feedback.play('complete');
+            toast(result.message);
+            if (result.path) navigate(result.path);
+          }}
+        />
       ) : null}
       {schedule ? (
         <SchedulePlanSheet

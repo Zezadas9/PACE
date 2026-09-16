@@ -60,6 +60,43 @@ describe('grantAll', () => {
   });
 });
 
+describe('applyAction — um horario', () => {
+  const horario = {
+    title: 'Horario do 12.o B',
+    startDate: null,
+    until: null,
+    unreadable: [],
+    items: [
+      { title: 'Matematica', category: 'school' as const, weekdays: [1], startTime: '09:00', endTime: '10:30', location: 'Sala 2' },
+      { title: 'Matematica', category: 'school' as const, weekdays: [3], startTime: '09:00', endTime: '10:30', location: 'Sala 2' },
+      { title: 'Fisica', category: 'school' as const, weekdays: [2], startTime: '11:00', endTime: '12:30', location: null },
+    ],
+  };
+
+  it('poe cada aula na agenda uma vez, a repetir-se nos dias dela', () => {
+    const result = applyAction(repos, { kind: 'create_events', label: 'Por na agenda', draft: horario });
+    expect(result.ok).toBe(true);
+    expect(result.path).toBe('/agenda');
+    const eventos = repos.events.all();
+    expect(eventos).toHaveLength(2);
+    expect(eventos.find((evento) => evento.title === 'Matematica')?.recurrence.weekdays).toEqual([1, 3]);
+  });
+
+  it('nao toca no que ja estava', () => {
+    const antes = repos.events.create({ title: 'Ginasio', startTime: '09:30', endTime: '10:30' });
+    applyAction(repos, { kind: 'create_events', label: 'Por na agenda', draft: horario });
+    expect(repos.events.byId(antes.id)).toMatchObject({ title: 'Ginasio', startTime: '09:30' });
+  });
+
+  it('recusa uma hora que nao e hora, ou uma aula sem dia', () => {
+    const errado = { ...horario, items: [{ ...horario.items[0]!, startTime: '9h' }] };
+    expect(applyAction(repos, { kind: 'create_events', label: 'x', draft: errado }).ok).toBe(false);
+    const semDia = { ...horario, items: [{ ...horario.items[0]!, weekdays: [] }] };
+    expect(applyAction(repos, { kind: 'create_events', label: 'x', draft: semDia }).ok).toBe(false);
+    expect(repos.events.all()).toHaveLength(0);
+  });
+});
+
 describe('applyAction — a última barreira antes de escrever', () => {
   it('recusa um treino sem exercícios', () => {
     const result = applyAction(repos, {
