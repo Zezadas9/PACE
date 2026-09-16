@@ -259,25 +259,64 @@
 
 /* Fica a vista antes de ser enviado, e sai com um toque. Ninguem deve descobrir
    depois que enviou uma fotografia sem querer. */
-.coach-attachment {
+/* Os anexos por enviar: uma fila que se desliza, por cima do campo de escrita.
+   Cada um mostra a miniatura e "Foto", "Vídeo" ou o nome do documento. */
+.coach-attachments {
   position: sticky;
   bottom: 3.25rem;
   display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-2) var(--s-3);
+  gap: var(--s-2);
   margin-bottom: var(--s-2);
+  padding: 2px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.coach-attachments::-webkit-scrollbar { display: none; }
+.coach-attachment {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: none;
+  max-width: 14rem;
+  padding: var(--s-1) var(--s-1) var(--s-1) var(--s-2);
   border: 1px solid var(--c-line);
   border-radius: var(--r-md);
   background: var(--c-surface-2);
 }
-.coach-attachment img {
+.coach-attachment.is-loading { padding: var(--s-2) var(--s-3); }
+.coach-attachment-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.coach-attachment-thumb {
+  position: relative;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+.coach-attachment img,
+.coach-attachment-thumb img {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: var(--r-sm);
   object-fit: cover;
   flex: none;
 }
+.coach-attachment-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: var(--r-full);
+  background: var(--c-ink);
+  color: var(--c-surface);
+}
+.coach-attachment-badge svg { width: 0.7rem; height: 0.7rem; }
 .coach-attachment-doc {
   display: grid;
   place-items: center;

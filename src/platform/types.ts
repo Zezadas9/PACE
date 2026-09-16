@@ -256,26 +256,30 @@ export interface AssistantRequest {
    */
   history?: Array<{ role: 'user' | 'assistant'; text: string }>;
   /**
-   * Uma fotografia ou um documento que acompanha a mensagem.
+   * As fotografias, os fotogramas de video e os documentos da mensagem.
    *
-   * Uma de cada vez, de propósito: duas imagens numa pergunta é quase sempre
-   * duas perguntas. Os dados vão em base64 já reduzidos pelo cliente — o
-   * original de 4 MB da câmara não atravessa a rede.
+   * Varios de uma vez: um horario tem duas paginas, um plano vem em tres
+   * fotografias. Os dados vao em base64 ja reduzidos pelo cliente — o original
+   * de 4 MB da camara nao atravessa a rede.
    *
-   * O motor local não os lê. Uma pergunta com imagem que caia no fallback é
-   * respondida a dizer isso, e não a fingir que viu.
+   * O motor local nao os le. Uma pergunta com anexos que caia no fallback e
+   * respondida a dizer isso, e nao a fingir que viu.
    */
-  attachment?: AssistantAttachment | null;
+  attachments?: AssistantAttachment[];
 }
 
 export interface AssistantAttachment {
-  kind: 'image' | 'document';
-  /** "image/jpeg", "image/png", "image/webp" ou "application/pdf". */
+  kind: 'image' | 'document' | 'text';
+  /** "image/jpeg", "image/png", "image/webp", "application/pdf", "text/plain" ou "text/csv". */
   mediaType: string;
   /** O conteúdo em base64, sem o prefixo "data:". */
   data: string;
-  /** O nome do ficheiro, quando veio de um. Só para o ecrã o poder mostrar. */
+  /** O nome do ficheiro — so nos documentos. Fotos e videos seguem sem nome. */
   name?: string | null;
+  /** De onde veio: uma foto, um fotograma de um video, ou um ficheiro. */
+  origin?: 'photo' | 'video' | 'file' | null;
+  /** Num video, qual e o fotograma e quantos ha. */
+  frame?: { index: number; of: number } | null;
 }
 
 export interface AssistantReply {

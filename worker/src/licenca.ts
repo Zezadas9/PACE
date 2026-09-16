@@ -436,6 +436,7 @@ export async function handleWebhook(
   request: Request,
   env: LicencaEnv,
   cors: Record<string, string>,
+  now: Date = new Date(),
 ): Promise<Response> {
   const secret = env.LS_WEBHOOK_SECRET?.trim();
   if (!secret || !env.LICENCAS) return fail('not_configured', 503, cors);
@@ -470,7 +471,7 @@ export async function handleWebhook(
 
   const store = env.LICENCAS as KvStore;
   const key = `dispositivo:${device}`;
-  const record = await readJson<DeviceRecord>(store, key) ?? { trialStart: day(new Date()) };
+  const record = await readJson<DeviceRecord>(store, key) ?? { trialStart: day(now) };
   const attributes = payload.data?.attributes ?? {};
   const urls = attributes.urls as { customer_portal?: string } | undefined;
 

@@ -17,7 +17,9 @@
 import { respond } from '../../domain/coach';
 import { cardHeaders } from './licence';
 import type { CoachBlock, CoachTurn } from '../../domain/coach/types';
-import type { AssistantPort, AssistantReply, AssistantRequest } from '../types';
+import type {
+  AssistantAttachment, AssistantPort, AssistantReply, AssistantRequest,
+} from '../types';
 
 /**
  * Quanto tempo esperar pelo modelo.
@@ -54,9 +56,15 @@ const SHEDDABLE = [
 ] as const;
 
 /** Corta o contexto ate o pedido caber, e diz o que cortou. */
-function fit(body: Record<string, unknown>): string {
+function fit(body: Record<string, unknown>, attachments: AssistantAttachment[] = []): string {
   let json = JSON.stringify(body);
-  if (json.length <= MAX_BODY_BYTES) return json;
+  // Os anexos juntam-se so no fim, depois de o contexto caber. Medidos com ele,
+  // uma fotografia bastava para o contexto inteiro ser cortado — e a IA via a
+  // fotografia sem saber nada de quem a tirou.
+  const done = (): string => (
+    attachments.length > 0 ? JSON.stringify({ ...body, attachments }) : json
+  );
+  if (json.length <= MAX_BODY_BYTES) return done();
 
   const context = body.context as Record<string, unknown>;
   for (const key of SHEDDABLE) {
@@ -72,7 +80,7 @@ function fit(body: Record<string, unknown>): string {
     }
     if (json.length <= MAX_BODY_BYTES) break;
   }
-  return json;
+  return done();
 }
 
 /**
@@ -186,8 +194,7 @@ export class RemoteAssistantPort implements AssistantPort {
           context: request.context,
           previousIntent: request.previousIntent ?? null,
           history: request.history ?? [],
-          attachment: request.attachment ?? null,
-        }),
+        }, request.attachments ?? []),
       });
 
       if (!response.ok) throw new RemoteFailure('recusado', response.status);
@@ -254,7 +261,7 @@ export function withLocalFallback(
       // O motor local nao le imagens nem ficheiros. Se a pergunta trazia um,
       // a resposta tem de dizer que ele nao foi visto — calar isso seria deixar
       // o utilizador a achar que a fotografia contou para a resposta.
-      if (request.attachment) {
+      if ((request.attachments?.length ?? 0) > 0) {
         return {
           ...reply,
           fallback: true,

@@ -21,8 +21,9 @@ import { BrandIcon } from '../../ui/BrandIcon';
 import { SchedulePlanSheet } from './SchedulePlanSheet';
 import { Button, Card } from '../../ui/primitives';
 import { Icon } from '../../ui/Icon';
-import type { AssistantAttachment } from '../../platform/types';
-import { ACCEPTED_TYPES, AttachmentError, prepare } from './attachment';
+import {
+  ACCEPT, AttachmentError, describePending, limitProblem, prepare, type PendingAttachment,
+} from './attachment';
 import { Blocks } from './blocks';
 import { ActionCard } from './ActionCard';
 
@@ -92,13 +93,16 @@ export function AssistantScreen(): ReactElement {
   /** A proposta de semana aberta para rever — aceitar, editar ou rejeitar. */
   const [schedule, setSchedule] = useState<ScheduleDraft | null>(null);
   /**
-   * A fotografia ou o ficheiro que segue com a próxima mensagem.
+   * As fotografias, os vídeos e os ficheiros que seguem com a próxima mensagem.
    *
-   * Um de cada vez: duas imagens numa pergunta são quase sempre duas perguntas.
-   * Fica visível antes de ser enviado, e sai com um toque — ninguém deve
-   * descobrir depois que enviou uma fotografia sem querer.
+   * Ficam visíveis antes de serem enviados, e cada um sai com um toque —
+   * ninguém deve descobrir depois que enviou uma fotografia sem querer.
    */
-  const [attachment, setAttachment] = useState<AssistantAttachment | null>(null);
+  const [pending, setPending] = useState<PendingAttachment[]>([]);
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
+  /** Um vídeo demora uns segundos a preparar: diz-se, em vez de parecer parado. */
+  const [preparing, setPreparing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -130,14 +134,18 @@ export function AssistantScreen(): ReactElement {
 
   const send = useCallback(async (text: string) => {
     const message = text.trim();
-    if ((!message && !attachment) || busy) return;
-    const sending = attachment;
+    if ((!message && pending.length === 0) || busy || preparing) return;
+    const sending = pending;
     setDraft('');
-    setAttachment(null);
+    setPending([]);
     setBusy(true);
     setNotice(null);
     try {
-      const result = await ask(repos, platform, preferences, message, sending);
+      const result = await ask(
+        repos, platform, preferences, message,
+        sending.flatMap((item) => item.parts),
+        describePending(sending),
+      );
       feedback.touch();
       // Quando o backend falha, a resposta local sai à mesma — mas convém
       // dizê-lo, sem alarme e sem esconder.
@@ -152,7 +160,32 @@ export function AssistantScreen(): ReactElement {
     } finally {
       setBusy(false);
     }
-  }, [repos, platform, preferences, feedback, busy, attachment]);
+  }, [repos, platform, preferences, feedback, busy, preparing, pending]);
+
+  const addFiles = useCallback((files: File[]) => {
+    if (files.length === 0) return;
+    void (async () => {
+      setPreparing(true);
+      const prepared: PendingAttachment[] = [];
+      for (const file of files) {
+        try {
+          prepared.push(await prepare(file));
+        } catch (error) {
+          toast(error instanceof AttachmentError ? error.message : 'Não consegui ler um dos ficheiros.');
+        }
+      }
+      setPreparing(false);
+      if (prepared.length === 0) return;
+
+      const next = [...pendingRef.current, ...prepared];
+      const problem = limitProblem(next);
+      if (problem) {
+        toast(problem, 4000);
+        return;
+      }
+      setPending(next);
+    })();
+  }, [toast]);
 
   const run = useCallback((action: CoachAction) => {
     void (async () => {
@@ -287,26 +320,36 @@ export function AssistantScreen(): ReactElement {
         ))}
       </div>
 
-      {attachment ? (
-        <div className="coach-attachment">
-          {attachment.kind === 'image' ? (
-            <img
-              src={`data:${attachment.mediaType};base64,${attachment.data}`}
-              alt=""
-              aria-hidden="true"
-            />
-          ) : (
-            <span className="coach-attachment-doc" aria-hidden="true">PDF</span>
-          )}
-          <span className="grow t-sm">{attachment.name ?? 'Anexo'}</span>
-          <button
-            type="button"
-            className="btn-icon"
-            aria-label="Tirar o anexo"
-            onClick={() => setAttachment(null)}
-          >
-            <Icon name="close" />
-          </button>
+      {pending.length > 0 || preparing ? (
+        <div className="coach-attachments" role="list" aria-label="Anexos">
+          {pending.map((item) => (
+            <div key={item.id} className="coach-attachment" role="listitem">
+              {item.preview ? (
+                <span className="coach-attachment-thumb" aria-hidden="true">
+                  <img src={item.preview} alt="" />
+                  {item.kind === 'video' ? (
+                    <span className="coach-attachment-badge"><Icon name="video" /></span>
+                  ) : null}
+                </span>
+              ) : (
+                <span className="coach-attachment-doc" aria-hidden="true"><Icon name="file" /></span>
+              )}
+              <span className="coach-attachment-label t-sm">{item.label}</span>
+              <button
+                type="button"
+                className="btn-icon"
+                aria-label={`Tirar ${item.label.toLowerCase()}`}
+                onClick={() => setPending((current) => current.filter((other) => other.id !== item.id))}
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+          ))}
+          {preparing ? (
+            <div className="coach-attachment is-loading" role="status">
+              <span className="coach-attachment-label t-sm muted">A preparar…</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -317,23 +360,19 @@ export function AssistantScreen(): ReactElement {
         <input
           ref={fileRef}
           type="file"
-          accept={ACCEPTED_TYPES.join(',')}
+          accept={ACCEPT}
+          multiple
           hidden
           onChange={(event) => {
-            const file = event.target.files?.[0];
+            const files = Array.from(event.target.files ?? []);
             event.target.value = '';
-            if (!file) return;
-            void prepare(file)
-              .then(setAttachment)
-              .catch((error: unknown) => {
-                toast(error instanceof AttachmentError ? error.message : 'Não consegui ler isso.');
-              });
+            addFiles(files);
           }}
         />
         <button
           type="button"
           className="btn-icon"
-          aria-label="Juntar foto ou ficheiro"
+          aria-label="Juntar fotos, vídeos ou ficheiros"
           onClick={() => fileRef.current?.click()}
         >
           <Icon name="camera" />
@@ -341,11 +380,11 @@ export function AssistantScreen(): ReactElement {
         <input
           className="input"
           value={draft}
-          placeholder={attachment ? 'O que queres saber sobre isto?' : 'Escreve aqui…'}
+          placeholder={pending.length > 0 ? 'O que queres fazer com isto?' : 'Escreve aqui…'}
           onChange={(event) => setDraft(event.target.value)}
           aria-label="Mensagem"
         />
-        <button type="submit" className="btn-icon" aria-label="Enviar" disabled={busy}>
+        <button type="submit" className="btn-icon" aria-label="Enviar" disabled={busy || preparing}>
           <Icon name="chevron" />
         </button>
       </form>

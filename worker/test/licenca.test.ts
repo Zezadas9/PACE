@@ -213,7 +213,7 @@ describe('webhook', () => {
     const request = new Request('https://worker.example/api/pagamento/webhook', {
       method: 'POST', body: raw, headers: { 'x-signature': await assinar(raw) },
     });
-    expect((await handleWebhook(request, env, {})).status).toBe(200);
+    expect((await handleWebhook(request, env, {}, DIA_1)).status).toBe(200);
 
     const { body } = await call('/api/licenca', { device: DEVICE }, DIA_9);
     expect(body.state).toBe('paid');
@@ -225,7 +225,7 @@ describe('webhook', () => {
     const request = new Request('https://worker.example/api/pagamento/webhook', {
       method: 'POST', body: raw, headers: { 'x-signature': 'a'.repeat(64) },
     });
-    expect((await handleWebhook(request, env, {})).status).toBe(401);
+    expect((await handleWebhook(request, env, {}, DIA_1)).status).toBe(401);
     expect(await validSignature(raw, 'nao-e-hexadecimal', 'segredo-do-webhook')).toBe(false);
   });
 
@@ -234,7 +234,7 @@ describe('webhook', () => {
     const request = new Request('https://worker.example/api/pagamento/webhook', {
       method: 'POST', body: raw, headers: { 'x-signature': await assinar(raw) },
     });
-    await handleWebhook(request, env, {});
+    await handleWebhook(request, env, {}, DIA_1);
     const { body } = await call('/api/licenca', { device: DEVICE }, DIA_9);
     expect(body.state).toBe('blocked');
   });
@@ -244,7 +244,7 @@ describe('webhook', () => {
     const request = new Request('https://worker.example/api/pagamento/webhook', {
       method: 'POST', body: raw, headers: { 'x-signature': await assinar(raw) },
     });
-    await handleWebhook(request, env, {});
+    await handleWebhook(request, env, {}, DIA_1);
     expect((await call('/api/licenca', { device: DEVICE }, DIA_9)).body.state).toBe('paid');
     expect((await call('/api/licenca', { device: DEVICE }, new Date('2026-09-26T10:00:00Z'))).body.state)
       .toBe('blocked');

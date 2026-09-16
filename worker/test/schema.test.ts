@@ -234,6 +234,40 @@ describe('resposta do modelo', () => {
     expect(parsed.success).toBe(false);
   });
 
+  it('aceita varios anexos: fotos, fotogramas de um video, um PDF e um texto', () => {
+    const parsed = requestSchema.safeParse({
+      message: 'poe isto na agenda',
+      context,
+      attachments: [
+        { kind: 'image', mediaType: 'image/jpeg', data: 'AAAA', origin: 'photo' },
+        { kind: 'image', mediaType: 'image/jpeg', data: 'AAAA', origin: 'video', frame: { index: 1, of: 2 } },
+        { kind: 'image', mediaType: 'image/jpeg', data: 'AAAA', origin: 'video', frame: { index: 2, of: 2 } },
+        { kind: 'document', mediaType: 'application/pdf', data: 'AAAA', name: 'horario.pdf', origin: 'file' },
+        { kind: 'text', mediaType: 'text/csv', data: 'AAAA', name: 'turnos.csv', origin: 'file' },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('recusa mais anexos do que o limite', () => {
+    const foto = { kind: 'image', mediaType: 'image/jpeg', data: 'AAAA' };
+    const parsed = requestSchema.safeParse({
+      message: 'muitas',
+      context,
+      attachments: Array.from({ length: 13 }, () => foto),
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('recusa um ficheiro de texto que diz ser PDF', () => {
+    const parsed = requestSchema.safeParse({
+      message: 'le isto',
+      context,
+      attachments: [{ kind: 'text', mediaType: 'application/pdf', data: 'AAAA' }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
   it('recusa mais ações do que o limite', () => {
     const uma = { kind: 'open', label: 'Ver', path: '/treino' };
     const parsed = turnSchema.safeParse({ ...turn, actions: [uma, uma, uma, uma] });

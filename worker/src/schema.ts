@@ -20,28 +20,61 @@ export const MAX_HISTORY_CHARS = 1200;
 /**
  * O corpo do pedido.
  *
- * Generoso porque uma fotografia cabe aqui dentro, e apertado porque o cliente
- * reduz a imagem antes de a enviar: 1024 px de lado e JPEG raramente passam
- * dos 300 KB. Quem enviar mais do que isto está a tentar outra coisa.
+ * Cabem varios anexos: umas fotografias, um PDF, os fotogramas de um video. O
+ * cliente reduz cada imagem antes de a enviar — 1024 px de lado e JPEG
+ * raramente passam dos 300 KB — e corta o total antes de chegar aqui. Quem
+ * enviar mais do que isto esta a tentar outra coisa.
  */
-export const MAX_BODY_BYTES = 3 * 1024 * 1024;
+export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 export const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
 
-/** O que o modelo consegue mesmo ler. Nada de vídeo, nada de zips. */
+/**
+ * Um ficheiro de texto e lido inteiro pelo modelo, e texto e caro: 200 KB sao
+ * dezenas de milhares de tokens. Um horario ou um plano cabem com folga.
+ */
+export const MAX_TEXT_BYTES = 200 * 1024;
+
+/** Quantas partes um pedido pode trazer. Um video conta pelos fotogramas que leva. */
+export const MAX_ATTACHMENTS = 12;
+
+/**
+ * O que o modelo consegue mesmo ler.
+ *
+ * Video nao: o modelo nao o le. O cliente tira-lhe alguns fotogramas e manda-os
+ * como imagens, marcados como tal.
+ */
 export const ATTACHMENT_TYPES = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf',
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'application/pdf',
+  'text/plain', 'text/csv',
 ] as const;
 
+export function kindOfMediaType(mediaType: string): 'image' | 'document' | 'text' {
+  if (mediaType === 'application/pdf') return 'document';
+  if (mediaType.startsWith('text/')) return 'text';
+  return 'image';
+}
+
 export const attachmentSchema = z.object({
-  kind: z.enum(['image', 'document']),
+  kind: z.enum(['image', 'document', 'text']),
   mediaType: z.enum(ATTACHMENT_TYPES),
   // O tamanho em base64 é cerca de 4/3 do original; o limite é sobre o que
   // atravessa a rede, que é o que interessa medir.
   data: z.string().min(1).max(Math.ceil((MAX_ATTACHMENT_BYTES * 4) / 3)),
   name: z.string().max(120).nullable().optional(),
+  /** De onde veio: uma foto, um fotograma de um video, ou um ficheiro. */
+  origin: z.enum(['photo', 'video', 'file']).nullable().optional(),
+  /** Num video, qual e o fotograma e quantos ha. */
+  frame: z.object({
+    index: z.number().int().min(1).max(MAX_ATTACHMENTS),
+    of: z.number().int().min(1).max(MAX_ATTACHMENTS),
+  }).nullable().optional(),
 }).refine(
-  (value) => (value.kind === 'document') === (value.mediaType === 'application/pdf'),
+  (value) => kindOfMediaType(value.mediaType) === value.kind,
   { message: 'o tipo do anexo tem de bater certo com o media type' },
+).refine(
+  (value) => value.kind !== 'text' || value.data.length <= Math.ceil((MAX_TEXT_BYTES * 4) / 3),
+  { message: 'ficheiro de texto grande de mais' },
 );
 
 /**
@@ -93,6 +126,12 @@ export const requestSchema = z.object({
     )
     .max(MAX_HISTORY_MESSAGES)
     .default([]),
+  /** Os anexos desta mensagem, por ordem. */
+  attachments: z.array(attachmentSchema).max(MAX_ATTACHMENTS).default([]),
+  /**
+   * O formato antigo, de um anexo so. Fica aceite porque uma aplicacao
+   * instalada so se atualiza quando e aberta, e ate la continua a falar assim.
+   */
   attachment: attachmentSchema.nullable().default(null),
 });
 

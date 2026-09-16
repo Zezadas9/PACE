@@ -240,7 +240,9 @@ export async function ask(
   platform: Platform,
   preferences: UserPreferences,
   message: string,
-  attachment: AssistantAttachment | null = null,
+  attachments: AssistantAttachment[] = [],
+  /** Como os anexos ficam escritos na conversa: "2 fotos e horario.pdf". */
+  attachmentSummary = '',
 ): Promise<AskResult> {
   const previousMessages = history(repos);
 
@@ -254,11 +256,14 @@ export async function ask(
 
   // A mensagem guardada diz que houve um anexo, mas nao guarda o anexo: uma
   // fotografia por mensagem encheria o armazenamento local em dias.
+  const resumo = attachments.length === 0
+    ? ''
+    : attachmentSummary || (attachments.length === 1 ? 'um anexo' : `${attachments.length} anexos`);
   repos.coachMessages.create({
     role: 'user',
-    text: attachment && message.trim() === ''
-      ? '(imagem enviada)'
-      : attachment ? `${message.trim()} (com imagem)` : message.trim(),
+    text: resumo && message.trim() === ''
+      ? `(${resumo})`
+      : resumo ? `${message.trim()} (${resumo})` : message.trim(),
     turn: null,
   });
 
@@ -268,7 +273,7 @@ export async function ask(
     context,
     previousIntent: previous,
     history: compactHistory(previousMessages),
-    attachment,
+    attachments,
   });
 
   repos.coachMessages.create({ role: 'coach', text: '', turn: reply.turn });
