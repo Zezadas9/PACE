@@ -508,6 +508,61 @@ sei", e não um número.
 
 ---
 
+## Voz, anexos, horários e música
+
+### A voz nas sessões
+
+Uma corrida do plano é guiada por voz. No aquecimento, a voz diz quantas séries
+vêm e de que são feitas ("8 séries, cada uma 1 minuto a correr e 1 minuto e meio
+a caminhar"), e repete-o um minuto antes de acabar; depois anuncia cada série,
+cada recuperação, os últimos 10 segundos, o arrefecimento e o fim. Nas corridas
+por distância, anuncia cada quilómetro, a metade e a chegada — **só com
+distância medida pelo GPS**. No treino de força, diz o exercício, a série e o
+alvo, o descanso, e o que vem a seguir.
+
+As frases e o momento de as dizer estão em `src/domain/guidance.ts`, puros e
+testados. A voz é a síntese do próprio telemóvel, sem rede. O iPhone só deixa
+uma página falar depois de um toque, por isso é o toque em "Começar" que a
+desbloqueia. O ecrã fica aceso durante a sessão — com ele apagado, a página
+suspende-se e a voz com ela. Liga-se e desliga-se no ecrã da sessão e no perfil.
+
+### Anexos para a IA
+
+Várias fotografias, vídeos e ficheiros numa mensagem (até 6 coisas, 12 partes).
+No ecrã, uma foto aparece como "Foto" e um vídeo como "Vídeo"; o nome do
+ficheiro nem sai do telemóvel. Um documento mostra o nome.
+
+O modelo não lê vídeo: de cada vídeo tiram-se 4 fotogramas espalhados pela
+duração, enviados como imagens marcadas como tal. Aceitam-se também PDFs,
+ficheiros de texto e CSV, e fotografias em formatos que o modelo não lê (HEIC),
+convertidas para JPEG. O servidor aceita também o formato antigo, de um anexo
+só, porque uma app instalada só se atualiza quando é aberta.
+
+### Horários na agenda
+
+Um horário escolar ou de trabalho — fotografia, PDF, CSV ou escrito — vira uma
+proposta `create_events`: uma linha por aula ou turno, e uma aula em vários dias
+é **um só evento semanal**. Nada entra sem uma revisão onde cada aula pode sair,
+as sobreposições com o que já está na agenda aparecem à vista, e o que a IA não
+conseguiu ler é dito em vez de inventado. **Só acrescenta**: o que já estava na
+agenda nunca é alterado. A lógica está em `src/domain/timetable.ts`.
+
+### Música
+
+Cada treino pode ter uma playlist, e as corridas e caminhadas têm uma própria.
+Na sessão, um botão abre-a na app de música, e a música continua a tocar quando
+se volta à PACE. A IA faz playlists à medida (`create_playlist`); a lista fica
+guardada, e cada música abre na app de quem ouve.
+
+**Porque não uma ligação à conta do Spotify.** Desde 2026, uma app nova no
+Spotify só se pode ligar à conta de 5 pessoas, e o acesso alargado é só para
+empresas registadas com 250 000 utilizadores por mês. Um botão "ligar ao
+Spotify" funcionaria para 5 pessoas e falharia para todos os clientes. Um link
+funciona para toda a gente. O modelo nunca escreve links (o servidor deita-os
+fora), e os links colados só são aceites de apps de música conhecidas.
+
+---
+
 ## Marca, cor e som
 
 ### O logo
