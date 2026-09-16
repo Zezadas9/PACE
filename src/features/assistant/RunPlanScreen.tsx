@@ -27,8 +27,8 @@ export function describeSession(session: RunPlanSession, unit: 'km' | 'mi'): str
   if (session.kind === 'walk_run') {
     const first = session.segments[0];
     if (!first) return 'Corrida e caminhada';
-    return `${first.repeats}× (${Math.round(first.runSec / 60)} min a correr / `
-      + `${Math.round(first.walkSec / 60)} min a caminhar)`;
+    return `${first.repeats}× (${format.shortDuration(first.runSec)} a correr / `
+      + `${format.shortDuration(first.walkSec)} a caminhar)`;
   }
   if (session.targetDistanceM == null) return 'Descanso';
   return format.distance(session.targetDistanceM, unit);
@@ -101,8 +101,17 @@ export function RunPlanScreen(): ReactElement {
                 {describeSession(next, unit)}
               </p>
               {next.note ? <p className="t-sm muted">{next.note}</p> : null}
-              <div className="row" style={{ gap: 'var(--s-2)', marginTop: '1rem' }}>
-                <Button variant="primary" label="Correu bem" onClick={() => setFeedbackFor(next)} />
+              <div style={{ marginTop: '1rem' }}>
+                <Button
+                  variant="primary"
+                  block
+                  icon="run"
+                  label="Começar corrida"
+                  onClick={() => navigate(`/atividade/preparar/run?plano=${next.id}`)}
+                />
+              </div>
+              <div className="row" style={{ gap: 'var(--s-2)', marginTop: 'var(--s-2)' }}>
+                <Button variant="outline" label="Já corri" onClick={() => setFeedbackFor(next)} />
                 <Button
                   variant="outline"
                   label="Saltar"

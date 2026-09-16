@@ -8,11 +8,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ACTIVITY_LABELS, ACTIVITY_TYPE_OPTIONS } from '../../core/constants';
 import type { ActivityType } from '../../core/types';
 import * as format from '../../core/utils/format';
 import { goalProgress, startSession } from '../../services/activity';
+import { runPlanView } from '../../services/coach';
+import { describeSession } from '../assistant/RunPlanScreen';
+import { useVoice } from '../guidance/useVoice';
 import { useApp, useFeedback, usePreferences, useStoreVersion } from '../../app/providers/appContext';
 import { Screen } from '../../app/navigation/Screen';
 import { Button, Card } from '../../ui/primitives';
@@ -49,6 +52,15 @@ export function ActivityPrepareScreen(): ReactElement {
   const navigate = useNavigate();
   const version = useStoreVersion();
   const params = useParams<{ type: string }>();
+  const [search] = useSearchParams();
+  const voice = useVoice();
+
+  // Vem do plano de corrida: a sessão que esta corrida vai cumprir.
+  const planSessionId = search.get('plano');
+  const planSession = useMemo(() => {
+    if (!planSessionId) return null;
+    return runPlanView(repos)?.plan.sessions.find((item) => item.id === planSessionId) ?? null;
+  }, [repos, planSessionId, version]);
 
   const type = (ACTIVITY_TYPE_OPTIONS.find((option) => option.id === params.type)?.id
     ?? 'run') as ActivityType;
@@ -78,10 +90,13 @@ export function ActivityPrepareScreen(): ReactElement {
   );
 
   const begin = useCallback(() => {
-    startSession(repos, type);
+    // Este toque é o que deixa a voz falar no iPhone — tem de ser aqui, e não
+    // já no ecrã seguinte, onde a primeira frase sai sem toque nenhum.
+    if (voice.on) platform.voice.unlock();
+    startSession(repos, type, undefined, planSession?.id ?? null);
     feedback.touch('medium');
     navigate('/atividade/sessao', { replace: true });
-  }, [repos, type, feedback, navigate]);
+  }, [repos, platform, type, planSession, voice.on, feedback, navigate]);
 
   const brand = brandIconFor(type);
   const copy = GPS_COPY[gps];
@@ -105,6 +120,20 @@ export function ActivityPrepareScreen(): ReactElement {
           </div>
         </div>
       </Card>
+
+      {planSession ? (
+        <Card>
+          <p className="t-eyebrow">Sessão do plano</p>
+          <p className="t-h2" style={{ marginTop: '0.15rem' }}>
+            {describeSession(planSession, preferences.distanceUnit)}
+          </p>
+          <p className="t-sm muted" style={{ marginTop: '0.35rem' }}>
+            {voice.on
+              ? 'Começa com 5 minutos a caminhar. Uma voz vai dizer-te o que fazer em cada momento — podes deixar o telemóvel no bolso.'
+              : 'Começa com 5 minutos a caminhar. O ecrã mostra o que fazer em cada momento.'}
+          </p>
+        </Card>
+      ) : null}
 
       <Card variant="quiet">
         <div className="row row-between">

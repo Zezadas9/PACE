@@ -662,3 +662,56 @@
   .streak-plus { display: none; }
 }
 
+/* --- A corrida guiada -------------------------------------------------------------
+   Lida de relance, a correr. A fase é a palavra maior; o tempo que falta, o
+   número maior. Correr tem a cor quente da sequência, recuperar e aquecer têm
+   a cor calma — para se perceber a fase sem ler. */
+
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--e-1);
+  transition: background var(--d-base) var(--ease), border-color var(--d-base) var(--ease);
+}
+.guide-card[data-kind="run"],
+.guide-card[data-kind="free"] {
+  background: var(--c-ember-soft);
+  border-color: color-mix(in srgb, var(--c-ember) 35%, transparent);
+}
+.guide-phase {
+  font-size: 1.75rem;
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.guide-card[data-kind="run"] .guide-phase,
+.guide-card[data-kind="free"] .guide-phase { color: var(--c-ember); }
+.guide-clock {
+  font-size: 3rem;
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.guide-bar {
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--c-surface-2);
+  overflow: hidden;
+}
+.guide-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--c-accent);
+  transition: width 900ms linear;
+}
+.guide-card[data-kind="run"] .guide-bar > span { background: var(--c-ember); }
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-bar > span { transition: none; }
+}
+

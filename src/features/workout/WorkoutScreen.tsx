@@ -40,7 +40,7 @@ function describeWeekdays(weekdays: number[]): string | null {
 }
 
 export function WorkoutScreen(): ReactElement {
-  const { repos } = useApp();
+  const { repos, platform } = useApp();
   const feedback = useFeedback();
   const { confirm, toast } = useUi();
   const navigate = useNavigate();
@@ -64,6 +64,8 @@ export function WorkoutScreen(): ReactElement {
   const todayWorkout = data.planned.workout;
 
   const begin = (workout: Workout): void => {
+    // O toque que começa o treino é o que deixa a voz falar no iPhone.
+    if (repos.settings.get().feedback.voice) platform.voice.unlock();
     startSession(repos, workout.id, today);
     feedback.touch('medium');
     navigate('/treino/sessao');

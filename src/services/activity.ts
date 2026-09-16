@@ -37,8 +37,11 @@ export function startSession(
   repos: Repositories,
   type: ActivityType,
   date: DayKey = todayKey(),
+  /** A sessão do plano de corrida que esta atividade vai cumprir, quando há uma. */
+  planSessionId: string | null = null,
 ): ActivitySession {
   return repos.activitySessions.create({
+    planSessionId,
     type,
     date,
     startedAt: new Date().toISOString(),

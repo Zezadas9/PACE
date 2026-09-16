@@ -147,7 +147,12 @@ export function ActivityScreen(): ReactElement {
           <RunPlanSection
             view={plan}
             unit={unit}
-            onStart={() => begin('run')}
+            onStart={() => {
+              feedback.touch('light');
+              navigate(plan.next
+                ? `/atividade/preparar/run?plano=${plan.next.id}`
+                : '/atividade/preparar/run');
+            }}
             onOpen={() => navigate('/atividade/plano')}
           />
         ) : null}

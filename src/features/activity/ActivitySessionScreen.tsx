@@ -8,6 +8,10 @@
  * Location arrives through the platform port. On the web that is the browser
  * API, which stops when the screen sleeps; on device it becomes the native one
  * with background permission, and nothing on this screen changes.
+ *
+ * Quando a corrida é uma sessão do plano, há mais uma coisa por cima dos
+ * números: a fase em que se está, o tempo que falta, e uma voz que diz o que
+ * fazer. É para ser seguida sem olhar para o telemóvel.
  */
 
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
@@ -15,9 +19,11 @@ import { useNavigate } from 'react-router-dom';
 import { ACTIVITY_LABELS } from '../../core/constants';
 import * as format from '../../core/utils/format';
 import * as activity from '../../domain/activity';
+import { runGuide } from '../../domain/guidance';
 import {
   activeSession, finishSession, pauseSession, resumeSession, trackSession,
 } from '../../services/activity';
+import { completeRunSession, runPlanView } from '../../services/coach';
 import {
   useApp, useFeedback, usePreferences, useStoreVersion,
 } from '../../app/providers/appContext';
@@ -26,6 +32,9 @@ import { clock, useTicker } from '../workout/useTicker';
 import { Icon } from '../../ui/Icon';
 import { Button } from '../../ui/primitives';
 import { ActivitySummarySheet } from './ActivitySummarySheet';
+import { RunGuideCard, useDistanceGuide, useRunGuide } from '../guidance/RunGuide';
+import { useVoice } from '../guidance/useVoice';
+import { useWakeLock } from '../guidance/useWakeLock';
 
 export function ActivitySessionScreen(): ReactElement {
   const { repos, platform } = useApp();
@@ -34,6 +43,7 @@ export function ActivitySessionScreen(): ReactElement {
   const { confirm } = useUi();
   const navigate = useNavigate();
   const version = useStoreVersion();
+  const voice = useVoice();
 
   const [finishing, setFinishing] = useState(false);
   const [gps, setGps] = useState<'waiting' | 'live' | 'off'>('waiting');
@@ -41,6 +51,9 @@ export function ActivitySessionScreen(): ReactElement {
   const session = useMemo(() => activeSession(repos), [repos, version]);
   const paused = session?.pausedAt != null;
   const now = useTicker(!!session && !paused && !finishing);
+  const unit = preferences.distanceUnit;
+
+  useWakeLock(!!session && !finishing);
 
   // The GPS watch lives exactly as long as this screen does.
   useEffect(() => {
@@ -58,6 +71,30 @@ export function ActivitySessionScreen(): ReactElement {
     [session, now, version],
   );
 
+  // A sessão do plano que esta corrida cumpre, quando há uma.
+  const planSession = useMemo(() => {
+    if (!session?.planSessionId) return null;
+    return runPlanView(repos)?.plan.sessions.find((item) => item.id === session.planSessionId) ?? null;
+  }, [repos, session?.planSessionId, version]);
+
+  const phases = useMemo(
+    () => (planSession ? runGuide(planSession, unit) : []),
+    [planSession, unit],
+  );
+
+  const elapsed = session ? Math.floor(activity.elapsedSec(session, now)) : 0;
+  const running = !!session && !paused && !finishing;
+  const guide = useRunGuide(phases, elapsed, running, voice.say);
+
+  // Só distância medida, e só depois do aquecimento.
+  useDistanceGuide(
+    metrics?.distanceM ?? null,
+    planSession?.targetDistanceM ?? null,
+    unit,
+    running && gps === 'live' && guide?.phase.kind === 'free',
+    voice.say,
+  );
+
   const leave = useCallback(async () => {
     if (!session) { navigate('/atividade', { replace: true }); return; }
     const ok = await confirm({
@@ -67,9 +104,10 @@ export function ActivitySessionScreen(): ReactElement {
       danger: true,
     });
     if (!ok) return;
+    platform.voice.cancel();
     repos.activitySessions.remove(session.id);
     navigate('/atividade', { replace: true });
-  }, [confirm, navigate, repos, session]);
+  }, [confirm, navigate, repos, platform, session]);
 
   if (!session || !metrics) {
     return (
@@ -82,7 +120,6 @@ export function ActivitySessionScreen(): ReactElement {
     );
   }
 
-  const unit = preferences.distanceUnit;
   const showPace = metrics.paceMode === 'pace';
   const primary = showPace
     ? format.pace(metrics.paceSecPerKm, unit)
@@ -103,6 +140,8 @@ export function ActivitySessionScreen(): ReactElement {
           <span>{gps === 'live' ? 'GPS' : gps === 'off' ? 'Sem GPS' : '…'}</span>
         </span>
       </header>
+
+      {guide ? <RunGuideCard state={guide} voice={voice} /> : null}
 
       <div className="live-primary">
         <span className="live-value t-num">{clock(metrics.durationSec)}</span>
@@ -145,7 +184,11 @@ export function ActivitySessionScreen(): ReactElement {
             block
             icon="play"
             label="Retomar"
-            onClick={() => { resumeSession(repos, session.id); feedback.touch('medium'); }}
+            onClick={() => {
+              resumeSession(repos, session.id);
+              feedback.touch('medium');
+              if (guide) voice.say('Vamos continuar.', true);
+            }}
           />
         ) : (
           <Button
@@ -153,7 +196,11 @@ export function ActivitySessionScreen(): ReactElement {
             block
             icon="pause"
             label="Pausa"
-            onClick={() => { pauseSession(repos, session.id); feedback.touch('medium'); }}
+            onClick={() => {
+              pauseSession(repos, session.id);
+              feedback.touch('medium');
+              if (guide) voice.say('Pausa.', true);
+            }}
           />
         )}
         <Button variant="primary" block icon="stop" label="Terminar" onClick={() => setFinishing(true)} />
@@ -164,9 +211,19 @@ export function ActivitySessionScreen(): ReactElement {
           session={session}
           onClose={() => setFinishing(false)}
           onDone={(input) => {
+            platform.voice.cancel();
             finishSession(repos, session.id, input);
+            // Uma corrida do plano fecha a sessão do plano: é daqui que o plano
+            // aprende se deve abrandar ou subir.
+            if (session.planSessionId) {
+              completeRunSession(repos, session.planSessionId, {
+                difficulty: input.difficulty ?? 'right',
+                rpe: input.perceivedEffort ?? null,
+                note: input.notes ?? null,
+              }, session.id);
+            }
             feedback.play('workout');
-            navigate('/atividade', { replace: true });
+            navigate(session.planSessionId ? '/atividade/plano' : '/atividade', { replace: true });
           }}
         />
       ) : null}

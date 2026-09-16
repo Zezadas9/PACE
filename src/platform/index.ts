@@ -30,6 +30,7 @@ import { LocalAssistantPort } from './web/assistant';
 import { RemoteAssistantPort, withLocalFallback } from './web/remoteAssistant';
 import { UnavailablePushPort, WebPushPort } from './web/push';
 import { RemoteLicencePort, UnmanagedLicencePort } from './web/licence';
+import { WebVoicePort } from './web/voice';
 import type { Platform } from './types';
 import { RemoteFoodDatabase, UnavailableFoodDatabase } from './web/foodDatabase';
 
@@ -50,6 +51,7 @@ export async function createWebPlatform(): Promise<Platform> {
     foodDatabase: createFoodDatabase(),
     push: createPush(),
     licence: createLicence(),
+    voice: new WebVoicePort(),
   };
 }
 

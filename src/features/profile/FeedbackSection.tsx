@@ -1,5 +1,5 @@
 /**
- * Sound and vibration.
+ * Sound, vibration and voice.
  *
  * Both default on because they are what makes a tap feel like it landed, but
  * both are one switch away — an app that insists on making noise is an app
@@ -13,8 +13,9 @@ import { Rows } from '../../ui/data';
 import { Switch } from '../../ui/Switch';
 
 export function FeedbackSection(): ReactElement {
-  const { repos } = useApp();
+  const { repos, platform } = useApp();
   const feedback = useFeedback();
+  const canSpeak = platform.voice.supported();
   useStoreVersion();
 
   const settings = repos.settings.get().feedback;
@@ -28,7 +29,7 @@ export function FeedbackSection(): ReactElement {
 
   return (
     <section>
-      <SectionHeader title="Som e vibração" />
+      <SectionHeader title="Som, vibração e voz" />
       <Card variant="flush">
         <Rows>
           <Switch
@@ -56,6 +57,26 @@ export function FeedbackSection(): ReactElement {
             onChange={(haptics) => {
               repos.settings.updateFeedback({ haptics });
               feedback.setPreferences(settings.sound, haptics);
+            }}
+          />
+          <Switch
+            brand="som"
+            checked={settings.voice && canSpeak}
+            disabled={!canSpeak}
+            title="Voz nas sessões"
+            subtitle={
+              canSpeak
+                ? 'Diz o que fazer durante as corridas do plano e os treinos.'
+                : 'Este aparelho não tem síntese de voz.'
+            }
+            onChange={(voice) => {
+              repos.settings.updateFeedback({ voice });
+              if (voice) {
+                platform.voice.unlock();
+                platform.voice.speak('A voz está ligada.', { interrupt: true });
+              } else {
+                platform.voice.cancel();
+              }
             }}
           />
         </Rows>

@@ -13,9 +13,43 @@ export type IconName =
   | 'trophy' | 'chart' | 'briefcase' | 'graduation' | 'stethoscope' | 'users'
   | 'home' | 'wallet' | 'edit' | 'today' | 'minus' | 'walk' | 'bike'
   | 'mountain' | 'pause' | 'play' | 'stop' | 'pin' | 'route' | 'flag'
-  | 'camera' | 'image' | 'download' | 'upload';
+  | 'camera' | 'image' | 'download' | 'upload'
+  | 'volume' | 'volumeOff' | 'music' | 'video' | 'file';
 
 const PATHS: Record<IconName, ReactNode> = {
+  volume: (
+    <>
+      <path d="M4 9v6h4l5 4V5L8 9H4z" />
+      <path d="M16 9.5a3.5 3.5 0 0 1 0 5" />
+      <path d="M18.5 7a7 7 0 0 1 0 10" />
+    </>
+  ),
+  volumeOff: (
+    <>
+      <path d="M4 9v6h4l5 4V5L8 9H4z" />
+      <path d="M17 10l4 4" />
+      <path d="M21 10l-4 4" />
+    </>
+  ),
+  music: (
+    <>
+      <path d="M9 18V6l11-2v12" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="17.5" cy="16" r="2.5" />
+    </>
+  ),
+  video: (
+    <>
+      <rect x="3" y="6" width="13" height="12" rx="2" />
+      <path d="M16 10l5-3v10l-5-3" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5" />
+    </>
+  ),
   download: (
     <>
       <path d="M12 3v12" />

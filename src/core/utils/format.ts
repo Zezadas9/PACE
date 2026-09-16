@@ -42,6 +42,21 @@ export function duration(seconds: number | null): string {
   return `${minutes}m`;
 }
 
+/**
+ * Uma duracao curta, sem arredondar ao minuto: "1 min", "1 min 30 s", "45 s".
+ *
+ * `duration` arredonda aos minutos, e 90 segundos passavam a "2m" — o que num
+ * intervalo de corrida e meio minuto de caminhada que nao existe, escrito ao
+ * lado de uma voz que diz "1 minuto e meio".
+ */
+export function shortDuration(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  if (min === 0) return `${sec} s`;
+  return sec === 0 ? `${min} min` : `${min} min ${sec} s`;
+}
+
 /** Seconds per km -> "5:24 /km" */
 export function pace(secPerKm: number | null, unit: DistanceUnit = 'km'): string {
   if (secPerKm == null) return '—';

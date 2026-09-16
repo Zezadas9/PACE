@@ -617,6 +617,8 @@ export interface NotificationSettings {
 export interface FeedbackSettings {
   sound: boolean;
   haptics: boolean;
+  /** A voz que diz o que fazer durante corridas e treinos. */
+  voice: boolean;
 }
 
 /**

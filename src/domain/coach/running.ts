@@ -16,6 +16,7 @@ import type { ActivitySession, DayKey } from '../../core/types';
 import { addDaysToKey } from '../../core/utils/date';
 import { LIMITS } from './safety';
 import type { RunPlanDraft } from './types';
+import { shortDuration } from '../../core/utils/format';
 
 export interface RunBaseline {
   hasHistory: boolean;
@@ -155,7 +156,8 @@ export function buildRunPlan(
           segments,
           targetDistanceM: null,
           targetDurationSec: (first.runSec + first.walkSec) * first.repeats + 600,
-          note: `Aquece 5 min a caminhar. Depois ${first.repeats}× (${Math.round(first.runSec / 60)} min a correr, ${Math.round(first.walkSec / 60)} min a caminhar).`,
+          note: `Aquece 5 min a caminhar. Depois ${first.repeats}× `
+            + `(${shortDuration(first.runSec)} a correr, ${shortDuration(first.walkSec)} a caminhar).`,
         });
         return;
       }

@@ -324,6 +324,21 @@ export interface FoodDatabasePort extends Capability {
   byBarcode(barcode: string): Promise<FoodResult | null>;
 }
 
+/* --- Voz ----------------------------------------------------------------- */
+
+/**
+ * A voz que guia as sessoes.
+ *
+ * `unlock` tem de ser chamado dentro de um toque: o iPhone nao deixa uma pagina
+ * falar antes disso.
+ */
+export interface VoicePort {
+  supported(): boolean;
+  unlock(): void;
+  speak(text: string, options?: { interrupt?: boolean }): void;
+  cancel(): void;
+}
+
 /* --- Licenca ------------------------------------------------------------- */
 
 /** O que o servidor diz sobre o direito de usar a aplicacao. */
@@ -390,4 +405,5 @@ export interface Platform {
   foodDatabase: FoodDatabasePort;
   push: PushPort;
   licence: LicencePort;
+  voice: VoicePort;
 }

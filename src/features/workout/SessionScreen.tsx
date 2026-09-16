@@ -5,32 +5,71 @@
  * button. Everything else is either a glance (elapsed, progress) or one tap
  * away. It gets its own route without the tab bar, because mid-set is the worst
  * possible moment to accidentally navigate away.
+ *
+ * A voz diz o exercício e a série ao começar, o descanso quando acaba uma
+ * série, e o que vem a seguir quando o descanso acaba — para o telemóvel poder
+ * ficar no chão entre séries.
  */
 
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hasSections, WORKOUT_SECTION_LABELS, WORKOUT_TYPE_LABELS } from '../../core/constants';
+import type { Workout, WorkoutSession } from '../../core/types';
 import * as training from '../../domain/training';
+import {
+  WORKOUT_DONE_CUE, afterRestCue, restCue, setCue, type SetInfo,
+} from '../../domain/guidance';
 import {
   activeSession, completeNextSet, discardSession, logSet,
 } from '../../services/training';
 import { useApp, useFeedback, useStoreVersion } from '../../app/providers/appContext';
 import { useUi } from '../../app/providers/uiContext';
+import type { Repositories } from '../../data/repositories';
 import { Icon } from '../../ui/Icon';
 import { ProgressBar } from '../../ui/data';
 import { Button } from '../../ui/primitives';
 import { SessionSummarySheet } from './SessionSummarySheet';
 import { RestTimer } from './RestTimer';
 import { clock, useTicker } from './useTicker';
+import { useVoice } from '../guidance/useVoice';
+import { useWakeLock } from '../guidance/useWakeLock';
+
+type NextSet = NonNullable<ReturnType<typeof training.nextSet>>;
+
+/** O que a voz precisa de saber sobre uma série. */
+function setInfo(
+  repos: Repositories,
+  session: WorkoutSession,
+  workout: Workout | null,
+  next: NextSet,
+): SetInfo {
+  return {
+    exercise: repos.exercises.byId(next.block.exerciseId)?.name ?? 'Exercício',
+    // So se diz a seccao quando ela muda alguma coisa: "aquecimento" ajuda,
+    // repetir o nome da parte principal antes de cada serie e ruido.
+    section: workout && hasSections(workout.type) && next.block.section !== 'main'
+      ? WORKOUT_SECTION_LABELS[next.block.section]
+      : null,
+    setIndex: next.set.setIndex,
+    setsTotal: training.setsFor(session, next.block).length,
+    reps: next.set.reps ?? next.block.reps ?? null,
+    durationSec: next.set.durationSec ?? next.block.durationSec ?? null,
+    loadKg: next.set.loadKg ?? next.block.loadKg ?? null,
+  };
+}
 
 export function SessionScreen(): ReactElement {
-  const { repos } = useApp();
+  const { repos, platform } = useApp();
   const feedback = useFeedback();
   const { confirm } = useUi();
   const navigate = useNavigate();
   const version = useStoreVersion();
+  const voice = useVoice();
 
   const [restSeconds, setRestSeconds] = useState<number | null>(null);
+  // Uma chave nova por descanso: dois descansos de 60 s seguidos são dois
+  // descansos, e o segundo tem de recomeçar do início.
+  const [restKey, setRestKey] = useState(0);
   const [finishing, setFinishing] = useState(false);
 
   const session = useMemo(() => activeSession(repos), [repos, version]);
@@ -40,6 +79,7 @@ export function SessionScreen(): ReactElement {
   );
 
   const now = useTicker(!!session && !finishing);
+  useWakeLock(!!session && !finishing);
 
   const progress = useMemo(
     () => (session ? training.sessionProgress(session, workout) : null),
@@ -50,21 +90,44 @@ export function SessionScreen(): ReactElement {
     [session, workout, version],
   );
 
+  // A primeira frase, só num treino acabado de começar. Voltar a um treino a
+  // meio não o anuncia de novo.
+  const announced = useRef(false);
+  useEffect(() => {
+    if (announced.current || !session || !current) return;
+    announced.current = true;
+    if ((progress?.setsCompleted ?? 0) === 0) {
+      voice.say(setCue(setInfo(repos, session, workout, current)));
+    }
+  }, [repos, session, workout, current, progress, voice]);
+
   const complete = useCallback(() => {
     if (!session || !current) return;
     completeNextSet(repos, session.id);
 
     // Rest only makes sense when there is something left to rest before.
-    const after = training.nextSet(
-      repos.workoutSessions.byId(session.id) ?? session,
-      workout,
-    );
+    const updated = repos.workoutSessions.byId(session.id) ?? session;
+    const after = training.nextSet(updated, workout);
     const rest = current.block.restSec ?? 0;
     setRestSeconds(after && rest > 0 ? rest : null);
+    setRestKey((key) => key + 1);
+
     // Only the set that ends the workout makes a sound; the rest are felt.
     if (after) feedback.touch('medium');
     else feedback.play('workout');
-  }, [repos, session, current, workout, feedback]);
+
+    if (!after) voice.say(WORKOUT_DONE_CUE, true);
+    else if (rest > 0) voice.say(restCue(rest), true);
+    else voice.say(setCue(setInfo(repos, updated, workout, after)), true);
+  }, [repos, session, current, workout, feedback, voice]);
+
+  const restDone = useCallback(() => {
+    setRestSeconds(null);
+    const latest = repos.workoutSessions.byId(session?.id ?? '');
+    if (!latest) return;
+    const next = training.nextSet(latest, workout);
+    if (next) voice.say(afterRestCue(setInfo(repos, latest, workout, next)), true);
+  }, [repos, session?.id, workout, voice]);
 
   const leave = useCallback(async () => {
     if (!session) { navigate('/treino', { replace: true }); return; }
@@ -75,9 +138,10 @@ export function SessionScreen(): ReactElement {
       danger: true,
     });
     if (!ok) return;
+    platform.voice.cancel();
     discardSession(repos, session.id);
     navigate('/treino', { replace: true });
-  }, [confirm, navigate, repos, session]);
+  }, [confirm, navigate, repos, platform, session]);
 
   if (!session) {
     return (
@@ -104,6 +168,17 @@ export function SessionScreen(): ReactElement {
           <span className="t-h2">{workout?.title ?? 'Treino'}</span>
         </div>
         <span className="session-clock t-num">{clock(elapsed)}</span>
+        {voice.supported ? (
+          <button
+            type="button"
+            className="btn-icon"
+            aria-label={voice.on ? 'Desligar a voz' : 'Ligar a voz'}
+            aria-pressed={voice.on}
+            onClick={voice.toggle}
+          >
+            <Icon name={voice.on ? 'volume' : 'volumeOff'} />
+          </button>
+        ) : null}
       </header>
 
       <div className="session-progress">
@@ -115,7 +190,7 @@ export function SessionScreen(): ReactElement {
       </div>
 
       {restSeconds != null ? (
-        <RestTimer seconds={restSeconds} onDone={() => setRestSeconds(null)} />
+        <RestTimer key={restKey} seconds={restSeconds} onDone={restDone} />
       ) : null}
 
       {finished ? (
@@ -160,7 +235,10 @@ export function SessionScreen(): ReactElement {
           workout={workout}
           elapsedSec={elapsed}
           onClose={() => setFinishing(false)}
-          onDone={() => navigate('/treino', { replace: true })}
+          onDone={() => {
+            platform.voice.cancel();
+            navigate('/treino', { replace: true });
+          }}
         />
       ) : null}
     </div>
@@ -177,8 +255,8 @@ export function SessionScreen(): ReactElement {
 function CurrentSet({
   session, current, exerciseName, sectionLabel, onEdit,
 }: {
-  session: import('../../core/types').WorkoutSession;
-  current: NonNullable<ReturnType<typeof training.nextSet>>;
+  session: WorkoutSession;
+  current: NextSet;
   exerciseName: string;
   sectionLabel: string | null;
   onEdit: (patch: Partial<import('../../core/types').SetLog>) => void;
@@ -260,8 +338,8 @@ function Stepper({
 function BlockList({
   session, workout, currentBlockId,
 }: {
-  session: import('../../core/types').WorkoutSession;
-  workout: import('../../core/types').Workout | null;
+  session: WorkoutSession;
+  workout: Workout | null;
   currentBlockId: string | null;
 }): ReactElement | null {
   const { repos } = useApp();

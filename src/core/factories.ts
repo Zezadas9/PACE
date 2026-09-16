@@ -323,7 +323,7 @@ export function createSettings(partial: Partial<AppSettings> = {}): AppSettings 
       streakReminderTime: '20:00',
       pushId: null,
     },
-    feedback: { sound: true, haptics: true },
+    feedback: { sound: true, haptics: true, voice: true },
     licence: {
       device: null,
       card: null,
