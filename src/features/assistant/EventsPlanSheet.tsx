@@ -8,6 +8,10 @@
  * é dito, em vez de ter sido inventado.
  *
  * O que já está na agenda nunca é alterado. Um horário novo só acrescenta.
+ *
+ * Depois de entrar, a folha não desaparece: fica a dizer o que ficou marcado,
+ * com um botão para o ir ver. Um horário que some no instante em que se
+ * confirma deixa quem o mandou sem saber onde ele foi parar.
  */
 
 import { useMemo, useState, type ReactElement } from 'react';
@@ -40,16 +44,24 @@ function describeDays(weekdays: number[]): string {
 
 const pt = (date: string): string => date.split('-').reverse().join('/');
 
+/** Onde se vai ver o que acabou de ficar marcado. */
+export interface Placed {
+  path: string | null;
+}
+
 export function EventsPlanSheet({
-  draft, onClose, onConfirm,
+  draft, onClose, onConfirm, onView,
 }: {
   draft: EventsDraft;
   onClose: () => void;
-  onConfirm: (edited: EventsDraft) => void;
+  /** Põe na agenda. Devolve o que ficou lá, ou `null` se não deu. */
+  onConfirm: (edited: EventsDraft) => Placed | null;
+  onView: (path: string) => void;
 }): ReactElement {
   const { repos } = useApp();
   const grouped = useMemo(() => groupEventItems(draft.items), [draft]);
   const [left, setLeft] = useState<Set<number>>(() => new Set());
+  const [placed, setPlaced] = useState<Placed | null>(null);
 
   const today = todayKey();
   const from = draft.startDate && draft.startDate > today ? draft.startDate : today;
@@ -61,7 +73,14 @@ export function EventsPlanSheet({
     [chosen, repos, from],
   );
 
+  const confirm = (): void => {
+    const result = onConfirm({ ...draft, items: chosen });
+    if (!result) return;
+    setPlaced(result);
+  };
+
   const toggle = (index: number): void => {
+    if (placed) return;
     setLeft((current) => {
       const next = new Set(current);
       if (next.has(index)) next.delete(index);
@@ -78,34 +97,60 @@ export function EventsPlanSheet({
       subtitle={`${total} ${total === 1 ? 'marcação' : 'marcações'} por semana · a partir de ${pt(from)}`
         + (draft.until ? ` · até ${pt(draft.until)}` : '')}
       onClose={onClose}
-      footer={
+      footer={placed ? (
+        <>
+          <Button variant="ghost" label="Fechar" onClick={onClose} />
+          <Button
+            variant="primary"
+            icon="calendar"
+            label="Ver na agenda"
+            disabled={!placed.path}
+            onClick={() => placed.path && onView(placed.path)}
+          />
+        </>
+      ) : (
         <>
           <Button variant="outline" label="Cancelar" onClick={onClose} />
           <Button
             variant="primary"
             label={chosen.length === 0 ? 'Nada a pôr' : 'Pôr na agenda'}
             disabled={chosen.length === 0}
-            onClick={() => onConfirm({ ...draft, items: chosen })}
+            onClick={confirm}
           />
         </>
-      }
+      )}
     >
       <div className="stack stack-4">
-        <p className="t-sm muted">
-          Confirma se foi bem lido. Toca numa linha para a tirar — o que já está na
-          tua agenda fica como está.
-        </p>
+        {placed ? (
+          <div className="timetable-note" data-tone="done">
+            <p className="t-sm">
+              <strong>Está na agenda.</strong>{' '}
+              {total === 1 ? 'Uma marcação' : `${total} marcações`} por semana, a
+              repetir todas as semanas a partir de {pt(from)}.
+            </p>
+            <p className="t-sm muted">
+              Aparece no dia de cada aula, à hora dela. Podes mudar ou apagar
+              qualquer uma na agenda, como as outras.
+            </p>
+          </div>
+        ) : (
+          <p className="t-sm muted">
+            Confirma se foi bem lido. Toca numa linha para a tirar — o que já está na
+            tua agenda fica como está.
+          </p>
+        )}
 
         <ul className="timetable-list">
-          {grouped.map((item, index) => {
-            const out = left.has(index);
+          {(placed ? chosen : grouped).map((item, index) => {
+            const out = !placed && left.has(index);
             return (
               <li key={`${item.title}-${item.startTime}-${index}`}>
                 <button
                   type="button"
                   className="timetable-row"
                   data-out={String(out)}
-                  aria-pressed={!out}
+                  aria-pressed={placed ? undefined : !out}
+                  disabled={!!placed}
                   onClick={() => toggle(index)}
                 >
                   <span className="timetable-check" aria-hidden="true">
@@ -126,7 +171,7 @@ export function EventsPlanSheet({
           })}
         </ul>
 
-        {overlaps.length > 0 ? (
+        {overlaps.length > 0 && !placed ? (
           <div className="timetable-note" data-tone="caution">
             <p className="t-sm">
               <strong>Sobrepõe-se ao que já tens:</strong>
@@ -142,7 +187,7 @@ export function EventsPlanSheet({
           </div>
         ) : null}
 
-        {draft.unreadable.length > 0 ? (
+        {draft.unreadable.length > 0 && !placed ? (
           <div className="timetable-note">
             <p className="t-sm"><strong>Não consegui ler:</strong></p>
             <ul>

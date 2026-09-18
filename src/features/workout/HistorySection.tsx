@@ -15,6 +15,7 @@ import { useApp, usePreferences, useStoreVersion } from '../../app/providers/app
 import { Card, SectionHeader } from '../../ui/primitives';
 import { EmptyState, Row, Rows } from '../../ui/data';
 import { Segmented } from '../../ui/form';
+import { workoutGlyph } from '../../ui/sportGlyph';
 
 export function HistorySection(): ReactElement {
   const { repos } = useApp();
@@ -67,7 +68,10 @@ export function HistorySection(): ReactElement {
               {sessions.map((row) => (
                 <Row
                   key={row.session.id}
-                  icon="dumbbell"
+                  {...workoutGlyph({
+                    title: row.title,
+                    type: row.workout?.type ?? 'other',
+                  })}
                   title={row.title}
                   sub={[
                     mediumDate(row.session.date),

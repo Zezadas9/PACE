@@ -105,7 +105,9 @@ describe('applyAction — um horario', () => {
   it('poe cada aula na agenda uma vez, a repetir-se nos dias dela', () => {
     const result = applyAction(repos, { kind: 'create_events', label: 'Por na agenda', draft: horario });
     expect(result.ok).toBe(true);
-    expect(result.path).toBe('/agenda');
+    // A agenda abre na semana da primeira aula, nao em hoje.
+    const primeira = repos.events.all().map((evento) => evento.date).sort()[0];
+    expect(result.path).toBe(`/agenda?dia=${primeira}&vista=semana`);
     const eventos = repos.events.all();
     expect(eventos).toHaveLength(2);
     expect(eventos.find((evento) => evento.title === 'Matematica')?.recurrence.weekdays).toEqual([1, 3]);

@@ -244,7 +244,7 @@ export function AssistantScreen(): ReactElement {
           aria-label="O que posso ler"
           onClick={() => navigate('/ia/dados')}
         >
-          <Icon name="lock" />
+          <BrandIcon name="cadeado" size={24} />
         </button>
       </header>
 
@@ -424,20 +424,22 @@ export function AssistantScreen(): ReactElement {
         <EventsPlanSheet
           draft={timetable.draft}
           onClose={() => setTimetable(null)}
+          onView={(path) => { setTimetable(null); navigate(path); }}
           onConfirm={(edited) => {
             const result = applyAction(repos, {
               kind: 'create_events',
               label: timetable.label,
               draft: edited,
             });
-            setTimetable(null);
             if (!result.ok) {
+              setTimetable(null);
               toast(result.message || 'Não consegui pôr isso na agenda.');
-              return;
+              return null;
             }
             feedback.play('complete');
-            toast(result.message);
-            if (result.path) navigate(result.path);
+            // A folha fica aberta a dizer o que ficou marcado: sem isso, um
+            // horario inteiro entra na agenda sem nada no ecra a dize-lo.
+            return { path: result.path };
           }}
         />
       ) : null}

@@ -550,10 +550,19 @@ function createPlaylist(repos: Repositories, draft: PlaylistDraft): ApplyResult 
 function createEvents(repos: Repositories, draft: EventsDraft): ApplyResult {
   const events = eventsFromDraft(draft, todayKey());
   for (const event of events) repos.events.create(event);
+
+  // Um horario e uma semana, nao um dia: a agenda abre na semana da primeira
+  // aula, que e onde ele se ve inteiro. Sem a data, abria em hoje — e um
+  // horario que so comeca na segunda parecia nao ter entrado.
+  const first = events
+    .map((event) => event.date)
+    .filter((date): date is DayKey => !!date)
+    .sort()[0];
+
   return {
     ok: true,
     message: events.length === 1 ? '1 evento na agenda.' : `${events.length} eventos na agenda.`,
-    path: '/agenda',
+    path: first ? `/agenda?dia=${first}&vista=semana` : '/agenda',
   };
 }
 

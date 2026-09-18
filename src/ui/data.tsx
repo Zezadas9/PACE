@@ -101,7 +101,7 @@ export function Ring({
 }
 
 export function Row({
-  title, sub, trail, icon, brand, tick, done, chevron, hue, onClick,
+  title, sub, trail, icon, brand, emoji, tick, done, chevron, hue, onClick,
 }: {
   title: string;
   sub?: string | null;
@@ -109,6 +109,8 @@ export function Row({
   icon?: IconName;
   /** O icone ilustrado, quando existe um que seja exatamente esta linha. */
   brand?: BrandIconName;
+  /** A figura do sistema, para o que nao tem arte propria — um desporto, p.ex. */
+  emoji?: string;
   tick?: boolean;
   done?: boolean;
   chevron?: boolean;
@@ -128,7 +130,10 @@ export function Row({
           <BrandIcon name={brand} size={26} />
         </span>
       ) : null}
-      {!tick && !brand && icon ? (
+      {!tick && !brand && emoji ? (
+        <span className="lead lead-emoji" aria-hidden="true">{emoji}</span>
+      ) : null}
+      {!tick && !brand && !emoji && icon ? (
         <span className="lead">
           <Icon name={icon} />
         </span>

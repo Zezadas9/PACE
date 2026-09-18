@@ -130,6 +130,18 @@
   }
 }
 
+/* O cadeado e um objeto preto. Sobre o tema claro le-se de longe; sobre o
+   escuro fica um vulto cinzento ao lado do caixote vermelho. O anel de luz
+   acima da-lhe contorno mas nao lhe da corpo — o corpo vem de o levantar. */
+:root[data-theme="dark"] .brand-icon.brand-cadeado {
+  --ring-filter: brightness(1.85) contrast(0.92) drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-icon.brand-cadeado {
+    --ring-filter: brightness(1.85) contrast(0.92) drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+  }
+}
+
 /* Dentro de um disco proprio o fundo ja separa o icone do ecra. */
 .brand-tile .brand-icon { --ring-filter: ; }
 
@@ -202,3 +214,37 @@ button:active .brand-icon { transform: scale(0.92); }
   :root:not([data-theme="light"]) .brand-icon.theme-dark-only { display: block; }
   :root:not([data-theme="light"]) .brand-icon.theme-light-only { display: none; }
 }
+
+/* --- Emoji como figura ----------------------------------------------------------
+   Nem todos os desportos tem arte da casa, e desenhar vinte bolas nao era
+   trabalho bem gasto: o sistema ja traz a figura de cada um, na linguagem que
+   a pessoa ja reconhece no teclado. Fica ao lado da arte da casa sem destoar
+   porque tambem e uma figura cheia, com volume e cor.
+
+   O tamanho vem do estilo em linha (ver GlyphMark) e a familia e so de emoji:
+   sem ela, o Windows desenha alguns em preto e branco. */
+
+.emoji-mark,
+.row-item .lead-emoji {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-weight: 400;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  flex: none;
+  /* O emoji nao e texto a ler: nao se seleciona nem se arrasta. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Na linha, ocupa o lugar do disco do glifo de linha, mas sem disco. */
+.row-item .lead-emoji {
+  background: none;
+  font-size: 1.4rem;
+}
+
+/* A figura do treino de hoje respira um pouco mais do que a de uma linha. */
+.today-mark { margin-right: var(--s-1); }
+
+button:active .emoji-mark { transform: scale(0.92); }
+.emoji-mark { transition: transform 220ms cubic-bezier(0.34, 1.4, 0.5, 1); }

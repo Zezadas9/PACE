@@ -23,6 +23,7 @@ import { Card, SectionHeader } from '../../ui/primitives';
 import { EmptyState, Metric, ProgressBar, Row, Rows } from '../../ui/data';
 import { Fab } from '../../ui/Fab';
 import { PageHeader } from '../../ui/page';
+import { GlyphMark, workoutGlyph } from '../../ui/sportGlyph';
 import { WorkoutBuilder } from './WorkoutBuilder';
 import { HistorySection } from './HistorySection';
 import { AskPace } from '../assistant/AskPace';
@@ -101,7 +102,7 @@ export function WorkoutScreen(): ReactElement {
                 {data.workouts.map((workout) => (
                   <Row
                     key={workout.id}
-                    icon="dumbbell"
+                    {...workoutGlyph(workout)}
                     hue={workout.type}
                     title={workout.title}
                     sub={[
@@ -195,6 +196,7 @@ function TodayCard({
       <SectionHeader title="Hoje" />
       <Card onClick={running ? onResume : onStart}>
         <div className="row row-between">
+          <GlyphMark glyph={workoutGlyph(workout)} size={38} className="today-mark" />
           <div className="grow">
             <p className="t-eyebrow">{WORKOUT_TYPE_LABELS[workout.type]}</p>
             <p className="t-h1" style={{ marginTop: '0.25rem' }}>{workout.title}</p>

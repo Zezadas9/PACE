@@ -4,9 +4,14 @@
  * One screen, four scales. The anchor date is the single piece of state that
  * matters; every view is derived from it, and switching scale keeps the day you
  * were looking at.
+ *
+ * O endereço pode trazer o dia e a vista (`/agenda?dia=2026-09-21&vista=semana`).
+ * É assim que o assistente leva alguém ao horário que acabou de pôr: a agenda
+ * abre onde ele está, em vez de abrir em hoje e deixar a pessoa à procura.
  */
 
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AGENDA_VIEW_OPTIONS, type AgendaView } from '../../core/constants';
 import type { DayKey } from '../../core/types';
 import {
@@ -28,14 +33,37 @@ import { MonthView, WeekView, YearView } from './views';
 import { AgendaSheets, type SheetState } from './AgendaSheets';
 import { AskPace } from '../assistant/AskPace';
 
+/** As vistas, como se escrevem no endereço. */
+const VIEW_PARAM: Record<string, AgendaView> = {
+  dia: 'day', semana: 'week', mes: 'month', ano: 'year',
+};
+
+function dayParam(value: string | null): DayKey | null {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? (value as DayKey) : null;
+}
+
+function viewParam(value: string | null): AgendaView | null {
+  return (value && VIEW_PARAM[value]) || null;
+}
+
 export function AgendaScreen(): ReactElement {
   const { repos } = useApp();
   const feedback = useFeedback();
   const version = useStoreVersion();
 
-  const [view, setView] = useState<AgendaView>('day');
-  const [anchor, setAnchor] = useState<DayKey>(() => todayKey());
+  const [params] = useSearchParams();
+  const [view, setView] = useState<AgendaView>(() => viewParam(params.get('vista')) ?? 'day');
+  const [anchor, setAnchor] = useState<DayKey>(() => dayParam(params.get('dia')) ?? todayKey());
   const [sheet, setSheet] = useState<SheetState>(null);
+
+  // Chegar à agenda já estando nela não a volta a montar: sem isto, o botão
+  // "Ver na agenda" mudava o endereço e deixava o ecrã no mesmo sítio.
+  useEffect(() => {
+    const date = dayParam(params.get('dia'));
+    const wanted = viewParam(params.get('vista'));
+    if (date) setAnchor(date);
+    if (wanted) setView(wanted);
+  }, [params]);
 
   const today = todayKey();
 

@@ -415,7 +415,7 @@ function DataSection(): ReactElement {
       <Card variant="flush">
         <Rows>
           <Row
-            icon="lock"
+            brand="cadeado"
             title="Guardados neste dispositivo"
             sub={
               store.degraded
