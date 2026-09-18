@@ -547,6 +547,11 @@ as sobreposições com o que já está na agenda aparecem à vista, e o que a IA
 conseguiu ler é dito em vez de inventado. **Só acrescenta**: o que já estava na
 agenda nunca é alterado. A lógica está em `src/domain/timetable.ts`.
 
+Depois de entrar, a folha fica a dizer o que ficou marcado, com um botão que
+abre a agenda na semana da primeira aula (`/agenda?dia=…&vista=semana`) — um
+horário que desaparecesse no instante em que se confirma deixava quem o mandou
+sem saber onde ele foi parar.
+
 ### Música
 
 Cada treino pode ter uma playlist, e as corridas e caminhadas têm uma própria.
@@ -560,6 +565,23 @@ empresas registadas com 250 000 utilizadores por mês. Um botão "ligar ao
 Spotify" funcionaria para 5 pessoas e falharia para todos os clientes. Um link
 funciona para toda a gente. O modelo nunca escreve links (o servidor deita-os
 fora), e os links colados só são aceites de apps de música conhecidas.
+
+---
+
+## Os ícones
+
+A arte ilustrada vive em `public/icons/`, um ficheiro por ícone, gerada por
+`tools/build-brand-icons.cjs`. Os que desaparecem contra um dos temas estão
+listados em `src/ui/BrandIcon.tsx` e ganham um anel de luz ou de sombra; três
+têm mesmo uma cópia própria para o tema escuro.
+
+**Cada treino tem a figura do seu desporto.** O desporto lê-se do título —
+"Basquetebol — Técnica + Físico" é basquetebol para quem o lê — em
+`src/domain/sport.ts`, puro e testado, com o tipo do treino como rede por
+baixo. A figura vem de `src/ui/sportGlyph.tsx`: a arte da casa onde ela existe
+(o haltere da aba do treino, a corrida, a bicicleta, a caminhada) e um emoji do
+sistema onde não existe — 🏀, ⚽, 🕺, 🏊. O emoji é desenhado pelo telemóvel, por
+isso é o do iPhone no iPhone, e não pesa um byte de transferência.
 
 ---
 
